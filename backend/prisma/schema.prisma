@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  RENTER
+  OWNER
+  ADMIN
+}
+
+enum ToolStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  HIDDEN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  ACTIVE
+  RETURNED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum KycDocumentType {
+  PASSPORT
+  SELFIE
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum SupportTicketType {
+  GENERAL
+  DISPUTE
+}
+
+model User {
+  id        String     @id @default(uuid())
+  phone     String     @unique
+  name      String?
+  city      String?
+  avatarUrl String?
+  role      UserRole   @default(RENTER)
+  kycStatus KycStatus?
+  isBlocked Boolean    @default(false)
+  deletedAt DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  tools                Tool[]          @relation("ToolOwner")
+  bookingsAsRenter     Booking[]       @relation("BookingRenter")
+  bookingsAsOwner      Booking[]       @relation("BookingOwner")
+  payments             Payment[]
+  kycDocuments         KycDocument[]   @relation("KycDocumentUser")
+  reviewedKycDocuments KycDocument[]   @relation("KycDocumentReviewer")
+  supportTickets       SupportTicket[] @relation("SupportTicketUser")
+  adminAuditLogs       AdminAuditLog[] @relation("AdminAuditLogAdmin")
+
+  @@index([role])
+  @@index([kycStatus])
+  @@index([isBlocked])
+  @@map("users")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  iconName  String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tools Tool[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model Tool {
+  id            String     @id @default(uuid())
+  ownerId       String
+  categoryId    String
+  title         String
+  description   String
+  pricePerDay   Decimal    @db.Decimal(10, 2)
+  depositAmount Decimal?   @db.Decimal(10, 2)
+  status        ToolStatus @default(PENDING)
+  rejectReason  String?
+  address       String
+  latitude      Float
+  longitude     Float
+  location      Unsupported("geography(Point,4326)")?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  owner    User        @relation("ToolOwner", fields: [ownerId], references: [id])
+  category Category    @relation(fields: [categoryId], references: [id])
+  photos   ToolPhoto[]
+  bookings Booking[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([pricePerDay])
+  @@index([createdAt])
+  @@index([location], type: Gist, map: "tools_location_idx")
+  @@map("tools")
+}
+
+model ToolPhoto {
+  id           String   @id @default(uuid())
+  toolId       String
+  originalUrl  String
+  thumbnailUrl String?
+  previewUrl   String?
+  sortOrder    Int      @default(0)
+  isCover      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  tool Tool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@index([toolId])
+  @@index([toolId, sortOrder])
+  @@map("tool_photos")
+}
+
+model Booking {
+  id              String        @id @default(uuid())
+  toolId          String
+  renterId        String
+  ownerId         String
+  startDate       DateTime      @db.Date
+  endDate         DateTime      @db.Date
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  status          BookingStatus @default(PENDING)
+  disputeOpenedAt DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tool           Tool            @relation(fields: [toolId], references: [id])
+  renter         User            @relation("BookingRenter", fields: [renterId], references: [id])
+  owner          User            @relation("BookingOwner", fields: [ownerId], references: [id])
+  payment        Payment?
+  supportTickets SupportTicket[]
+
+  @@index([toolId])
+  @@index([renterId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("bookings")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  bookingId         String        @unique
+  userId            String
+  amount            Decimal       @db.Decimal(10, 2)
+  status            PaymentStatus @default(PENDING)
+  yookassaPaymentId String?       @unique
+  checkoutUrl       String?
+  rawPayload        Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
+}
+
+model KycDocument {
+  id            String          @id @default(uuid())
+  userId        String
+  type          KycDocumentType
+  storageKey    String
+  status        KycStatus       @default(PENDING)
+  reviewComment String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  user       User  @relation("KycDocumentUser", fields: [userId], references: [id])
+  reviewedBy User? @relation("KycDocumentReviewer", fields: [reviewedById], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedById])
+  @@map("kyc_documents")
+}
+
+model SupportTicket {
+  id        String              @id @default(uuid())
+  userId    String
+  bookingId String?
+  type      SupportTicketType   @default(GENERAL)
+  subject   String
+  message   String
+  status    SupportTicketStatus @default(OPEN)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  user    User     @relation("SupportTicketUser", fields: [userId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([userId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([type])
+  @@map("support_tickets")
+}
+
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  adminId    String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  admin User? @relation("AdminAuditLogAdmin", fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}

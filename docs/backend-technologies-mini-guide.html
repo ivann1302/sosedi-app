@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Соседи - Backend Mini Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root,
+[data-theme="light"] {
+  --bg: #f6f5f1;
+  --surface: #fffefa;
+  --surface-2: #f0eee8;
+  --surface-3: #e8e4dc;
+  --border: #d7d1c5;
+  --divider: #e3ddd2;
+  --text: #25221b;
+  --muted: #6f6a60;
+  --faint: #9b9487;
+  --primary: #056b6f;
+  --primary-soft: #d9e9e6;
+  --blue: #256c9a;
+  --blue-soft: #dbeaf3;
+  --green: #487c2a;
+  --green-soft: #dfebd7;
+  --gold: #a87400;
+  --gold-soft: #efe2bf;
+  --orange: #b85c24;
+  --orange-soft: #f0dfd2;
+  --red: #b13d60;
+  --red-soft: #efd7df;
+  --code-bg: #1e1d1a;
+  --code-text: #f3efe7;
+  --shadow: 0 18px 42px rgba(45, 38, 26, 0.1);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --topbar: 58px;
+  --sidebar: 286px;
+  --font-body: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+[data-theme="dark"] {
+  --bg: #141312;
+  --surface: #1b1a18;
+  --surface-2: #24221f;
+  --surface-3: #2d2a25;
+  --border: #36332e;
+  --divider: #2b2925;
+  --text: #e2dfd9;
+  --muted: #9b968d;
+  --faint: #706b63;
+  --primary: #58a6a6;
+  --primary-soft: #183739;
+  --blue: #6aa6d7;
+  --blue-soft: #1b3041;
+  --green: #87ba62;
+  --green-soft: #24351f;
+  --gold: #e4b64e;
+  --gold-soft: #392f18;
+  --orange: #e28a4d;
+  --orange-soft: #3d281d;
+  --red: #dd7598;
+  --red-soft: #3d202b;
+  --code-bg: #0f0f0e;
+  --code-text: #f5efe3;
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
+code {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 0.88em;
+}
+
+pre {
+  overflow: auto;
+  margin: 0;
+  padding: 18px;
+  color: var(--code-text);
+  background: var(--code-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+pre code {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 20;
+  height: var(--topbar);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 24px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  border-radius: 8px;
+}
+
+.brand-subtitle {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border-radius: 8px;
+}
+
+.icon-button:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: var(--topbar);
+  bottom: 0;
+  width: var(--sidebar);
+  overflow-y: auto;
+  padding: 18px 14px 24px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-label {
+  padding: 10px 12px 7px;
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 8px 12px;
+  color: var(--muted);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.nav-link svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.main {
+  grid-column: 2;
+  padding: calc(var(--topbar) + 32px) 40px 54px;
+}
+
+.content {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 28px;
+  align-items: stretch;
+  margin-bottom: 30px;
+}
+
+.hero-copy {
+  padding: 34px 0;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+h1 {
+  margin: 0 0 18px;
+  max-width: 760px;
+  font-size: 42px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.hero-copy p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.hero-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.terminal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.dots {
+  display: flex;
+  gap: 5px;
+}
+
+.dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dots span:nth-child(1) { background: var(--red); }
+.dots span:nth-child(2) { background: var(--gold); }
+.dots span:nth-child(3) { background: var(--green); }
+
+.flow {
+  display: grid;
+  gap: 8px;
+}
+
+.flow-step {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.flow-index {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.flow-title {
+  font-weight: 700;
+}
+
+.flow-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.stat {
+  min-height: 118px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stat-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.stat-value {
+  margin-top: 14px;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.stat-note {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.section {
+  scroll-margin-top: calc(var(--topbar) + 18px);
+  margin-top: 28px;
+  padding-top: 8px;
+}
+
+.section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.section-kicker {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin: 5px 0 0;
+  font-size: 26px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.section-head p {
+  max-width: 540px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card,
+.stack-card,
+.rule-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.card {
+  padding: 20px;
+}
+
+.card h3,
+.stack-card h3,
+.rule-card h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.card p {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  color: var(--muted);
+}
+
+.list li::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-top: 9px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.stack-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stack-card {
+  min-height: 170px;
+  padding: 18px;
+}
+
+.stack-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stack-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.tag.blue { color: var(--blue); background: var(--blue-soft); }
+.tag.green { color: var(--green); background: var(--green-soft); }
+.tag.gold { color: var(--gold); background: var(--gold-soft); }
+.tag.orange { color: var(--orange); background: var(--orange-soft); }
+.tag.red { color: var(--red); background: var(--red-soft); }
+
+.table-wrap {
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+th,
+td {
+  padding: 13px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--divider);
+  vertical-align: top;
+}
+
+th {
+  color: var(--text);
+  background: var(--surface-2);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+td {
+  color: var(--muted);
+}
+
+tr:last-child td {
+  border-bottom: 0;
+}
+
+.code-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+}
+
+.callout {
+  padding: 16px 18px;
+  color: var(--text);
+  background: var(--gold-soft);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  border-radius: var(--radius);
+}
+
+.callout strong {
+  color: var(--gold);
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pipe-item {
+  min-height: 112px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pipe-item span {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 12px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.pipe-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pipe-item small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rule-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.rule-card {
+  padding: 18px;
+}
+
+.rule-card.allow h3 { color: var(--green); }
+.rule-card.deny h3 { color: var(--red); }
+
+.footer {
+  margin-top: 44px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .hero,
+  .code-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid,
+  .stack-grid,
+  .pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .app {
+    display: block;
+  }
+
+  .topbar {
+    padding: 0 14px;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: var(--topbar);
+    left: 0;
+    right: 0;
+    bottom: auto;
+    width: auto;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-label {
+    display: none;
+  }
+
+  .nav-link {
+    white-space: nowrap;
+    min-height: 34px;
+    padding: 7px 10px;
+  }
+
+  .main {
+    padding: calc(var(--topbar) + 76px) 16px 40px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .hero-copy {
+    padding: 12px 0 0;
+  }
+
+  .section-head {
+    display: block;
+  }
+
+  .section-head p {
+    margin-top: 8px;
+  }
+
+  .grid-2,
+  .grid-3,
+  .rule-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .stats-grid,
+  .stack-grid,
+  .pipeline {
+    grid-template-columns: 1fr;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Соседи backend mini guide">
+      <span class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+          <path d="M8 4v16M16 4v16"/>
+        </svg>
+      </span>
+      <span>Соседи</span>
+    </a>
+    <span class="brand-subtitle">Backend technologies mini guide</span>
+    <div class="topbar-actions">
+      <a class="icon-button" href="../sosedi-roadmap.html" title="Roadmap" aria-label="Roadmap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19V5M4 19h16M8 17V9M12 17V7M16 17v-5"/>
+        </svg>
+      </a>
+      <button class="icon-button" data-theme-toggle title="Сменить тему" aria-label="Сменить тему">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <nav class="sidebar" aria-label="Навигация по учебнику">
+    <div class="sidebar-label">Разделы</div>
+    <a class="nav-link active" href="#overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Обзор
+    </a>
+    <a class="nav-link" href="#nestjs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      NestJS
+    </a>
+    <a class="nav-link" href="#auth">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Auth
+    </a>
+    <a class="nav-link" href="#data">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>
+      База
+    </a>
+    <a class="nav-link" href="#upload">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+      Upload
+    </a>
+    <a class="nav-link" href="#quality">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Качество
+    </a>
+    <a class="nav-link" href="#workflow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      Workflow
+    </a>
+  </nav>
+
+  <main class="main" id="top">
+    <div class="content">
+      <section class="hero" id="overview">
+        <div class="hero-copy">
+          <div class="eyebrow">Sosedi backend</div>
+          <h1>Мини-учебник по технологиям backend</h1>
+          <p>Практичная карта монолита NestJS: как запрос проходит через контроллеры, DTO, guards, сервисы, Prisma, Redis, S3 и BullMQ. Без лишней архитектуры, только то, что уже есть в проекте.</p>
+        </div>
+        <div class="hero-panel" aria-label="Путь backend запроса">
+          <div class="terminal-head">
+            <span class="dots"><span></span><span></span><span></span></span>
+            request-pipeline.ts
+          </div>
+          <div class="flow">
+            <div class="flow-step"><span class="flow-index">01</span><div><div class="flow-title">HTTP request</div><div class="flow-note">Все endpoint начинаются с /api/v1</div></div></div>
+            <div class="flow-step"><span class="flow-index">02</span><div><div class="flow-title">Controller + DTO</div><div class="flow-note">ValidationPipe, whitelist, transform</div></div></div>
+            <div class="flow-step"><span class="flow-index">03</span><div><div class="flow-title">Guard</div><div class="flow-note">JWT и роли для приватных действий</div></div></div>
+            <div class="flow-step"><span class="flow-index">04</span><div><div class="flow-title">Service</div><div class="flow-note">Бизнес-логика без лишних слоев</div></div></div>
+            <div class="flow-step"><span class="flow-index">05</span><div><div class="flow-title">Prisma / Redis / S3 / BullMQ</div><div class="flow-note">Данные, сессии, файлы и фоновые задачи</div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-label"><span class="stat-dot" style="background:var(--primary)"></span>API</div>
+          <div class="stat-value">REST</div>
+          <div class="stat-note">NestJS + Swagger</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label"><span class="stat-dot" style="background:var(--green)"></span>Auth</div>
+          <div class="stat-value">OTP + JWT</div>
+          <div class="stat-note">Redis для OTP и refresh</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label"><span class="stat-dot" style="background:var(--blue)"></span>Data</div>
+          <div class="stat-value">PostGIS</div>
+          <div class="stat-note">Геопоиск до 50 км</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label"><span class="stat-dot" style="background:var(--orange)"></span>Files</div>
+          <div class="stat-value">S3 + BullMQ</div>
+          <div class="stat-note">Presigned URL и resize</div>
+        </div>
+      </div>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Карта проекта</div>
+            <h2>Ключевые файлы backend</h2>
+          </div>
+          <p>Эти файлы полезно открыть первыми, когда нужно понять или расширить backend.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Что</th><th>Где</th><th>Зачем</th></tr></thead>
+            <tbody>
+              <tr><td>Точка входа</td><td><code>backend/src/main.ts</code></td><td>Global prefix, validation, exception filter, Swagger</td></tr>
+              <tr><td>Корневой модуль</td><td><code>backend/src/app.module.ts</code></td><td>Подключение feature modules</td></tr>
+              <tr><td>Prisma schema</td><td><code>backend/prisma/schema.prisma</code></td><td>Модели, enum, связи, индексы</td></tr>
+              <tr><td>Единый ответ</td><td><code>backend/src/common/http/api-response.ts</code></td><td><code>{ success, data, error }</code></td></tr>
+              <tr><td>Ошибки</td><td><code>backend/src/common/filters/http-exception.filter.ts</code></td><td>Одинаковый JSON для всех ошибок</td></tr>
+              <tr><td>Фичи</td><td><code>backend/src/auth</code>, <code>tools</code>, <code>upload</code>, <code>admin</code></td><td>Controller + Service + DTO</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="nestjs">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Framework</div>
+            <h2>NestJS: модульный монолит</h2>
+          </div>
+          <p>Новая backend-фича должна оставаться простой: module, controller, service, DTO.</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Что настроено глобально</h3>
+            <pre><code>app.setGlobalPrefix('api/v1');
+app.useGlobalPipes(
+  new ValidationPipe({
+    transform: true,
+    whitelist: true,
+  }),
+);
+app.useGlobalFilters(new HttpExceptionFilter());</code></pre>
+          </div>
+          <div class="card">
+            <h3>Что делает controller</h3>
+            <ul class="list">
+              <li>Читает <code>@Body</code>, <code>@Query</code>, <code>@Param</code>, <code>@CurrentUser</code>.</li>
+              <li>Вызывает один метод service.</li>
+              <li>Возвращает <code>ok(result)</code>.</li>
+              <li>Не работает напрямую с Prisma, Redis или S3.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Input</div>
+            <h2>DTO, validation и transform</h2>
+          </div>
+          <p>DTO отсекает плохой input до service. Service оставляет за собой бизнес-правила.</p>
+        </div>
+        <div class="code-grid">
+          <div class="card">
+            <h3>Пример поля объявления</h3>
+            <pre><code>@Transform(numberFromInput)
+@IsNumber({ maxDecimalPlaces: 2 })
+@Min(1)
+@Max(1_000_000)
+pricePerDay: number;</code></pre>
+          </div>
+          <div class="card">
+            <h3>Бизнес-правила в service</h3>
+            <ul class="list">
+              <li><code>minPrice</code> не может быть больше <code>maxPrice</code>.</li>
+              <li>Координаты должны приходить парой.</li>
+              <li>Радиус геопоиска не больше 50 км.</li>
+              <li>Фото можно загрузить только к своему объявлению.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Response</div>
+            <h2>Единый формат ответа</h2>
+          </div>
+          <p>Controller не собирает JSON руками. Успех идет через <code>ok(...)</code>, ошибки через Nest exceptions.</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Успех</h3>
+            <pre><code>{
+  "success": true,
+  "data": {},
+  "error": null
+}</code></pre>
+          </div>
+          <div class="card">
+            <h3>Ошибка</h3>
+            <pre><code>{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Описание ошибки"
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="auth">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Security</div>
+            <h2>Auth: OTP, Redis, JWT</h2>
+          </div>
+          <p>Авторизация завязана на телефон. Redis хранит временные состояния, база хранит пользователя.</p>
+        </div>
+        <div class="pipeline">
+          <div class="pipe-item"><span>1</span><strong>Request OTP</strong><small>Нормализация телефона и rate limit.</small></div>
+          <div class="pipe-item"><span>2</span><strong>Hash code</strong><small>6 цифр, bcrypt hash, TTL 5 минут.</small></div>
+          <div class="pipe-item"><span>3</span><strong>Verify OTP</strong><small>Сравнение с hash и учет ошибок.</small></div>
+          <div class="pipe-item"><span>4</span><strong>Upsert user</strong><small>Пользователь создается по телефону.</small></div>
+          <div class="pipe-item"><span>5</span><strong>Issue JWT</strong><small>Access + refresh, refresh jti в Redis.</small></div>
+        </div>
+        <div class="section" style="margin-top:16px">
+          <div class="grid-2">
+            <div class="card">
+              <h3>Redis ключи</h3>
+              <ul class="list">
+                <li><code>auth:otp:code:{phone}</code> - bcrypt hash OTP.</li>
+                <li><code>auth:otp:send:{phone}</code> - лимит выдачи OTP.</li>
+                <li><code>auth:otp:fail:{phone}</code> - неверные коды.</li>
+                <li><code>auth:otp:block:{phone}</code> - блокировка ввода.</li>
+                <li><code>auth:refresh:{jti}</code> - активный refresh token.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Guards и роли</h3>
+              <pre><code>@ApiBearerAuth()
+@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('admin')
+export class AdminController {}</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="data">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Database</div>
+            <h2>Prisma, PostgreSQL и PostGIS</h2>
+          </div>
+          <p>Prisma покрывает обычные CRUD-запросы. PostGIS расстояния считаются через raw SQL.</p>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <h3>Prisma</h3>
+            <ul class="list">
+              <li><code>findMany</code>, <code>findFirst</code>, <code>findUnique</code>.</li>
+              <li><code>create</code>, <code>update</code>, <code>upsert</code>.</li>
+              <li><code>$transaction</code> для связанных изменений.</li>
+              <li><code>$queryRaw</code> для PostGIS.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>PostGIS поле</h3>
+            <pre><code>location Unsupported(
+  "geography(Point,4326)"
+)?</code></pre>
+            <p>Prisma видит колонку, но не управляет ей как обычным полем.</p>
+          </div>
+          <div class="card">
+            <h3>Порядок координат</h3>
+            <pre><code>ST_MakePoint(
+  longitude,
+  latitude
+)</code></pre>
+            <p>Это важно: сначала долгота, потом широта.</p>
+          </div>
+        </div>
+        <div class="section" style="margin-top:16px">
+          <div class="callout"><strong>Геопоиск:</strong> при координатах используется <code>ST_DWithin</code> для радиуса и <code>ST_Distance</code> для сортировки. Максимальный радиус MVP - 50 км.</div>
+        </div>
+      </section>
+
+      <section class="section" id="upload">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Files</div>
+            <h2>S3 presigned URL, BullMQ и Sharp</h2>
+          </div>
+          <p>Backend не проксирует тяжелые файлы. Mobile грузит файл напрямую в S3, backend подтверждает и ставит обработку в очередь.</p>
+        </div>
+        <div class="pipeline">
+          <div class="pipe-item"><span>1</span><strong>Presigned URL</strong><small>Проверка типа, размера и владельца.</small></div>
+          <div class="pipe-item"><span>2</span><strong>PUT to S3</strong><small>Mobile загружает файл напрямую.</small></div>
+          <div class="pipe-item"><span>3</span><strong>Confirm</strong><small>Создается запись ToolPhoto.</small></div>
+          <div class="pipe-item"><span>4</span><strong>BullMQ job</strong><small>Асинхронная обработка фото.</small></div>
+          <div class="pipe-item"><span>5</span><strong>Sharp resize</strong><small>thumbnail 200x200 и preview 800x600.</small></div>
+        </div>
+        <div class="grid-2" style="margin-top:16px">
+          <div class="card">
+            <h3>Ограничения upload</h3>
+            <ul class="list">
+              <li>Разрешены <code>image/jpeg</code>, <code>image/png</code>, <code>image/webp</code>.</li>
+              <li>Максимальный размер файла - 10 МБ.</li>
+              <li>KYC уходит в приватный bucket.</li>
+              <li>Для KYC <code>publicUrl</code> равен <code>null</code>.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Env для S3</h3>
+            <pre><code>S3_ENDPOINT
+S3_REGION
+S3_ACCESS_KEY
+S3_SECRET_KEY
+S3_BUCKET_PUBLIC
+S3_BUCKET_PRIVATE
+S3_PUBLIC_BASE_URL
+S3_FORCE_PATH_STYLE</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="quality">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Quality</div>
+            <h2>Swagger, Jest и локальные команды</h2>
+          </div>
+          <p>Документация API генерируется из decorators, тесты покрывают бизнес-логику и рисковые переходы.</p>
+        </div>
+        <div class="stack-grid">
+          <div class="stack-card">
+            <h3><span class="stack-icon">S</span>Swagger</h3>
+            <p>Доступен на <code>/api/docs</code>.</p>
+            <div class="tag-list"><span class="tag">ApiTags</span><span class="tag">ApiBearerAuth</span><span class="tag">ApiProperty</span></div>
+          </div>
+          <div class="stack-card">
+            <h3><span class="stack-icon">J</span>Jest</h3>
+            <p>Unit и e2e тесты backend.</p>
+            <div class="tag-list"><span class="tag green">services</span><span class="tag gold">guards</span><span class="tag blue">state</span></div>
+          </div>
+          <div class="stack-card">
+            <h3><span class="stack-icon">M</span>Make</h3>
+            <p>Единые команды из корня проекта.</p>
+            <div class="tag-list"><span class="tag">backend-test</span><span class="tag">backend-lint</span></div>
+          </div>
+          <div class="stack-card">
+            <h3><span class="stack-icon">E</span>Env</h3>
+            <p>Секреты только через переменные окружения.</p>
+            <div class="tag-list"><span class="tag red">no hardcode</span><span class="tag green">RF storage</span></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3>Основные команды</h3>
+          <pre><code>make infra-up
+make backend-dev
+make backend-build
+make backend-lint
+make backend-test
+make backend-test-e2e
+make backend-prisma-generate
+make backend-prisma-migrate</code></pre>
+        </div>
+      </section>
+
+      <section class="section" id="workflow">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">MVP workflow</div>
+            <h2>Как добавлять новую backend фичу</h2>
+          </div>
+          <p>Порядок помогает не расползаться в архитектуру, которая не нужна до MVP 1.0.</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Простой порядок</h3>
+            <ul class="list">
+              <li>Проверить, нужна ли фича для MVP.</li>
+              <li>Если нужна БД - изменить <code>schema.prisma</code>.</li>
+              <li>Создать migration через <code>make backend-prisma-migrate</code>.</li>
+              <li>Создать module, controller, service, DTO.</li>
+              <li>Подключить module в <code>AppModule</code>.</li>
+              <li>Добавить guards, tests и релевантные проверки.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Минимальная структура</h3>
+            <pre><code>backend/src/booking/
+booking.module.ts
+booking.controller.ts
+booking.service.ts
+dto/</code></pre>
+            <p>Не добавлять extra layers без прямой причины.</p>
+          </div>
+        </div>
+        <div class="rule-grid" style="margin-top:16px">
+          <div class="rule-card allow">
+            <h3>Использовать</h3>
+            <ul class="list">
+              <li>Controller + DTO + Service + Prisma.</li>
+              <li>Prisma transaction для нескольких сущностей.</li>
+              <li>Redis для временного состояния.</li>
+              <li>BullMQ только для фоновых задач.</li>
+            </ul>
+          </div>
+          <div class="rule-card deny">
+            <h3>Не использовать до MVP 1.0</h3>
+            <ul class="list">
+              <li>Microservices, CQRS, Event Sourcing, DDD.</li>
+              <li>GraphQL, Kafka, RabbitMQ, Elasticsearch.</li>
+              <li>Repository Pattern и service factories.</li>
+              <li>Clean Architecture и feature flags.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Cheatsheet</div>
+            <h2>Короткая шпаргалка</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Задача</th><th>Технология</th></tr></thead>
+            <tbody>
+              <tr><td>REST API</td><td>NestJS controllers</td></tr>
+              <tr><td>Бизнес-логика</td><td>NestJS services</td></tr>
+              <tr><td>Валидация входа</td><td>DTO + class-validator</td></tr>
+              <tr><td>Документация API</td><td>Swagger/OpenAPI</td></tr>
+              <tr><td>Авторизация</td><td>JWT + guards</td></tr>
+              <tr><td>OTP и refresh state</td><td>Redis</td></tr>
+              <tr><td>База и ORM</td><td>PostgreSQL + Prisma</td></tr>
+              <tr><td>Геопоиск</td><td>PostGIS + raw SQL</td></tr>
+              <tr><td>Файлы</td><td>S3-compatible storage + Presigned URL</td></tr>
+              <tr><td>Фото</td><td>BullMQ + Sharp</td></tr>
+              <tr><td>Тесты</td><td>Jest</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="footer">
+        HTML-версия создана на основе <code>docs/backend-technologies-mini-guide.md</code>. Источник истины по backend остается код в <code>backend/</code>.
+      </footer>
+    </div>
+  </main>
+</div>
+
+<script>
+const root = document.documentElement;
+const savedTheme = localStorage.getItem('sosedi-backend-guide-theme');
+if (savedTheme) {
+  root.dataset.theme = savedTheme;
+}
+
+document.querySelector('[data-theme-toggle]').addEventListener('click', () => {
+  const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  root.dataset.theme = next;
+  localStorage.setItem('sosedi-backend-guide-theme', next);
+});
+
+const navLinks = Array.from(document.querySelectorAll('.nav-link'));
+const sections = navLinks
+  .map((link) => document.querySelector(link.getAttribute('href')))
+  .filter(Boolean);
+
+const observer = new IntersectionObserver((entries) => {
+  const visible = entries
+    .filter((entry) => entry.isIntersecting)
+    .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+  if (!visible) {
+    return;
+  }
+
+  navLinks.forEach((link) => {
+    link.classList.toggle(
+      'active',
+      link.getAttribute('href') === `#${visible.target.id}`,
+    );
+  });
+}, {
+  rootMargin: '-20% 0px -65% 0px',
+  threshold: [0, 0.1, 0.25, 0.5],
+});
+
+sections.forEach((section) => observer.observe(section));
+</script>
+</body>
+</html>
