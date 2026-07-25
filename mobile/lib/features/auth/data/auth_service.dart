@@ -8,17 +8,11 @@ import '../../../core/storage/token_storage.dart';
 import 'auth_models.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService(
-    ref.watch(dioProvider),
-    ref.watch(tokenStorageProvider),
-  );
+  return AuthService(ref.watch(dioProvider), ref.watch(tokenStorageProvider));
 });
 
 class AuthService {
-  const AuthService(
-    this._dio,
-    this._tokenStorage,
-  );
+  const AuthService(this._dio, this._tokenStorage);
 
   final Dio _dio;
   final TokenStorage _tokenStorage;
@@ -47,10 +41,7 @@ class AuthService {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/auth/otp/verify',
-        data: {
-          'phone': phone,
-          'code': code,
-        },
+        data: {'phone': phone, 'code': code},
         options: _skipAuthOptions(),
       );
       final tokens = _readData(
@@ -72,10 +63,7 @@ class AuthService {
   Future<AuthTokens> refresh() async {
     final refreshToken = await _tokenStorage.readRefreshToken();
     if (refreshToken == null) {
-      throw const ApiException(
-        code: 'UNAUTHORIZED',
-        message: 'Войдите заново',
-      );
+      throw const ApiException(code: 'UNAUTHORIZED', message: 'Войдите заново');
     }
 
     try {
@@ -114,9 +102,8 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    final refreshToken = await _tokenStorage.readRefreshToken();
-
     try {
+      final refreshToken = await _tokenStorage.readRefreshToken();
       if (refreshToken != null) {
         await _dio.post<Map<String, dynamic>>(
           '/auth/logout',
@@ -124,8 +111,8 @@ class AuthService {
           options: _skipAuthOptions(),
         );
       }
-    } on DioException {
-      // Для пользователя logout должен завершаться локально даже без сети.
+    } catch (_) {
+      // Удалённый logout не должен мешать немедленному локальному выходу.
     } finally {
       await clearSession();
     }
@@ -136,37 +123,41 @@ class AuthService {
   }
 
   Options _skipAuthOptions() {
-    return Options(
-      extra: const {
-        'skipAuth': true,
-        'skipAuthRefresh': true,
-      },
-    );
+    return Options(extra: const {'skipAuth': true, 'skipAuthRefresh': true});
   }
 
   T _readData<T>(
     Response<Map<String, dynamic>> response,
     T Function(Object?) fromJsonT,
   ) {
-    final body = response.data;
-    if (body == null) {
+    try {
+      final body = response.data;
+      if (body == null) {
+        throw const ApiException(
+          code: 'INVALID_RESPONSE',
+          message: 'Не удалось прочитать ответ сервера',
+        );
+      }
+
+      final envelope = ApiEnvelope<T>.fromJson(body, fromJsonT);
+      final data = envelope.data;
+
+      if (envelope.success && data != null) {
+        return data;
+      }
+
+      throw ApiException(
+        code: envelope.error?.code ?? 'API_ERROR',
+        message: envelope.error?.message ?? 'Ошибка сервера',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (_) {
       throw const ApiException(
         code: 'INVALID_RESPONSE',
         message: 'Не удалось прочитать ответ сервера',
       );
     }
-
-    final envelope = ApiEnvelope<T>.fromJson(body, fromJsonT);
-    final data = envelope.data;
-
-    if (envelope.success && data != null) {
-      return data;
-    }
-
-    throw ApiException(
-      code: envelope.error?.code ?? 'API_ERROR',
-      message: envelope.error?.message ?? 'Ошибка сервера',
-    );
   }
 
   ApiException _toApiException(DioException error) {
@@ -177,10 +168,7 @@ class AuthService {
         final apiError = envelope.error;
 
         if (apiError != null) {
-          return ApiException(
-            code: apiError.code,
-            message: apiError.message,
-          );
+          return ApiException(code: apiError.code, message: apiError.message);
         }
       } catch (_) {
         return const ApiException(

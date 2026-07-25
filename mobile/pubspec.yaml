@@ -44,7 +44,7 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
   firebase_messaging: ^16.3.0
-  sentry_flutter: ^8.14.2
+  sentry_flutter: ^9.25.0
   yandex_maps_mapkit: ^4.36.0
 
 dev_dependencies:
@@ -61,11 +61,20 @@ dev_dependencies:
   freezed: ^3.2.5
   json_serializable: ^6.14.0
 
+# Yandex MapKit 4.41 compiles against Android API 35 and cannot consume
+# flutter_plugin_android_lifecycle 2.0.27+, which compiles against API 36.
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.26
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  config:
+    # Yandex MapKit 4.41 ships an invalid empty SwiftPM version.
+    # Use its working CocoaPods integration until the upstream package is fixed.
+    enable-swift-package-manager: false
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

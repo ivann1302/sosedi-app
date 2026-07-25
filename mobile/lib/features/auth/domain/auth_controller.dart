@@ -2,23 +2,35 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/session_events.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/token_storage.dart';
 import '../data/auth_service.dart';
 import 'auth_state.dart';
 import 'auth_validators.dart';
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthState>(AuthController.new);
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);
 
 class AuthController extends Notifier<AuthState> {
   @override
   AuthState build() {
-    unawaited(_restoreSession());
+    ref.listen<int>(sessionInvalidationProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        state = const AuthState.unauthenticated();
+      }
+    });
+
+    unawaited(restoreSession());
     return const AuthState.loading();
   }
 
   Future<bool> requestOtp(String rawPhone) async {
+    if (state.isSubmitting) {
+      return false;
+    }
+
     final phone = AuthValidators.normalizeRussianPhone(rawPhone);
     state = const AuthState.unauthenticated(isSubmitting: true);
 
@@ -37,20 +49,16 @@ class AuthController extends Notifier<AuthState> {
 
   Future<bool> verifyOtp(String code) async {
     final currentState = state;
-    if (currentState is! AuthCodeSent) {
+    if (currentState is! AuthCodeSent || currentState.isSubmitting) {
       return false;
     }
 
-    state = currentState.copyWith(
-      errorMessage: null,
-      isSubmitting: true,
-    );
+    state = currentState.copyWith(errorMessage: null, isSubmitting: true);
 
     try {
-      final tokens = await ref.read(authServiceProvider).verifyOtp(
-            phone: currentState.phone,
-            code: code,
-          );
+      final tokens = await ref
+          .read(authServiceProvider)
+          .verifyOtp(phone: currentState.phone, code: code);
       state = AuthState.authenticated(user: tokens.user);
       return true;
     } catch (error) {
@@ -63,26 +71,41 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
-    await ref.read(authServiceProvider).logout();
     state = const AuthState.unauthenticated();
+    await ref.read(authServiceProvider).logout();
   }
 
-  Future<void> _restoreSession() async {
-    final refreshToken =
-        await ref.read(tokenStorageProvider).readRefreshToken();
-
-    if (refreshToken == null) {
-      state = const AuthState.unauthenticated();
-      return;
-    }
+  Future<void> restoreSession() async {
+    final storage = ref.read(tokenStorageProvider);
 
     try {
+      final refreshToken = await storage.readRefreshToken();
+
+      if (refreshToken == null) {
+        if (await storage.readAccessToken() != null) {
+          await ref.read(authServiceProvider).clearSession();
+        }
+        state = const AuthState.unauthenticated();
+        return;
+      }
+
       final user = await ref.read(authServiceProvider).me();
       state = AuthState.authenticated(user: user);
-    } catch (_) {
-      await ref.read(authServiceProvider).clearSession();
-      state = const AuthState.unauthenticated();
+    } on ApiException catch (error) {
+      if (_invalidatesSession(error)) {
+        await ref.read(authServiceProvider).clearSession();
+        state = const AuthState.unauthenticated();
+        return;
+      }
+
+      state = AuthState.unauthenticated(errorMessage: error.message);
+    } catch (error) {
+      state = AuthState.unauthenticated(errorMessage: _message(error));
     }
+  }
+
+  bool _invalidatesSession(ApiException error) {
+    return error.code == 'UNAUTHORIZED' || error.code == 'FORBIDDEN';
   }
 
   String _message(Object error) {

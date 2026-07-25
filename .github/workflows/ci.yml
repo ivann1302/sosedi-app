@@ -14,9 +14,6 @@ jobs:
   backend:
     name: Backend
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,25 +27,39 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: backend
 
       - name: Generate Prisma client
         run: npx prisma generate
+        working-directory: backend
 
       - name: Lint
-        run: npx eslint "{src,apps,libs,test}/**/*.ts"
+        run: make backend-lint-check
 
-      - name: Test
-        run: npm test
+      - name: Unit tests with coverage
+        run: make backend-test-coverage
+
+      - name: Upload backend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage
+          if-no-files-found: warn
+
+      - name: E2E tests with PostgreSQL/PostGIS and Redis
+        run: make backend-test-e2e
+
+      - name: Stop test infrastructure
+        if: always()
+        run: make test-infra-down
 
       - name: Build
-        run: npm run build
+        run: make backend-build
 
   mobile:
     name: Mobile
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: mobile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,14 +67,23 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.44.7'
           cache: true
 
       - name: Install dependencies
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
+        working-directory: mobile
 
       - name: Analyze
-        run: flutter analyze
+        run: make mobile-analyze
 
-      - name: Test
-        run: flutter test
+      - name: Test with coverage
+        run: make mobile-test-coverage
+
+      - name: Upload mobile coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-coverage
+          path: mobile/coverage/lcov.info
+          if-no-files-found: warn

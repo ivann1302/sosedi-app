@@ -9,18 +9,8 @@ import { SmsService } from './sms.service';
 
 class RedisMock {
   private readonly values = new Map<string, string>();
-
-  incr(key: string): Promise<number> {
-    const nextValue = Number(this.values.get(key) ?? '0') + 1;
-    this.values.set(key, nextValue.toString());
-    return Promise.resolve(nextValue);
-  }
-
-  expire(key: string, ttlSeconds: number): Promise<number> {
-    void key;
-    void ttlSeconds;
-    return Promise.resolve(1);
-  }
+  private readonly expirySeconds = new Map<string, number>();
+  private readonly expiryWrites = new Map<string, number>();
 
   set(key: string, value: string): Promise<'OK'> {
     this.values.set(key, value);
@@ -29,6 +19,38 @@ class RedisMock {
 
   get(key: string): Promise<string | null> {
     return Promise.resolve(this.values.get(key) ?? null);
+  }
+
+  getdel(key: string): Promise<string | null> {
+    const value = this.values.get(key) ?? null;
+    this.values.delete(key);
+    return Promise.resolve(value);
+  }
+
+  eval(
+    script: string,
+    _numberOfKeys: number,
+    key: string,
+    argument: string,
+  ): Promise<number> {
+    if (script.includes("redis.call('INCR'")) {
+      const nextValue = Number(this.values.get(key) ?? '0') + 1;
+      this.values.set(key, nextValue.toString());
+
+      if (nextValue === 1) {
+        this.expirySeconds.set(key, Number(argument));
+        this.expiryWrites.set(key, (this.expiryWrites.get(key) ?? 0) + 1);
+      }
+
+      return Promise.resolve(nextValue);
+    }
+
+    if (this.values.get(key) !== argument) {
+      return Promise.resolve(0);
+    }
+
+    this.values.delete(key);
+    return Promise.resolve(1);
   }
 
   del(...keys: string[]): Promise<number> {
@@ -40,6 +62,18 @@ class RedisMock {
     }
 
     return Promise.resolve(deleted);
+  }
+
+  getValue(key: string): string | null {
+    return this.values.get(key) ?? null;
+  }
+
+  getExpirySeconds(key: string): number | null {
+    return this.expirySeconds.get(key) ?? null;
+  }
+
+  getExpiryWriteCount(key: string): number {
+    return this.expiryWrites.get(key) ?? 0;
   }
 }
 
@@ -142,6 +176,8 @@ function createService() {
 
   return {
     service,
+    jwt,
+    redis,
     sendOtp,
   };
 }
@@ -160,6 +196,43 @@ describe('AuthService', () => {
     expect(sendOtp).toHaveBeenCalledTimes(3);
   });
 
+  it('atomically increments OTP counters and sets TTL only once', async () => {
+    const { service, redis } = createService();
+    const evalSpy = jest.spyOn(redis, 'eval');
+    const phone = '+79991234567';
+    const sendKey = `auth:otp:send:${phone}`;
+    const failKey = `auth:otp:fail:${phone}`;
+
+    await service.requestOtp(phone);
+    await service.requestOtp(phone);
+
+    expect(redis.getValue(sendKey)).toBe('2');
+    expect(redis.getExpirySeconds(sendKey)).toBe(10 * 60);
+    expect(redis.getExpiryWriteCount(sendKey)).toBe(1);
+
+    await expect(service.verifyOtp(phone, '000000')).rejects.toThrow(
+      'Неверный код',
+    );
+    await expect(service.verifyOtp(phone, '000000')).rejects.toThrow(
+      'Неверный код',
+    );
+
+    expect(redis.getValue(failKey)).toBe('2');
+    expect(redis.getExpirySeconds(failKey)).toBe(30 * 60);
+    expect(redis.getExpiryWriteCount(failKey)).toBe(1);
+
+    const counterCalls = evalSpy.mock.calls.filter(([script]) =>
+      String(script).includes("redis.call('INCR'"),
+    );
+    expect(counterCalls).toHaveLength(4);
+    expect(counterCalls).toEqual(
+      expect.arrayContaining([
+        [expect.any(String), 1, sendKey, '600'],
+        [expect.any(String), 1, failKey, '1800'],
+      ]),
+    );
+  });
+
   it('creates user and returns tokens after valid OTP', async () => {
     const { service } = createService();
 
@@ -170,5 +243,21 @@ describe('AuthService', () => {
     expect(result.user.role).toBe(UserRole.RENTER);
     expect(result.accessToken).toBe('access:user-1:');
     expect(result.refreshToken).toMatch(/^refresh:user-1:/);
+  });
+
+  it('does not hide a Redis failure while revoking a valid session', async () => {
+    const { service, jwt, redis } = createService();
+    jwt.verifyAsync = jest.fn().mockResolvedValue({
+      sub: 'user-1',
+      phone: '+79991234567',
+      role: UserRole.RENTER,
+      tokenType: 'refresh',
+      jti: 'refresh-id',
+    });
+    jest.spyOn(redis, 'del').mockRejectedValueOnce(new Error('Redis is down'));
+
+    await expect(service.logout('valid-refresh-token')).rejects.toThrow(
+      'Redis is down',
+    );
   });
 });

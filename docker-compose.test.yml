@@ -1,0 +1,44 @@
+name: sosedi-test
+
+services:
+  postgres-test:
+    image: postgis/postgis:15-3.5
+    # The official PostGIS image does not publish an arm64 manifest.
+    # Docker Desktop runs it through Apple Silicon amd64 emulation.
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: sosedi_test
+      POSTGRES_USER: sosedi_test
+      POSTGRES_PASSWORD: sosedi_test
+    ports:
+      - "${TEST_POSTGRES_PORT:-5435}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test "$$(head -n 1 /var/lib/postgresql/data/postmaster.pid)" = "1" && pg_isready -U sosedi_test -d sosedi_test
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis-test:
+    image: redis:7
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    ports:
+      - "${TEST_REDIS_PORT:-6380}:6379"
+    tmpfs:
+      - /data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 2s
+      timeout: 3s
+      retries: 30

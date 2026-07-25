@@ -30,12 +30,19 @@ export class JwtAuthGuard implements CanActivate {
 
     let payload: JwtAccessPayload;
     try {
-      payload = await this.jwt.verifyAsync<JwtAccessPayload>(token, { secret });
+      payload = await this.jwt.verifyAsync<JwtAccessPayload>(token, {
+        secret,
+        algorithms: ['HS256'],
+      });
     } catch {
       throw new UnauthorizedException('Недействительный access токен');
     }
 
-    if (payload.tokenType !== 'access') {
+    if (
+      payload.tokenType !== 'access' ||
+      typeof payload.sub !== 'string' ||
+      payload.sub.length === 0
+    ) {
       throw new UnauthorizedException('Недействительный access токен');
     }
 

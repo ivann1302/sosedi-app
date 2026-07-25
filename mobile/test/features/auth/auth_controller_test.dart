@@ -1,108 +1,278 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/auth/session_events.dart';
 import 'package:mobile/core/network/dio_provider.dart';
+import 'package:mobile/core/storage/token_storage.dart';
 import 'package:mobile/features/auth/domain/auth_controller.dart';
 import 'package:mobile/features/auth/domain/auth_state.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../support/network_fakes.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('authenticates after successful OTP verification', () async {
-    FlutterSecureStorage.setMockInitialValues({});
+  test('starts unauthenticated when no session exists', () async {
+    final storage = MemoryTokenStorage();
+    final container = createContainer(storage, (_) => notFoundResponse());
+    addTearDown(container.dispose);
 
-    final dio = Dio(BaseOptions(baseUrl: 'http://test'));
-    dio.httpClientAdapter = _AuthFakeAdapter();
-    final container = ProviderContainer(
-      overrides: [
-        dioProvider.overrideWithValue(dio),
-      ],
+    expect(await waitForState<AuthUnauthenticated>(container), isNotNull);
+    expect(storage.clearCount, 0);
+  });
+
+  test('clears an orphan access token during restore', () async {
+    final storage = MemoryTokenStorage(accessToken: 'orphan-access');
+    final container = createContainer(storage, (_) => notFoundResponse());
+    addTearDown(container.dispose);
+
+    await waitForState<AuthUnauthenticated>(container);
+
+    expect(storage.accessToken, isNull);
+    expect(storage.clearCount, 1);
+  });
+
+  test('restores a valid session from /auth/me', () async {
+    final storage = MemoryTokenStorage(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    );
+    final container = createContainer(
+      storage,
+      (options) =>
+          options.path == '/auth/me' ? userResponse() : notFoundResponse(),
     );
     addTearDown(container.dispose);
 
-    await Future<void>.delayed(Duration.zero);
+    final state = await waitForState<AuthAuthenticated>(container);
 
+    expect(state.user.phone, '+79991234567');
+    expect(storage.clearCount, 0);
+  });
+
+  test('clears a session rejected by the server', () async {
+    final storage = MemoryTokenStorage(
+      accessToken: 'expired-access',
+      refreshToken: 'rejected-refresh',
+    );
+    final container = createContainer(
+      storage,
+      (_) => jsonResponse({
+        'success': false,
+        'data': null,
+        'error': {'code': 'UNAUTHORIZED', 'message': 'Войдите заново'},
+      }, statusCode: 401),
+    );
+    addTearDown(container.dispose);
+
+    await waitForState<AuthUnauthenticated>(container);
+
+    expect(storage.accessToken, isNull);
+    expect(storage.refreshToken, isNull);
+    expect(storage.clearCount, 1);
+  });
+
+  test('keeps tokens when session restore fails temporarily', () async {
+    final storage = MemoryTokenStorage(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    );
+    final container = createContainer(storage, (options) {
+      throw DioException.connectionError(
+        requestOptions: options,
+        reason: 'offline',
+      );
+    });
+    addTearDown(container.dispose);
+
+    final state = await waitForState<AuthUnauthenticated>(container);
+
+    expect(state.errorMessage, 'Не удалось связаться с сервером');
+    expect(storage.accessToken, 'access-token');
+    expect(storage.refreshToken, 'refresh-token');
+    expect(storage.clearCount, 0);
+  });
+
+  test('reacts to session invalidation from the network layer', () async {
+    final storage = MemoryTokenStorage(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    );
+    final container = createContainer(storage, (_) => userResponse());
+    addTearDown(container.dispose);
+    await waitForState<AuthAuthenticated>(container);
+
+    container.read(sessionInvalidationProvider.notifier).notify();
+
+    expect(container.read(authControllerProvider), isA<AuthUnauthenticated>());
+  });
+
+  test('runs the OTP login and local-first logout flow', () async {
+    final storage = MemoryTokenStorage();
+    final logoutRelease = Completer<void>();
+    final container = createContainer(storage, (options) async {
+      switch (options.path) {
+        case '/auth/otp/request':
+          return otpResponse();
+        case '/auth/otp/verify':
+          return authTokensResponse();
+        case '/auth/logout':
+          await logoutRelease.future;
+          return emptySuccessResponse();
+        default:
+          return notFoundResponse();
+      }
+    });
+    addTearDown(container.dispose);
+    await waitForState<AuthUnauthenticated>(container);
     final controller = container.read(authControllerProvider.notifier);
 
     expect(await controller.requestOtp('8 (999) 123-45-67'), isTrue);
     expect(container.read(authControllerProvider), isA<AuthCodeSent>());
 
     expect(await controller.verifyOtp('123456'), isTrue);
+    final authenticated = container.read(authControllerProvider);
+    expect(authenticated, isA<AuthAuthenticated>());
+    expect((authenticated as AuthAuthenticated).user.phone, '+79991234567');
+    expect(storage.refreshToken, 'refresh-token');
 
-    final state = container.read(authControllerProvider);
-    expect(state, isA<AuthAuthenticated>());
-    expect((state as AuthAuthenticated).user.phone, '+79991234567');
+    final logout = controller.logout();
+    expect(container.read(authControllerProvider), isA<AuthUnauthenticated>());
+    logoutRelease.complete();
+    await logout;
+    expect(storage.accessToken, isNull);
+    expect(storage.refreshToken, isNull);
+  });
+
+  test('does not submit two OTP requests concurrently', () async {
+    final storage = MemoryTokenStorage();
+    final release = Completer<void>();
+    var requests = 0;
+    final container = createContainer(storage, (options) async {
+      if (options.path == '/auth/otp/request') {
+        requests += 1;
+        await release.future;
+        return otpResponse();
+      }
+      return notFoundResponse();
+    });
+    addTearDown(container.dispose);
+    await waitForState<AuthUnauthenticated>(container);
+    final controller = container.read(authControllerProvider.notifier);
+
+    final first = controller.requestOtp('+79991234567');
+    final second = controller.requestOtp('+79991234567');
+
+    expect(await second, isFalse);
+    release.complete();
+    expect(await first, isTrue);
+    expect(requests, 1);
+  });
+
+  test('keeps the OTP step after a verification error', () async {
+    final storage = MemoryTokenStorage();
+    final container = createContainer(storage, (options) {
+      if (options.path == '/auth/otp/request') {
+        return otpResponse();
+      }
+      return jsonResponse({
+        'success': false,
+        'data': null,
+        'error': {'code': 'OTP_INVALID', 'message': 'Неверный код'},
+      }, statusCode: 401);
+    });
+    addTearDown(container.dispose);
+    await waitForState<AuthUnauthenticated>(container);
+    final controller = container.read(authControllerProvider.notifier);
+    await controller.requestOtp('+79991234567');
+
+    expect(await controller.verifyOtp('000000'), isFalse);
+
+    final state = container.read(authControllerProvider) as AuthCodeSent;
+    expect(state.errorMessage, 'Неверный код');
+    expect(state.isSubmitting, isFalse);
   });
 }
 
-class _AuthFakeAdapter implements HttpClientAdapter {
-  @override
-  void close({bool force = false}) {}
+ProviderContainer createContainer(
+  MemoryTokenStorage storage,
+  FutureOr<ResponseBody> Function(RequestOptions options) callback,
+) {
+  final dio = Dio(BaseOptions(baseUrl: 'http://test'));
+  dio.httpClientAdapter = CallbackAdapter(callback);
 
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    if (options.path == '/auth/otp/request') {
-      return _json({
-        'success': true,
-        'data': {
-          'phone': '+79991234567',
-          'expiresInSeconds': 300,
-        },
-        'error': null,
-      });
+  return ProviderContainer(
+    overrides: [
+      tokenStorageProvider.overrideWithValue(storage),
+      dioProvider.overrideWithValue(dio),
+    ],
+  )..read(authControllerProvider);
+}
+
+Future<T> waitForState<T extends AuthState>(ProviderContainer container) async {
+  for (var attempt = 0; attempt < 100; attempt += 1) {
+    final state = container.read(authControllerProvider);
+    if (state is T) {
+      return state;
     }
-
-    if (options.path == '/auth/otp/verify') {
-      return _json({
-        'success': true,
-        'data': {
-          'accessToken': 'access-token',
-          'refreshToken': 'refresh-token',
-          'user': {
-            'id': 'user-1',
-            'phone': '+79991234567',
-            'name': null,
-            'role': 'RENTER',
-            'kycStatus': null,
-            'isBlocked': false,
-          },
-        },
-        'error': null,
-      });
-    }
-
-    return _json(
-      {
-        'success': false,
-        'data': null,
-        'error': {
-          'code': 'NOT_FOUND',
-          'message': 'Не найдено',
-        },
-      },
-      statusCode: 404,
-    );
+    await Future<void>.delayed(const Duration(milliseconds: 1));
   }
 
-  ResponseBody _json(
-    Map<String, Object?> body, {
-    int statusCode = 200,
-  }) {
-    return ResponseBody.fromString(
-      jsonEncode(body),
-      statusCode,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
+  throw TestFailure(
+    'AuthController did not reach $T. '
+    'Last state: ${container.read(authControllerProvider)}',
+  );
+}
+
+ResponseBody otpResponse() {
+  return jsonResponse({
+    'success': true,
+    'data': {'phone': '+79991234567', 'expiresInSeconds': 300},
+    'error': null,
+  });
+}
+
+ResponseBody authTokensResponse() {
+  return jsonResponse({
+    'success': true,
+    'data': {
+      'accessToken': 'access-token',
+      'refreshToken': 'refresh-token',
+      'user': userJson(),
+    },
+    'error': null,
+  });
+}
+
+ResponseBody userResponse() {
+  return jsonResponse({'success': true, 'data': userJson(), 'error': null});
+}
+
+ResponseBody emptySuccessResponse() {
+  return jsonResponse({
+    'success': true,
+    'data': <String, Object?>{},
+    'error': null,
+  });
+}
+
+ResponseBody notFoundResponse() {
+  return jsonResponse({
+    'success': false,
+    'data': null,
+    'error': {'code': 'NOT_FOUND', 'message': 'Не найдено'},
+  }, statusCode: 404);
+}
+
+Map<String, Object?> userJson() {
+  return {
+    'id': 'user-1',
+    'phone': '+79991234567',
+    'name': null,
+    'role': 'RENTER',
+    'kycStatus': null,
+    'isBlocked': false,
+  };
 }

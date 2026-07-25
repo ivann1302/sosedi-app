@@ -11,56 +11,29 @@ import '../../features/auth/presentation/phone_screen.dart';
 import '../storage/onboarding_storage.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authControllerProvider);
-  final onboardingCompleted = ref.watch(onboardingCompletedProvider);
+  final refreshNotifier = _RouterRefreshNotifier();
 
-  return GoRouter(
+  ref.listen<AuthState>(
+    authControllerProvider,
+    (_, _) => refreshNotifier.refresh(),
+  );
+  ref.listen<bool>(
+    onboardingCompletedProvider,
+    (_, _) => refreshNotifier.refresh(),
+  );
+
+  final router = GoRouter(
     initialLocation: '/',
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
-      final location = state.uri.path;
-      final isAuthenticated = authState is AuthAuthenticated;
-      final isLoading = authState is AuthLoading;
-
-      if (!onboardingCompleted && location != '/onboarding') {
-        return '/onboarding';
-      }
-
-      if (!onboardingCompleted) {
-        return null;
-      }
-
-      if (isLoading) {
-        return location == '/onboarding' ? '/' : null;
-      }
-
-      if (isAuthenticated &&
-          (location == '/' ||
-              location == '/onboarding' ||
-              location.startsWith('/auth'))) {
-        return '/home';
-      }
-
-      if (!isAuthenticated && (location == '/' || location == '/home')) {
-        return '/auth/phone';
-      }
-
-      if (!isAuthenticated &&
-          location == '/auth/otp' &&
-          authState is! AuthCodeSent) {
-        return '/auth/phone';
-      }
-
-      if (!isAuthenticated && location == '/onboarding') {
-        return '/auth/phone';
-      }
-
-      return null;
+      return appRedirect(
+        ref.read(authControllerProvider),
+        ref.read(onboardingCompletedProvider),
+        state.uri.path,
+      );
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const _SplashScreen(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const _SplashScreen()),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
@@ -73,23 +46,60 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/auth/otp',
         builder: (context, state) => const OtpScreen(),
       ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomeScreen(),
-      ),
+      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
     ],
   );
+
+  ref.onDispose(() {
+    router.dispose();
+    refreshNotifier.dispose();
+  });
+
+  return router;
 });
+
+String? appRedirect(
+  AuthState authState,
+  bool onboardingCompleted,
+  String location,
+) {
+  if (!onboardingCompleted) {
+    return location == '/onboarding' ? null : '/onboarding';
+  }
+
+  if (authState is AuthLoading) {
+    return location == '/' ? null : '/';
+  }
+
+  if (authState is AuthAuthenticated) {
+    final isAuthLocation = location == '/auth' || location.startsWith('/auth/');
+    if (location == '/' || location == '/onboarding' || isAuthLocation) {
+      return '/home';
+    }
+
+    return null;
+  }
+
+  if (location == '/auth/phone') {
+    return null;
+  }
+
+  if (location == '/auth/otp' && authState is AuthCodeSent) {
+    return null;
+  }
+
+  return '/auth/phone';
+}
+
+class _RouterRefreshNotifier extends ChangeNotifier {
+  void refresh() => notifyListeners();
+}
 
 class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

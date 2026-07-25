@@ -1,6 +1,9 @@
 services:
   postgres:
     image: postgis/postgis:15-3.5
+    # The official PostGIS image does not publish an arm64 manifest.
+    # Docker Desktop runs this service through its Apple Silicon amd64 emulator.
+    platform: linux/amd64
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-sosedi}
       POSTGRES_USER: ${POSTGRES_USER:-sosedi}

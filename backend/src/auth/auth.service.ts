@@ -22,6 +22,14 @@ const OTP_RATE_WINDOW_SECONDS = 10 * 60;
 const OTP_FAIL_LIMIT = 5;
 const OTP_BLOCK_SECONDS = 30 * 60;
 
+const INCR_WITH_EXPIRE_SCRIPT = `
+  local value = redis.call('INCR', KEYS[1])
+  if value == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+  end
+  return value
+`;
+
 type AuthUserModel = Pick<
   User,
   'id' | 'phone' | 'name' | 'role' | 'kycStatus' | 'isBlocked' | 'deletedAt'
@@ -103,11 +111,20 @@ export class AuthService {
     await this.ensureOtpNotBlocked(phone);
 
     const codeHash = await this.redis.get(this.otpCodeKey(phone));
-    if (!codeHash || !(await bcrypt.compare(code, codeHash))) {
-      await this.registerOtpFailure(phone);
+    if (!codeHash) {
+      return this.registerOtpFailure(phone);
     }
 
-    await this.redis.del(this.otpCodeKey(phone), this.otpFailKey(phone));
+    if (!(await bcrypt.compare(code, codeHash))) {
+      return this.registerOtpFailure(phone);
+    }
+
+    const consumed = await this.consumeOtpCode(phone, codeHash);
+    if (!consumed) {
+      throw new UnauthorizedException('Неверный код');
+    }
+
+    await this.redis.del(this.otpFailKey(phone));
 
     const user = await this.prisma.user.upsert({
       where: { phone },
@@ -124,7 +141,7 @@ export class AuthService {
   async refresh(refreshToken: string): Promise<AuthTokensResponse> {
     const payload = await this.verifyRefreshToken(refreshToken);
     const refreshKey = this.refreshTokenKey(payload.jti);
-    const storedUserId = await this.redis.get(refreshKey);
+    const storedUserId = await this.redis.getdel(refreshKey);
 
     if (storedUserId !== payload.sub) {
       throw new UnauthorizedException('Refresh токен отозван');
@@ -141,19 +158,23 @@ export class AuthService {
     }
 
     this.ensureUserCanLogin(user);
-    await this.redis.del(refreshKey);
 
     return this.issueTokens(user);
   }
 
   async logout(refreshToken: string): Promise<LogoutResponse> {
+    let payload: JwtRefreshPayload;
     try {
-      const payload = await this.verifyRefreshToken(refreshToken);
-      await this.redis.del(this.refreshTokenKey(payload.jti));
-    } catch {
-      return { loggedOut: true };
+      payload = await this.verifyRefreshToken(refreshToken);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        return { loggedOut: true };
+      }
+
+      throw error;
     }
 
+    await this.redis.del(this.refreshTokenKey(payload.jti));
     return { loggedOut: true };
   }
 
@@ -275,16 +296,37 @@ export class AuthService {
     throw new UnauthorizedException('Неверный код');
   }
 
+  private async consumeOtpCode(
+    phone: string,
+    expectedHash: string,
+  ): Promise<boolean> {
+    const result = await this.redis.eval(
+      `
+        if redis.call('GET', KEYS[1]) == ARGV[1] then
+          return redis.call('DEL', KEYS[1])
+        end
+        return 0
+      `,
+      1,
+      this.otpCodeKey(phone),
+      expectedHash,
+    );
+
+    return Number(result) === 1;
+  }
+
   private async incrWithExpire(
     key: string,
     ttlSeconds: number,
   ): Promise<number> {
-    const value = await this.redis.incr(key);
-    if (value === 1) {
-      await this.redis.expire(key, ttlSeconds);
-    }
+    const value = await this.redis.eval(
+      INCR_WITH_EXPIRE_SCRIPT,
+      1,
+      key,
+      ttlSeconds.toString(),
+    );
 
-    return value;
+    return Number(value);
   }
 
   private ensureUserCanLogin(user: AuthUserModel): void {
