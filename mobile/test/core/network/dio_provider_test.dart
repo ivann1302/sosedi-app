@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/compatibility/compatibility_gate.dart';
 import 'package:mobile/core/network/dio_provider.dart';
 
 import '../../support/network_fakes.dart';
@@ -18,6 +19,7 @@ void main() {
     final dio = createApiDio(
       baseUrl: 'http://test',
       tokenStorage: storage,
+      installationId: Future.value('11111111-1111-4111-8111-111111111111'),
       adapter: adapter,
     );
 
@@ -29,7 +31,59 @@ void main() {
 
     expect(adapter.requests[0].headers['Authorization'], 'Bearer access-token');
     expect(adapter.requests[1].headers['Authorization'], isNull);
+    expect(
+      adapter.requests[0].headers['X-Installation-Id'],
+      '11111111-1111-4111-8111-111111111111',
+    );
+    expect(
+      adapter.requests[1].headers['X-Installation-Id'],
+      '11111111-1111-4111-8111-111111111111',
+    );
   });
+
+  test(
+    'sends client compatibility headers and captures update requirement',
+    () async {
+      final storage = MemoryTokenStorage();
+      UpdateRequirement? requirement;
+      final adapter = CallbackAdapter(
+        (_) => jsonResponse(
+          {
+            'success': false,
+            'data': null,
+            'error': {
+              'code': 'MOBILE_UPDATE_REQUIRED',
+              'message': 'Требуется обновление',
+            },
+          },
+          statusCode: 426,
+          headers: {
+            'X-Min-Mobile-Version': ['2.0.0'],
+            'X-Mobile-Update-Url': ['https://store.example/sosedi'],
+          },
+        ),
+      );
+      final dio = createApiDio(
+        baseUrl: 'http://test',
+        tokenStorage: storage,
+        mobileVersion: Future.value('1.9.0'),
+        mobilePlatform: 'android',
+        adapter: adapter,
+        onUpdateRequired: (value) => requirement = value,
+      );
+
+      await expectLater(
+        dio.get<Map<String, dynamic>>('/health'),
+        throwsA(isA<DioException>()),
+      );
+
+      expect(adapter.requests.single.headers['X-Api-Version'], '1');
+      expect(adapter.requests.single.headers['X-Mobile-Version'], '1.9.0');
+      expect(adapter.requests.single.headers['X-Mobile-Platform'], 'android');
+      expect(requirement?.minimumVersion, '2.0.0');
+      expect(requirement?.updateUrl, Uri.parse('https://store.example/sosedi'));
+    },
+  );
 
   test('uses one refresh for concurrent 401 responses', () async {
     final storage = MemoryTokenStorage(

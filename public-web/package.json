@@ -1,0 +1,26 @@
+{
+  "name": "sosedi-public-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "typecheck": "astro check",
+    "lint": "eslint .",
+    "build": "astro build",
+    "smoke": "node scripts/smoke.mjs",
+    "check": "npm run typecheck && npm run lint && npm run build && npm run smoke"
+  },
+  "dependencies": {
+    "astro": "7.1.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@eslint/js": "10.0.1",
+    "eslint": "10.8.0",
+    "eslint-plugin-astro": "3.0.1",
+    "globals": "17.8.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.65.0"
+  }
+}

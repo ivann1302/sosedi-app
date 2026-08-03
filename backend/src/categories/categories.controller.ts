@@ -7,12 +7,16 @@ import {
   Patch,
   Post,
   UseGuards,
+  Req,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
+import { AdminCapability } from '@prisma/client';
+import { AdminCapabilities } from '../admin/admin-capabilities.decorator';
+import { getAdminAuditContext } from '../admin/admin-audit-context';
+import { AdminSessionGuard } from '../admin/admin-session.guard';
+import { ADMIN_SESSION_COOKIE } from '../admin/admin-session.service';
+import type { AuthenticatedRequest, AuthUser } from '../auth/auth.types';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ok, type ApiResponse } from '../common/http/api-response';
 import { CategoriesService, type CategoryResponse } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -35,34 +39,51 @@ export class CategoriesController {
     return ok(await this.categories.getBySlug(slug));
   }
 
-  @ApiBearerAuth()
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiCookieAuth(ADMIN_SESSION_COOKIE)
+  @AdminCapabilities(AdminCapability.MODERATION)
+  @UseGuards(AdminSessionGuard)
   @Post()
   async create(
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuthenticatedRequest,
     @Body() dto: CreateCategoryDto,
   ): Promise<ApiResponse<CategoryResponse>> {
-    return ok(await this.categories.create(dto));
+    return ok(
+      await this.categories.create(user.id, dto, getAdminAuditContext(request)),
+    );
   }
 
-  @ApiBearerAuth()
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiCookieAuth(ADMIN_SESSION_COOKIE)
+  @AdminCapabilities(AdminCapability.MODERATION)
+  @UseGuards(AdminSessionGuard)
   @Patch(':id')
   async update(
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCategoryDto,
   ): Promise<ApiResponse<CategoryResponse>> {
-    return ok(await this.categories.update(id, dto));
+    return ok(
+      await this.categories.update(
+        user.id,
+        id,
+        dto,
+        getAdminAuditContext(request),
+      ),
+    );
   }
 
-  @ApiBearerAuth()
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiCookieAuth(ADMIN_SESSION_COOKIE)
+  @AdminCapabilities(AdminCapability.MODERATION)
+  @UseGuards(AdminSessionGuard)
   @Patch(':id/disable')
   async disable(
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ApiResponse<CategoryResponse>> {
-    return ok(await this.categories.disable(id));
+    return ok(
+      await this.categories.disable(user.id, id, getAdminAuditContext(request)),
+    );
   }
 }

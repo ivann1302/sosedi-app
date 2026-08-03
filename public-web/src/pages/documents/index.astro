@@ -1,0 +1,40 @@
+---
+import { documentPath, documents } from '../../data/documents';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Версии документов"
+  description="Архив публичных документов Sosedi по версиям"
+>
+  <section class="page-heading">
+    <p class="eyebrow">Архив условий</p>
+    <h1>Версии документов</h1>
+    <p>
+      URL каждой версии неизменяем. Новая редакция добавляется отдельно, старая
+      остаётся доступной для проверки условий конкретного бронирования.
+    </p>
+  </section>
+  <div class="document-list">
+    {
+      documents.map((document) => (
+        <article class="card">
+          <h2>{document.title}</h2>
+          <ul class="version-list">
+            {document.versions.map((version) => (
+              <li>
+                <a href={documentPath(document.slug, version.id)}>
+                  {version.label}
+                </a>
+                <span class:list={['status', version.status.toLowerCase()]}>
+                  {version.status}
+                </span>
+                <span>{version.publishedOn}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+      ))
+    }
+  </div>
+</BaseLayout>

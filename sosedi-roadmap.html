@@ -523,7 +523,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       </svg>
       Соседи
     </a>
-    <span class="topbar-title">Маркетплейс аренды инструмента</span>
+    <span class="topbar-title">Платная аренда вещей</span>
     <div class="topbar-right">
       <span style="font-size:var(--text-xs);color:var(--color-text-muted);">v0.1 · TDD workflow</span>
       <button class="theme-toggle" data-theme-toggle aria-label="Сменить тему">
@@ -552,7 +552,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       <a href="#analysis" class="sidebar-item" data-view="analysis">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
         Анализ и улучшения
-        <span class="sidebar-badge badge-orange">10</span>
+        <span class="sidebar-badge badge-orange">11</span>
       </a>
       <a href="#rules" class="sidebar-item" data-view="rules">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 14.14 14.14"/></svg>
@@ -567,25 +567,25 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
     <!-- ==================== OVERVIEW ==================== -->
     <div id="view-overview" class="view active">
       <div class="page-header">
-        <h1>Соседи — Маркетплейс аренды инструмента</h1>
-        <p>Мобильная P2P-платформа аренды строительного инструмента. Разрабатывается одним разработчиком с AI-инструментами.</p>
+        <h1>Соседи — платная аренда вещей</h1>
+        <p>Мобильная P2P-платформа аренды разрешённых личных вещей между соседями. Разрабатывается одним разработчиком с AI-инструментами.</p>
       </div>
 
       <div class="kpi-strip">
         <div class="kpi-card">
           <div class="kpi-label"><span class="kpi-dot" style="background:var(--color-success)"></span>Фаза</div>
-          <div class="kpi-value">MVP 0.1</div>
-          <div class="kpi-sub">Marketplace Foundation</div>
+          <div class="kpi-value">Checklist 5</div>
+          <div class="kpi-sub">Booking-aware listings — next</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label"><span class="kpi-dot" style="background:var(--color-primary)"></span>Всего фаз</div>
-          <div class="kpi-value">8</div>
-          <div class="kpi-sub">0.1 → 0.7 → 1.0</div>
+          <div class="kpi-value">8 + gate</div>
+          <div class="kpi-sub">MVP 0.1 → 0.7 → 1.0</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label"><span class="kpi-dot" style="background:var(--color-gold)"></span>Общий срок MVP</div>
-          <div class="kpi-value">~20 нед</div>
-          <div class="kpi-sub">без ожидания внешних согласований</div>
+          <div class="kpi-value">~20+ нед</div>
+          <div class="kpi-sub">плюс scope/payment/legal gates</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label"><span class="kpi-dot" style="background:var(--color-blue)"></span>Стек</div>
@@ -607,13 +607,23 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       <div class="progress-wrap">
         <div class="progress-header">
           <span>Прогресс всего MVP</span>
-          <span>123 / 452 — 27,2%</span>
+          <span>319 / 456 — 70,0%</span>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:27.2%"></div></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:70.0%"></div></div>
         <div class="kpi-sub" style="margin-top:var(--space-2)">Рассчитано только из выполненных пунктов <code>MVP_CHECKLIST.md</code>; HTML не ведёт второй независимый процент.</div>
       </div>
 
       <div class="tl-body" style="margin-bottom:var(--space-8)">
+        <div class="tl-card">
+          <div class="tl-card-title" style="color:var(--color-primary)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 16l9 5 9-5M3 12l9 5 9-5"/></svg>
+            Product scope · 27.07.2026
+          </div>
+          <div class="tl-item"><div><strong>Платный MVP:</strong> одна разрешённая личная вещь в объявлении, дневная цена в RUB и личная передача между соседями.</div></div>
+          <div class="tl-item"><div><strong>Не в MVP:</strong> продажа, дарение, обмен, услуги, корзина, почасовой тариф, собственная доставка и сложный залог.</div></div>
+          <div class="tl-item"><div>Публичный каталог использует launch whitelist категорий; опасные, регулируемые, расходуемые и гигиенически рискованные вещи требуют отдельного accepted ADR.</div></div>
+          <div class="tl-item"><div>Технический prototype прежней ниши мигрирован в единый <code>Item</code>/<code>ItemPhoto</code> контракт по <code>/items</code>, <code>USER</code> поддерживает borrower/lender-сценарии с object ownership checks, launch whitelist enforced server-side, общие состояние, комплектация и условия передачи входят в Item-контракт, а новые объявления принимают только нулевой залог до отдельного утверждения. Решение: <code>docs/adr/0001-paid-neighbor-item-rental.md</code>.</div></div>
+        </div>
         <div class="tl-card">
           <div class="tl-card-title" style="color:var(--color-primary)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -624,6 +634,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-item"><div>Реализовать только необходимое до GREEN, затем выполнить refactor без изменения поведения.</div></div>
           <div class="tl-item"><div>После реализации и проверки изменить статус пункта в checklist и пересчитать единый общий процент.</div></div>
           <div class="tl-item"><div>DONE разрешён после targeted-теста и <code>make check</code>; закрытие фазы — только после <code>make ci</code>.</div></div>
+          <div class="tl-item"><div>Перед переходом к следующему этапу обязательно визуально пройти текущий пользовательский сценарий на emulator/device, а backend-only результат — через Swagger/HTTP-клиент; без этого этап не закрывать.</div></div>
           <div class="tl-item"><div>Если пункт нельзя завершить без внешних данных, отметить BLOCKED и кратко записать причину в ответе.</div></div>
           <div class="tl-item"><div>В финальном ответе всегда назвать следующий рекомендуемый пункт roadmap.</div></div>
         </div>
@@ -642,13 +653,22 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             Следующий рекомендуемый пункт
           </div>
-          <div class="tl-item"><div>P0 hardening: составить матрицу доступа public/authenticated/participant/owner/admin для всех endpoint.</div></div>
+          <div class="tl-item"><div><strong>Checklist 5 · listing declarations:</strong> требовать подтверждение права распоряжаться вещью, её исправности, комплектации и применимых safety/marketplace rules с версией принятого документа.</div></div>
+          <div class="tl-item"><div>Booking-aware guard уже запрещает изменение и скрытие объявления при <code>PENDING/CONFIRMED/ACTIVE/RETURNED</code>; терминальные брони не блокируют повторную модерацию.</div></div>
           <div class="tl-item"><div>После закрытия пункта Codex должен заменить эту подсказку на следующий TODO.</div></div>
         </div>
       </div>
 
       <!-- Quick phase overview -->
       <div class="tl-body" style="margin-bottom:var(--space-8)">
+        <div class="tl-card">
+          <div class="tl-card-title" style="color:var(--color-primary)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 7v5l3 2"/></svg>
+            Checklist 0.3 · scope pivot
+          </div>
+          <div class="tl-item"><div>ADR-0001, domain migration, единый Item API, borrower/lender-модель, launch whitelist, общие поля вещи, contract-тесты и очистка текстов — <strong>10/10 DONE</strong>.</div></div>
+          <div class="tl-item"><div>Scope pivot закрыт; следующий последовательный TODO — retention/export в account lifecycle.</div></div>
+        </div>
         <div class="tl-card">
           <div class="tl-card-title" style="color:var(--color-success)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
@@ -694,8 +714,8 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             MVP 0.6 · 1 нед
           </div>
-          <div class="tl-item"><div>Deep Link в Яндекс Go, передача адресов</div></div>
-          <div class="tl-item"><div>Критерий: доставка без API-интеграции</div></div>
+          <div class="tl-item"><div>ADR-0004: delivery entry point исключён из MVP 1.0</div></div>
+          <div class="tl-item"><div>Критерий: личный handover не зависит от доставки</div></div>
         </div>
         <div class="tl-card">
           <div class="tl-card-title" style="color:var(--color-error)">
@@ -712,7 +732,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
     <div id="view-roadmap" class="view">
       <div class="page-header">
         <h1>Roadmap</h1>
-        <p>Поэтапный план разработки от Foundation до MVP 1.0. Каждая фаза имеет чёткий критерий успеха и выполняется вертикальными TDD-срезами.</p>
+        <p>Исполняемый порядок и статусы задаёт <code>MVP_CHECKLIST.md</code>. Scope pivot завершён на 10 из 10 пунктов: backend использует нейтральный Item-контракт, borrower/lender-модель возможностей, server-side launch whitelist, общие поля вещи и проверенные migration contracts; пользовательские тексты прежней ниши удалены.</p>
       </div>
 
       <div class="tl-body" style="margin-bottom:var(--space-8)">
@@ -739,9 +759,15 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       <div class="analysis-section">
         <h2>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2"><path d="M3 12h18M12 3l9 9-9 9"/></svg>
-          Изменения решений · 25.07.2026
+          Принятые изменения решений
         </h2>
         <div class="tl-body">
+          <div class="tl-card">
+            <div class="tl-card-title" style="color:var(--color-primary)">Product scope · 27.07.2026</div>
+            <div class="tl-kv"><strong>Раньше:</strong><span>Продукт и prototype были описаны как сервис строительного инструмента.</span></div>
+            <div class="tl-kv"><strong>Теперь:</strong><span>Платная P2P-аренда разрешённых личных вещей между соседями: одна вещь, дневная ставка, личная передача и launch whitelist категорий.</span></div>
+            <div class="tl-kv"><strong>Почему:</strong><span>Это фактический продукт. Domain migration сохранила техническую основу и убрала legacy-контракт до следующей продуктовой функции.</span></div>
+          </div>
           <div class="tl-card">
             <div class="tl-card-title" style="color:var(--color-gold)">Уведомления</div>
             <div class="tl-kv"><strong>Раньше:</strong><span>FCM был единственным push-каналом.</span></div>
@@ -758,7 +784,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="tl-card-title" style="color:var(--color-gold)">Доменные состояния</div>
             <div class="tl-kv"><strong>Раньше:</strong><span><code>PAID</code> и <code>DISPUTED</code> смешивались с жизненным циклом Booking.</span></div>
             <div class="tl-kv"><strong>Теперь:</strong><span>Booking, Payment, Payout и Dispute имеют отдельные FSM и синхронизируются явными правилами.</span></div>
-            <div class="tl-kv"><strong>Почему:</strong><span>Оплата или спор могут измениться независимо от выдачи и возврата инструмента.</span></div>
+            <div class="tl-kv"><strong>Почему:</strong><span>Оплата или спор могут измениться независимо от выдачи и возврата вещи.</span></div>
           </div>
           <div class="tl-card">
             <div class="tl-card-title" style="color:var(--color-error)">Ошибки</div>
@@ -807,11 +833,36 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
 
       <div class="timeline">
 
+        <!-- checklist 0.3 scope pivot -->
+        <div class="tl-phase phase-teal">
+          <div class="tl-dot">✓</div>
+          <div class="tl-header">
+            <span class="tl-phase-title">Checklist 0.3 — Scope pivot и domain migration</span>
+            <span class="tl-meta">10 / 10 пунктов</span>
+            <span class="tag tag-green">ГОТОВО</span>
+          </div>
+          <div class="tl-body">
+            <div class="tl-card">
+              <div class="tl-card-title">Статус подпунктов</div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>ADR-0001: платная P2P-аренда разрешённых вещей между соседями, одна вещь в объявлении, дневная цена и личная передача</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Аудит: auth, privacy, public/private DTO, PostGIS и upload pipeline остаются переносимой технической основой; старый Tool API не является публичным item-контрактом</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Checklist и visual roadmap синхронизированы с новым scope</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Prisma migration: <code>Tool</code>/<code>ToolPhoto</code> → нейтральные <code>Item</code>/<code>ItemPhoto</code>; проверена на чистой и dev-базе, а сохранность связей — на fixture с существующими данными</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Один новый контракт: module, REST paths, DTO, OpenAPI, queue/storage payloads, Flutter copy и tests; параллельный legacy API отсутствует</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Единая роль <code>USER</code> поддерживает borrower/lender-сценарии; actor определяется участием в бронировании, а изменение объявления — predicate <code>id + ownerId</code></div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Seed строительных категорий заменён на launch whitelist вещей; backend отклоняет неразрешённые категории</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Item-контракт включает общие поля состояния, комплектации и условий передачи без характеристик отдельных вертикалей</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Privacy DTO, ownership, self-booking, security и upload key-prefix guarantees подтверждены contract-тестами</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>README, schema/API docs, public/legal gate и mobile copy очищены от прежней ниши; onboarding проверен на iOS Simulator</div></div>
+            </div>
+          </div>
+        </div>
+
         <!-- 0.1 -->
         <div class="tl-phase phase-green">
           <div class="tl-dot">1</div>
           <div class="tl-header">
-            <span class="tl-phase-title">MVP 0.1 — Marketplace Foundation</span>
+            <span class="tl-phase-title">MVP 0.1 — Технический foundation prototype</span>
             <span class="tl-meta">⏱ 5–7 недель</span>
             <span class="tag tag-green">Старт</span>
           </div>
@@ -821,25 +872,53 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
                 Backend (NestJS)
               </div>
-              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Prisma schema + начальная миграция + seed категорий</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Prisma schema, миграции и server-side launch whitelist категорий</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Авторизация по SMS (OTP + JWT refresh)</div></div>
-              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Пользователи, роли (арендатор / арендодатель / admin)</div></div>
-              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Категории инструментов</div></div>
-              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>CRUD объявлений + загрузка фото (S3)</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Единая роль <code>USER</code> для borrower/lender сценариев; admin отделён capabilities</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Активные категории ограничены server-side launch whitelist вещей</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>CRUD единого Item/Listing контракта + загрузка фото (S3)</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Геопоиск: PostGIS ST_DWithin + индексы</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Фильтрация: категория, цена, радиус, доступность</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Модерация объявлений (статус pending/approved/rejected)</div></div>
-              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Admin API: пользователи и модерация объявлений; отдельный UI ещё не реализован</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking-aware guard: незавершённая бронь блокирует изменение цены, адреса, других модерируемых условий и скрытие объявления; terminal Booking разрешает повторную модерацию</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Создание Item требует versioned подтверждения права распоряжения, исправности, комплектации и safety/marketplace rules; backend сохраняет actor, server timestamp, способ принятия и snapshot категорийного предупреждения</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Admin API и защищённый React/Vite operator UI: users, moderation, reports и GENERAL support queue с capability/MFA/audit boundary</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>TDD/CI safety-net: Auth concurrency, mobile session, route guards и isolated e2e</div></div>
             </div>
             <div class="tl-card">
               <div class="tl-card-title" style="color:var(--color-error)">P0 hardening · входит в прогресс</div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Матрица доступа + public/private DTO: публично район/distance bucket/stable coarse-cell без усредняемого random jitter; точный адрес и контакт — только участникам в разрешённых состояниях брони</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Tool upload quarantine: проверить object, magic bytes/MIME/размер, удалить EXIF, remoderation после edit; KYC presign/confirm жёстко выключены до выбранной legal ADR-ветки</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Auth/Admin hardening: admin bootstrap, TOTP/passkey step-up, operator shell для users/moderation, capabilities/audit, production Swagger off, env validation и rate limits</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Dual role и account deletion: OWNER сохраняет renter-возможности; self-booking запрещён; delete учитывает активные сделки и отзывает sessions/device tokens</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Матрица доступа + public/private DTO: публично район/distance bucket/stable coarse-cell без усредняемого random jitter; exact location остаётся в owner/admin DTO, participant-доступ будет добавлен вместе с Booking</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>KYC presign/confirm жёстко выключены до принятого <code>LOCAL_KYC</code> ADR и покрыты HTTP integration-тестом</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Object-level authorization: self-only profile, ownership Item/upload и participant-only Booking/private evidence/Inbox/Support покрыты negative e2e; ещё gated Payment/Dispute API остаются deny-by-default</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Generic status mutation запрещён: category state меняет отдельная disable command, moderation только PENDING → APPROVED/REJECTED с actor/state/audit checks, будущие FSM status routes закрыты</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Upload intent связывает backend-generated object key с actor, purpose, Item, bucket и TTL; confirm принимает только <code>intentId</code> и связывает результат с созданным фото</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Короткоживущий presigned POST фиксирует точные bucket/key/MIME и заявленный размер через подписанную S3 policy</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Confirm повторно проверяет ownership и bucket/key, через S3 HEAD и range-read сверяет existence, фактические MIME/размер и magic bytes; replay возвращает то же фото без дублей</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Item/Listing image upload: входной original хранится приватно, публикуется только безопасный WebP re-encode без EXIF/GPS</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Private quarantine namespace принимает только JPEG/PNG/WebP; типы вне безопасного re-encode allowlist отклоняются до presign, поэтому отдельный malware scanner пока не имеет входных типов</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Private download требует owner/booking-participant/ticket binding; возвращается только presigned GET на 60 секунд, а operator support download fail-closed пишет PII-free audit до signer</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Retention cleanup каждые 15 минут удаляет expired intents/orphans после 24-часового grace и failed re-encode после 7 дней; S3 очищается раньше DB linkage для безопасного retry</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Upload negative/concurrency tests покрывают foreign entity/key, MIME/size/magic mismatch, corrupted decode, replay и параллельный confirm с одной DB-записью</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Изменение текста, категории или фото атомарно возвращает объявление на повторную модерацию, не меняя snapshot существующей брони</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Admin access требует TOTP или одноразовый recovery code и отдельную короткую Redis-backed session с immediate revoke; TOTP secret зашифрован, recovery codes хешированы и не попадают в audit, access JWT/SMS OTP, default credentials, public bootstrap и self-promotion недостаточны</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Operator browser contract использует только opaque Redis session в <code>HttpOnly + Secure + SameSite=Strict</code> cookie; admin JWT не выдаётся, mutations требуют отдельный CSRF token, CSP содержит <code>frame-ancestors 'none'</code>, а <code>X-Frame-Options</code> установлен в <code>DENY</code></div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Минимальный React/Vite operator shell реализует SMS login → TOTP/recovery MFA, capability-aware navigation, users и moderation queue; production build входит в <code>make check</code>/CI, UI пройден headless Chrome smoke</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Operator имеет 5-минутный idle timeout, серверный hard TTL и forced logout при <code>401</code>; logout очищает privileged React state/private files, отзыв роли не удаляет append-only audit trail</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Первый production-admin создаётся one-time CLI с явным confirmation, phone и минимальными capabilities; PostgreSQL advisory lock блокирует повторный/конкурентный bootstrap, audit не содержит телефон</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Admin least privilege: роль без capabilities получает 403; <code>SUPPORT</code> и <code>MODERATION</code> разделены, отзыв применяется на следующем запросе, <code>KYC_REVIEW</code>/<code>FINANCE</code> зарезервированы для gated endpoint</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Admin audit защищён DB trigger как append-only; mutations, MFA/session и sensitive support download содержат actor/capability/target/request metadata и минимальные before/after без телефона, адреса, URLs, cookies или secrets</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Block/delete атомарно увеличивают <code>sessionVersion</code>: старые access/refresh/admin-токены не оживают, presign закрыт guard-ом, photo worker повторно проверяет активного владельца; WebSocket surface отсутствует</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>OTP abuse limit: phone 3 / installation 6 / direct IP 60 за 10 минут и атомарный global SMS cap за 24 часа; mobile хранит UUID v4, undelivered OTP hash удаляется compare-and-delete</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Trusted proxy allowlist: client IP для rate limit/audit учитывает только exact IP/CIDR цепочку; forged XFF игнорируется, wildcard и сети <code>/0</code> блокируют startup</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Production HTTP perimeter: точный CORS allowlist, обязательный HTTPS за trusted proxy, Helmet headers, ограниченный JSON/form body и явные request/header/keep-alive timeout</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Swagger UI/OpenAPI не регистрируются в production; debug surface отсутствует, а unknown error response не раскрывает внутренние message/stack</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Backend logs и mobile GlitchTip events централизованно очищаются от токенов, OTP, cookies, телефонов, адресов, KYC/payment payload и presigned URL; user/request/attachments не отправляются</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Production secrets runbook: inventory, раздельные runtime/migration/deploy identities, least privilege, плановая ротация, emergency revoke и break-glass</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Dependency/secret scan: high runtime findings исправлены; dev-only GHSA-mh99-v99m-4gvg временно принят до 31.08.2026 из-за несовместимости upstream API; Git history и working tree не содержат secrets</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Account closure: подтверждённый запрос атомарно отзывает все сессии и скрывает профиль/объявления; PII сохраняются при активных обязательствах, а идемпотентный finalizer выполняет anonymization после их завершения</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>ADR-0002: export и удаление определены по категориям; direct PII очищаются после blocker, а минимальный financial/audit trail хранится до обязательного срока со scoped legal hold</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><code>MVP_CHECKLIST.md</code> закреплён source of truth для scope/порядка/DoD/прогресса; локальный AGENTS и HTML не могут его переопределять</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Канонические transition tables + contract tests синхронизируют Prisma, backend DTO/OpenAPI и mobile mapping для Booking/Payment/Payout/Dispute FSM</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Канонические transition tables + contract tests синхронизируют Prisma, backend DTO/OpenAPI и mobile mapping для Booking/Payment/Payout/Dispute FSM</div></div>
             </div>
             <div class="tl-card">
               <div class="tl-card-title">
@@ -848,18 +927,30 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               </div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Онбординг (3 слайда) + SMS-логин</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile Map: Yandex MapKit + геолокация + маркеры + радиус</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile Catalog: список объявлений + поиск + фильтры</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Tool Details: фото, цена, локация, владелец</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Profile + My Tools: профиль + мои объявления</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Create Tool + photo upload: форма объявления + presigned URL</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile Catalog: список объявлений + поиск + фильтры</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Item Details: фото, дневная цена, примерная локация, владелец, состояние, комплектация, safety notice и проверка доступности по датам готовы; точная rental-rules версия показывается только из полного approved public набора</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Profile: собственный профиль загружается через authenticated API и показывает имя, город, аватар и статусы с loading/error/retry</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Profile edit: имя/город редактируются, avatar проходит presign → private quarantine → MIME/magic/decode/re-encode → confirm; прямой avatar URL запрещён</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Один USER одновременно видит «Беру в аренду» и «Сдаю» без постоянного role toggle; Catalog и My Listings реализованы отдельными безопасными сценариями</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Sessions: Redis registry активных установок, self-only list, revoke selected/current/all и family-wide refresh replay revocation; токены в UI/API list не выдаются</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Profile documents/support/export: legal URLs открываются только полным approved HTTPS-набором; GENERAL support и self-service UTF-8 JSON export готовы, export требует свежий SMS OTP и одноразовый purpose-bound step-up без хранения archive</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>My Listings: мои объявления</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Create Item + photo upload: форма объявления, presigned URL и owner calendar недоступности</div></div>
             </div>
             <div class="tl-card">
               <div class="tl-card-title" style="color:var(--color-warning)">Обязательные внешние gates · стартуют параллельно</div>
               <div class="tl-item"><div><strong>Store readiness:</strong> завершить Apple Developer, Google Play, RuStore, package/bundle ID, signing keys и smoke-сборки до интеграции MapKit/store SDK.</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Mobile IDs:</strong> Android applicationId/namespace и iOS bundle ID зафиксированы как <code>ru.sosedi.app</code>; release APK и iOS no-sign smoke собираются.</div></div>
               <div class="tl-item"><div><strong>Privacy:</strong> до интеграции MapKit и до активации AppMetrica/FCM в release составить карту данных, минимизацию, согласия и правила очистки.</div></div>
-              <div class="tl-item"><div><strong>Marketplace legal/safety:</strong> до любой публичной аренды опубликовать оферту/rental rules/support/delete URLs и согласовать роль посредника, cancellation/damage, eligibility, prohibited tools и versioned acceptance.</div></div>
+              <div class="tl-item"><div><strong>Marketplace legal/safety:</strong> launch whitelist принят; backend требует exact approved versions и хранит borrower/server-time/method acceptance. Mobile booking требует exact URLs/versions и два checkbox, а профиль показывает offer/rules/privacy только полным published set; default fail-closed. Публичный запуск ждёт legal texts, роль посредника, cancellation/damage, eligibility и production URLs.</div></div>
               <div class="tl-item"><div><strong>Payment/identity decision:</strong> до фазы 0.3 подтвердить provider onboarding и выбрать ADR-ветку provider-managed либо local KYC; production payment integration остаётся в 0.4.</div></div>
-              <div class="tl-item"><div><strong>Supply chain:</strong> до первого deployment настроить российский OCI registry, кеш зависимостей и фиксацию образов по digest.</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Supply chain:</strong> PostGIS 15.13/3.5.2 и Redis 7.4.9 зафиксированы в Compose по читаемой версии и immutable digest; совместимость подтверждена backend e2e.</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Build cache:</strong> npm/pub/Prisma/CocoaPods кеши привязаны к lock/schema; отдельный macOS job собирает locked iOS release без подписи.</div></div>
+              <div class="tl-item"><div><strong>Supply chain далее:</strong> production backend image и local candidate → previous rollback smoke готовы; реальный deploy по manifest digest BLOCKED до создания российского OCI mirror, compute и scoped credentials.</div></div>
+              <div class="tl-item"><div><strong>Monitoring foundation:</strong> защищённый Prometheus endpoint, API/DB/Redis/BullMQ/outbox/SMS/upload signals, backup freshness producer и exact-unit systemd failure alert готовы; production closure ждёт RF Prometheus/Alertmanager, node exporters и test-alert delivery.</div></div>
+              <div class="tl-item"><div><strong>GlitchTip foundation:</strong> self-hosted 6.2.2 image зафиксирован exact digest, RF-mirror Compose/verifier и safe release smoke готовы; deploy BLOCKED до RF host/DB/Valkey, DNS/TLS/SMTP, project DSN и alert evidence.</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Privacy-safe analytics:</strong> 8 allowlisted funnel events имеют payload только <code>event + schema_version</code>; consent default-off, opt-out очищает transport, AppMetrica недоступна до privacy/legal gate.</div></div>
+              <div class="tl-item"><div><strong>Environment isolation:</strong> local/staging/production templates и verifier запрещают общие DB/Redis/JWT/MFA/metrics/S3 identities, test mode в production и production ПД в non-production; closure ждёт реальные RF resources/secret sets.</div></div>
               <div class="tl-item"><div>Работа над gates идёт параллельно, но зависимая интеграция или публичная функция остаётся BLOCKED до их закрытия.</div></div>
             </div>
             <div class="tl-card">
@@ -867,7 +958,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/></svg>
                 Критерий успеха
               </div>
-              <div class="tl-item"><div><strong>Первые объявления проходят quarantine, модерацию и публикуются без точного адреса</strong></div></div>
+              <div class="tl-item"><div><strong>Первые Item/Listing-объявления проходят quarantine, модерацию и публикуются без точного адреса</strong></div></div>
             </div>
           </div>
         </div>
@@ -883,15 +974,16 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-body">
             <div class="tl-card">
               <div class="tl-card-title">Добавить</div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking FSM отдельно от денег и спора: PENDING → CONFIRMED → ACTIVE → RETURNED → COMPLETED; terminal CANCELLED, включая reason PENDING_TIMEOUT вместо отдельного EXPIRED</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Отдельные Payment, Payout и Dispute FSM: не использовать <code>PAID</code>/<code>DISPUTED</code> как Booking status</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Календарь: date-only semantics, inclusive/exclusive границы, timezone инструмента, blackout-периоды владельца и запрет прошлых дат</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PENDING TTL + атомарная проверка пересечения дат в PostgreSQL; конкурентные и повторные запросы не создают двойную бронь</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Snapshot условий в Booking: цена/день, итог, залог, даты, правила отмены и версия объявления</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Owner confirm/reject, renter/owner cancel, no-show и actor-specific переходы; причина и audit для каждого terminal action</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Contact/handover: точный адрес только участникам CONFIRMED/ACTIVE/RETURNED до конца dispute window, немедленный revoke при CANCELLED и очистка mobile cache; выдача/возврат подтверждаются обеими сторонами</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>История заказов в режимах «Арендую» и «Сдаю» с актуальным следующим действием</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>In-app inbox создаётся вместе с доменным событием; mobile обновляет его при resume/pull-to-refresh, push — best-effort сигнал без обязательного WebSocket</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking FSM отдельно от денег и спора: PENDING → CONFIRMED → ACTIVE → RETURNED → COMPLETED; terminal CANCELLED, включая reason PENDING_TIMEOUT вместо отдельного EXPIRED</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Канонические отдельные Payment, Payout и Dispute FSM не используют <code>PAID</code>/<code>DISPUTED</code> как Booking status; production-команды gated provider/ADR</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Календарь: date-only semantics, включительные границы, timezone вещи, blackout-периоды владельца и запрет прошлых дат</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PENDING TTL + атомарная проверка пересечения дат в PostgreSQL; конкурентные и повторные запросы не создают двойную бронь</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Provisional PAY_ON_HANDOVER snapshot хранит цену/день, дни, subtotal, 0% fee, payout, total, RUB, handover, versions и borrower acceptance evidence; чтение fail-closed сверяет borrower/lender/период/сумму с Booking</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Lender confirm/reject, borrower/lender cancel, no-show и actor-specific переходы; причина и audit для каждого terminal action</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Ручной процесс no-show/fault/early-late return/damage/loss: семь actor/state/date-bound GENERAL причин, private support thread и нулевой автоматический эффект на Booking/Payment</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Contact/handover: до утверждения dispute window точный адрес fail-closed виден только участникам CONFIRMED/ACTIVE; RETURNED/CANCELLED/COMPLETED скрыты, mobile private cache очищается при background/logout; bounded RETURNED window ждёт legal/dispute gate</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>История заказов в режимах «Арендую» и «Сдаю» с актуальным следующим действием</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>In-app inbox создаётся вместе с доменным событием; mobile обновляет его при resume/pull-to-refresh, push — best-effort сигнал без обязательного WebSocket</div></div>
               <div class="tl-kv"><strong>Критерий:</strong><span>Первая аренда проходит без двойной брони: обе стороны видят условия, действия, контакт, отмену и handover</span></div>
             </div>
           </div>
@@ -909,9 +1001,9 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="tl-card">
               <div class="tl-card-title">Добавить</div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>После payment-provider decision принять ADR ровно одной ветки: provider-managed identification без документов в Sosedi либо local KYC с legal/biometric/consent/retention gate; вторую ветку пометить N/A</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Статус «Проверен» на профиле арендодателя</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Фото инструмента до передачи (арендодатель)</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Фото инструмента после возврата (арендатор)</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Статус «Проверен» на профиле сдающего пользователя</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Приватный акт с фото вещи до передачи создаёт lender, borrower проверяет и подтверждает его</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Приватный акт с фото после возврата создаёт borrower, lender проверяет и подтверждает его</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Только для выбранной local KYC ветки: private S3 + защищённый admin UI с MFA/step-up, reviewer capability, retention и audit каждого просмотра/решения; иначе пункт N/A</div></div>
               <div class="tl-kv"><strong>Критерий:</strong><span>Выбранная identity-ветка работает end-to-end, лишние документы не собираются, evidence остаётся приватным</span></div>
             </div>
@@ -934,8 +1026,8 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>До первого production payout: минимальный dispute window, атомарный payout freeze, audited resolution и integration race-test open-dispute против create-payout; полный support thread остаётся в 0.5</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Safe Deal: создать сделку/платёж и вернуть confirmation URL; app resume сверяет серверное состояние, а не доверяет redirect</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Webhook: authenticity, idempotency key, replay/out-of-order/concurrency и запрос актуального состояния у провайдера при сомнении</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Snapshot расчёта: rental subtotal, fee, payout, refund и итог до подтверждения; сервер — единственный источник суммы</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Все суммы — точные minor units/Decimal в RUB без float; DB constraints и финансовый инвариант покрыты тестами</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PAY_ON_HANDOVER breakdown до подтверждения: ставка×дни, залог отсутствует, fee 0, owner payout, способ оплаты, total и RUB; сервер хранит immutable snapshot, SAFE_DEAL обновит формулу только после ADR</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PostgreSQL Decimal(10,2) и DB min/max constraints для Item/Booking/provisional Payment покрыты e2e; REST/mobile переход с JSON number на minor units и финансовый ledger ждут payment ADR</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Отдельные переходы hold/release/refund/payout/failed с retry без двойного финансового эффекта</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Receipt/fiscalization: определить ответственного, события выдачи чека и отображение документа пользователю</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Повторяемая reconciliation job: локальные суммы/статусы против ЮKassa, отчёт расхождений и alert</div></div>
@@ -957,15 +1049,15 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-body">
             <div class="tl-card">
               <div class="tl-card-title">Добавить</div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Support thread: сообщения пользователя/администратора, приватные вложения, read state и object-level authorization</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>GENERAL Support thread: сообщения пользователя/администратора, приватные вложения, read state, object-level authorization, audited operator download и атомарное закрытие</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Dispute FSM отдельно от Booking: состояния/actors/transitions утверждаются ADR, с окном открытия, payout freeze и запретом дублей</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Неизменяемый snapshot брони, условий и evidence обеих сторон; файлы проходят quarantine и retention</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Минимальный защищённый admin UI для dispute queue: MFA/step-up, priority/SLA, assignee, фильтры и безопасный просмотр контекста</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>GENERAL operator queue уже имеет MFA/step-up, priority/SLA, assignee и безопасный контекст; отдельная dispute queue/financial actions BLOCKED до ADR</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Resolution code + комментарий + полный audit; решение и следующее действие видят обе стороны</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Для Safe Deal решение идемпотентно инициирует release/refund; для offline pilot только фиксирует результат без движения денег платформой</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>In-app inbox уведомляет об ответе, запросе evidence, решении и закрытии; push остаётся необязательным transport</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>UGC report: жалоба на объявление/пользователя/бронь с reason, optional evidence, rate limit и защитой от дублей</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="#a86fdf" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Operator UI report queue: dismiss/hide/block с причиной, уведомлением, capability, полным audit и правилами для активных сделок</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>In-app inbox уведомляет об ответе GENERAL support; dispute evidence/decision events добавятся только вместе с утверждённой FSM, push остаётся необязательным transport</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>UGC report: жалоба на объявление/пользователя/бронь с reason, optional evidence, rate limit и защитой от дублей</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Operator UI report queue: dismiss/hide/block с причиной, уведомлением, capability, полным audit и правилами для активных сделок</div></div>
               <div class="tl-kv"><strong>Критерий:</strong><span>Спор и UGC-жалоба имеют безопасный thread/evidence, SLA, audited resolution и согласованное действие без разрушения активной аренды</span></div>
             </div>
           </div>
@@ -975,18 +1067,18 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
         <div class="tl-phase phase-teal">
           <div class="tl-dot">6</div>
           <div class="tl-header">
-            <span class="tl-phase-title">MVP 0.6 — Доставка</span>
-            <span class="tl-meta">⏱ 1 неделя</span>
-            <span class="tag tag-teal">Delivery</span>
+            <span class="tl-phase-title">MVP 0.6 — Доставка исключена</span>
+            <span class="tl-meta">ADR-0004</span>
+            <span class="tag tag-teal">N/A для MVP 1.0</span>
           </div>
           <div class="tl-body">
             <div class="tl-card">
               <div class="tl-card-title">Добавить</div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>ADR включает или скрывает delivery entry point; основной handover не зависит от Яндекс Go</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Только участник CONFIRMED-брони по явному действию создаёт allowlisted/encoded deep link после предупреждения о передаче pickup/dropoff внешнему приложению</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Fallback копирует адрес или открывает системную карту; телефон, цена и детали брони не попадают в URL</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m7 12 3 3 7-7"/></svg><div>ADR-0004 скрывает delivery entry point; основной handover не зависит от Яндекс Go</div></div>
+              <div class="tl-item" style="color:var(--color-text-muted)"><div>N/A для MVP 1.0: deep link, consent, encoding и external address transfer</div></div>
+              <div class="tl-item" style="color:var(--color-text-muted)"><div>N/A для MVP 1.0: delivery fallback и отдельные tests/analytics</div></div>
               <div class="tl-item" style="color:var(--color-text-muted)"><div>Backend/API-интеграция и синхронизация статусов доставки — после MVP</div></div>
-              <div class="tl-kv"><strong>Критерий:</strong><span>Опциональная доставка работает без API и не раскрывает адрес постороннему или внешнему сервису без явного действия участника</span></div>
+              <div class="tl-kv"><strong>Критерий:</strong><span>Личный handover работает без delivery entry point и адрес не передаётся внешнему сервису</span></div>
             </div>
           </div>
         </div>
@@ -1002,13 +1094,13 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-body">
             <div class="tl-card">
               <div class="tl-card-title">Обязательно до реальных пользователей</div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Encrypted PostgreSQL/S3 backups в РФ, утверждённые RPO/RTO, alert на failure и документированный restore drill</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Encrypted PostgreSQL/S3 backups в РФ, RPO/RTO и alerts: dual-copy success атомарно пишет freshness textfile, hardened six-hour systemd timer, guarded PostgreSQL restore и checksum-bound S3 sample в отдельный target bucket готовы; установка timer и RF drill ещё BLOCKED</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Liveness/readiness для backend, PostgreSQL, Redis и BullMQ; graceful shutdown и проверка запуска после отказа зависимости</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Structured logs + requestId, GlitchTip PII scrubbing, release/environment, SLO и actionable alerts на API/DB/queue/SMS/payment</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Privacy-safe product funnel: AppMetrica только после consent/opt-out, без телефона, точного адреса, KYC и содержимого брони; payload проверен тестом</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Migration/deploy/rollback runbook: backup до migration, pinned image digest, предыдущий image и проверенный откат</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Security gate: startup env validation, Helmet, production Swagger/CORS policy, rate limits, secrets rotation и dependency/image scan</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Marketplace legal/safety: оферта и роль посредника, комиссия/cancellation/refund, prohibited/dangerous tools, age/eligibility и хранение версии принятия условий</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Marketplace legal/safety: category policy закрыта ADR-0003; остаются оферта и роль посредника, комиссия/cancellation/refund, age/eligibility и хранение версии принятия условий</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Повторно проверить заранее опубликованный Astro site: актуальные versioned privacy/оферта/rental rules, support/account-deletion URLs без auth/ПД и рабочие production links во всех stores</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Store compliance: privacy/data safety, permissions, UGC report/block, account deletion, support contacts и актуальные Google Play/TestFlight/RuStore builds</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Negative e2e на реальных устройствах: no GMS, denied permissions, offline/slow network, duplicate submit, provider outage и out-of-order webhook</div></div>
@@ -1119,7 +1211,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
         <div class="stack-card">
           <div class="stack-card-head">
             <div class="stack-icon" style="background:var(--color-gold-highlight)">🗃️</div>
-            <div><h3>Файловое хранилище</h3><p>Фото инструментов</p></div>
+            <div><h3>Файловое хранилище</h3><p>Фото вещей</p></div>
           </div>
           <div class="stack-items">
             <div class="stack-item-row"><span class="stack-item-label">Тип</span><span class="tag tag-yellow">S3-compatible</span></div>
@@ -1209,7 +1301,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">✅</div>
             <div class="issue-body">
               <h4>Prisma schema и миграции готовы</h4>
-              <p><code>schema.prisma</code>, первая миграция и seed категорий уже есть. Продолжать менять структуру данных только через Prisma Migrate.</p>
+              <p><code>schema.prisma</code>, миграции Item-контракта и launch whitelist seed готовы. Продолжать менять структуру данных только через Prisma Migrate.</p>
             </div>
             <span class="priority-badge p-low">Закрыто</span>
           </div>
@@ -1217,7 +1309,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">✅</div>
             <div class="issue-body">
               <h4>PostGIS GiST index добавлен</h4>
-              <p><code>tools.location</code> хранится как geography point, обновляется trigger-ом и индексируется через <code>tools_location_idx</code>. Радиус геопоиска ограничен 50 км.</p>
+              <p>Техническое поле <code>items.location</code> хранится как geography point, обновляется trigger-ом и индексируется через <code>items_location_idx</code>. REST-контракт доступен по <code>/items</code>; радиус геопоиска ограничен 50 км.</p>
             </div>
             <span class="priority-badge p-low">Закрыто</span>
           </div>
@@ -1233,7 +1325,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">✅</div>
             <div class="issue-body">
               <h4>Photo pipeline базово готов</h4>
-              <p>Presigned upload и thumbnail/preview реализованы. Quarantine, проверка фактического object/magic bytes, удаление EXIF и remoderation остаются считаемым P0.</p>
+              <p>Presigned upload использует backend-generated key и actor-bound intent; confirm проверяет фактический object, MIME, размер и magic bytes и идемпотентен. Входной original находится в private quarantine до успешного Sharp decode и WebP re-encode без EXIF/GPS; неподдерживаемые типы отклоняются до presign. Remoderation остаётся P0.</p>
             </div>
             <span class="priority-badge p-high">Частично</span>
           </div>
@@ -1249,7 +1341,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">✅</div>
             <div class="issue-body">
               <h4>Admin API базово реализован</h4>
-              <p>Есть защищённые endpoints пользователей и модерации. Отдельного admin UI/bootstrap нет, а полный audit всех admin-действий остаётся P0; поэтому это не «готовая admin panel».</p>
+              <p>Есть защищённые endpoints пользователей и модерации, one-time CLI bootstrap, append-only audit и минимальный React/Vite operator shell. Reports, KYC, disputes и payment exceptions добавляются только вместе со своими доменными этапами.</p>
             </div>
             <span class="priority-badge p-high">Частично</span>
           </div>
@@ -1274,7 +1366,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">🔥</div>
             <div class="issue-body">
               <h4>Store readiness нельзя откладывать до релиза</h4>
-              <p>Gate можно начать параллельно сейчас, но до интеграции Mobile Map завершить Apple Developer, Google Play и RuStore: вход, продление, package/bundle ID, signing keys и публикацию smoke-сборки. Проблемы аккаунта не устраняются изменением кода.</p>
+              <p>Gate можно начать параллельно сейчас, но до интеграции Mobile Map завершить Apple Developer, Google Play и RuStore: вход, продление, package/bundle ID, signing keys и публикацию smoke-сборки. Android release больше не использует debug key; iOS Team ID и app-store-connect ExportOptions поступают только из protected CI environment. Локальные release wrappers fail-closed требуют чистый Git HEAD, выводят фактические Flutter version/build из единого APP_RELEASE, связывают approved public config с точными dart-defines и lock-файлами, checksum manifest — AAB/IPA с полным commit SHA, а pre-upload verifier повторно сверяет реальные байты и отклоняет symlink/path traversal. Unsigned iOS release для <code>ru.sosedi.app</code> уже собирается из lock-файлов с отдельными Pods settings для Profile; реальные signing assets и console upload остаются внешним blocker. Проблемы аккаунта не устраняются изменением кода.</p>
             </div>
             <span class="priority-badge p-critical">Критично</span>
           </div>
@@ -1306,7 +1398,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">🔥</div>
             <div class="issue-body">
               <h4>P0 hardening входит в текущую фазу</h4>
-              <p>До продолжения happy path закрыть access matrix/approximate location, tool-upload quarantine, запрет KYC presign до ADR, auth/admin hardening, dual role/account deletion и синхронизацию enum/FSM/API.</p>
+              <p>Item-upload hardening закрыт: object verification, private quarantine, безопасный image re-encode, private download authorization, retention cleanup и concurrency/negative tests реализованы.</p>
             </div>
             <span class="priority-badge p-critical">Критично</span>
           </div>
@@ -1331,7 +1423,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">📦</div>
             <div class="issue-body">
               <h4>Воспроизводимый supply chain</h4>
-              <p>До production deployment перенести нужные образы в private OCI registry в РФ, фиксировать версии и digests, кешировать npm/pub/Prisma artifacts и отдельно выбрать закреплённую версию Redis с приемлемой лицензией.</p>
+              <p>До production deployment перенести нужные образы в private OCI registry в РФ, фиксировать версии и digests, кешировать npm/pub/Prisma artifacts, настроить независимый Git backup remote с проверкой всех branches/tags и отдельно выбрать закреплённую версию Redis с приемлемой лицензией.</p>
             </div>
             <span class="priority-badge p-high">Высокий</span>
           </div>
@@ -1347,7 +1439,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">🛡️</div>
             <div class="issue-body">
               <h4>Полный malware scanner — позже</h4>
-              <p>Quarantine, проверка object/magic bytes/MIME/размера и удаление EXIF обязательны в P0. ClamAV или другой scanner добавлять позже, если появится подтверждённый риск abuse.</p>
+              <p>Проверка object/magic bytes/MIME/размера и безопасный image re-encode без EXIF/GPS закрыты. ClamAV или другой scanner добавлять только вместе с типами, которые нельзя безопасно обезвредить re-encode.</p>
             </div>
             <span class="priority-badge p-low">Позже</span>
           </div>

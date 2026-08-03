@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('SharedPreferences must be overridden in main.dart');
-});
+import '../analytics/analytics.dart';
+import 'shared_preferences_provider.dart';
+
+export 'shared_preferences_provider.dart' show sharedPreferencesProvider;
 
 final onboardingStorageProvider = Provider<OnboardingStorage>((ref) {
   return OnboardingStorage(ref.watch(sharedPreferencesProvider));
@@ -21,6 +24,11 @@ class OnboardingController extends Notifier<bool> {
   Future<void> markCompleted() async {
     await ref.read(onboardingStorageProvider).markCompleted();
     state = true;
+    unawaited(
+      ref
+          .read(analyticsServiceProvider)
+          .track(AnalyticsEvent.onboardingCompleted),
+    );
   }
 }
 

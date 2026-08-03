@@ -122,6 +122,52 @@ class AuthService {
     return _tokenStorage.clear();
   }
 
+  Future<List<UserSession>> sessions() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/auth/sessions');
+      return _readData(
+        response,
+        (json) => (json! as List<dynamic>)
+            .map(
+              (item) => UserSession.fromJson(
+                item! as Map<String, dynamic>,
+              ),
+            )
+            .toList(growable: false),
+      );
+    } on DioException catch (error) {
+      throw _toApiException(error);
+    }
+  }
+
+  Future<void> revokeSession(String sessionId) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/auth/sessions/$sessionId',
+      );
+      _readData(
+        response,
+        (json) => LogoutResult.fromJson(json! as Map<String, dynamic>),
+      );
+    } on DioException catch (error) {
+      throw _toApiException(error);
+    }
+  }
+
+  Future<void> revokeAllSessions() async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/auth/sessions',
+      );
+      _readData(
+        response,
+        (json) => LogoutResult.fromJson(json! as Map<String, dynamic>),
+      );
+    } on DioException catch (error) {
+      throw _toApiException(error);
+    }
+  }
+
   Options _skipAuthOptions() {
     return Options(extra: const {'skipAuth': true, 'skipAuthRefresh': true});
   }

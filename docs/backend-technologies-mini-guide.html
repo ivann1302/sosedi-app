@@ -899,7 +899,7 @@ tr:last-child td {
               <tr><td>Prisma schema</td><td><code>backend/prisma/schema.prisma</code></td><td>Модели, enum, связи, индексы</td></tr>
               <tr><td>Единый ответ</td><td><code>backend/src/common/http/api-response.ts</code></td><td><code>{ success, data, error }</code></td></tr>
               <tr><td>Ошибки</td><td><code>backend/src/common/filters/http-exception.filter.ts</code></td><td>Одинаковый JSON для всех ошибок</td></tr>
-              <tr><td>Фичи</td><td><code>backend/src/auth</code>, <code>tools</code>, <code>upload</code>, <code>admin</code></td><td>Controller + Service + DTO</td></tr>
+              <tr><td>Фичи</td><td><code>backend/src/auth</code>, <code>items</code>, <code>upload</code>, <code>admin</code></td><td>Controller + Service + DTO</td></tr>
             </tbody>
           </table>
         </div>
@@ -1019,6 +1019,9 @@ pricePerDay: number;</code></pre>
               <ul class="list">
                 <li><code>auth:otp:code:{phone}</code> - bcrypt hash OTP.</li>
                 <li><code>auth:otp:send:{phone}</code> - лимит выдачи OTP.</li>
+                <li><code>auth:otp:send:device:{sha256}</code> - лимит установки.</li>
+                <li><code>auth:otp:send:ip:{sha256}</code> - лимит socket IP.</li>
+                <li><code>auth:otp:send:global</code> - общий 24-часовой cap SMS.</li>
                 <li><code>auth:otp:fail:{phone}</code> - неверные коды.</li>
                 <li><code>auth:otp:block:{phone}</code> - блокировка ввода.</li>
                 <li><code>auth:refresh:{jti}</code> - активный refresh token.</li>
@@ -1026,9 +1029,8 @@ pricePerDay: number;</code></pre>
             </div>
             <div class="card">
               <h3>Guards и роли</h3>
-              <pre><code>@ApiBearerAuth()
-@Roles(UserRole.ADMIN)
-@UseGuards(JwtAuthGuard, RolesGuard)
+              <pre><code>@ApiCookieAuth('__Host-sosedi_admin')
+@UseGuards(AdminSessionGuard)
 @Controller('admin')
 export class AdminController {}</code></pre>
             </div>
@@ -1086,7 +1088,7 @@ export class AdminController {}</code></pre>
         <div class="pipeline">
           <div class="pipe-item"><span>1</span><strong>Presigned URL</strong><small>Проверка типа, размера и владельца.</small></div>
           <div class="pipe-item"><span>2</span><strong>PUT to S3</strong><small>Mobile загружает файл напрямую.</small></div>
-          <div class="pipe-item"><span>3</span><strong>Confirm</strong><small>Создается запись ToolPhoto.</small></div>
+          <div class="pipe-item"><span>3</span><strong>Confirm</strong><small>Создается запись ItemPhoto.</small></div>
           <div class="pipe-item"><span>4</span><strong>BullMQ job</strong><small>Асинхронная обработка фото.</small></div>
           <div class="pipe-item"><span>5</span><strong>Sharp resize</strong><small>thumbnail 200x200 и preview 800x600.</small></div>
         </div>

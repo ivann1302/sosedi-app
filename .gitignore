@@ -2,7 +2,16 @@ rosa-roadmap.html
 AGENTS.md
 TECHNOLOGIES.md
 /PROJECT_GUIDE_LOCAL.md
+APP_MAP_LOCAL.md
+.codex/HANDOFF.md
 
 .env
 /package-lock.json
 .idea/
+/operator/node_modules/
+/operator/dist/
+/operator/*.tsbuildinfo
+/public-web/node_modules/
+/public-web/dist/
+/public-web/.astro/
+/public-web/*.tsbuildinfo

@@ -1,9 +1,11 @@
 import { Controller, Get, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { CategoryListingPolicy } from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/app.setup';
+import { PrismaService } from './../src/prisma/prisma.service';
 import { RedisService } from './../src/redis/redis.service';
 
 @Controller('__e2e')
@@ -58,6 +60,36 @@ describe('Application (e2e)', () => {
       });
   });
 
+  it('separates liveness from dependency and migration readiness', async () => {
+    await request(httpServer())
+      .get('/api/v1/health/live')
+      .expect('Cache-Control', 'no-store')
+      .expect(200)
+      .expect({
+        success: true,
+        data: { status: 'ok' },
+        error: null,
+      });
+
+    await request(httpServer())
+      .get('/api/v1/health/ready')
+      .expect('Cache-Control', 'no-store')
+      .expect(200)
+      .expect({
+        success: true,
+        data: {
+          status: 'ready',
+          checks: {
+            database: 'ok',
+            migrations: 'ok',
+            redis: 'ok',
+            clock: 'ok',
+          },
+        },
+        error: null,
+      });
+  });
+
   it('connects to the isolated PostgreSQL database through the API', async () => {
     const response = await request(httpServer())
       .get('/api/v1/categories')
@@ -69,6 +101,55 @@ describe('Application (e2e)', () => {
     expect(Array.isArray(body.data)).toBe(true);
   });
 
+  it('exposes a category slug only through the active ALLOWED whitelist', async () => {
+    if (!app) {
+      throw new Error('Test app was not initialized');
+    }
+    const prisma = app.get(PrismaService);
+    const slugs = ['public-category-e2e', 'restricted-category-e2e'];
+    await prisma.category.createMany({
+      data: [
+        {
+          name: 'Публичная категория e2e',
+          slug: slugs[0],
+          isActive: true,
+          isAllowedForListings: true,
+          listingPolicy: CategoryListingPolicy.ALLOWED,
+          safetyNotice: 'Проверьте комплектность перед передачей.',
+        },
+        {
+          name: 'Ограниченная категория e2e',
+          slug: slugs[1],
+          isActive: true,
+          isAllowedForListings: false,
+          listingPolicy: CategoryListingPolicy.RESTRICTED,
+        },
+      ],
+    });
+
+    try {
+      await request(httpServer())
+        .get(`/api/v1/categories/${slugs[0]}`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body).toMatchObject({
+            success: true,
+            data: {
+              slug: slugs[0],
+              listingPolicy: CategoryListingPolicy.ALLOWED,
+              safetyNotice: 'Проверьте комплектность перед передачей.',
+            },
+            error: null,
+          });
+        });
+      await request(httpServer())
+        .get(`/api/v1/categories/${slugs[1]}`)
+        .expect(404);
+    } finally {
+      await prisma.category.deleteMany({ where: { slug: { in: slugs } } });
+    }
+  });
+
   it('connects to the isolated Redis instance', async () => {
     if (!app) {
       throw new Error('Test app was not initialized');
@@ -76,6 +157,22 @@ describe('Application (e2e)', () => {
 
     const redis = app.get(RedisService).getClient();
     await expect(redis.ping()).resolves.toBe('PONG');
+  });
+
+  it('protects operational metrics with a dedicated bearer token', async () => {
+    await request(httpServer()).get('/api/v1/internal/metrics').expect(401);
+
+    const response = await request(httpServer())
+      .get('/api/v1/internal/metrics')
+      .set('Authorization', `Bearer ${process.env.METRICS_TOKEN}`)
+      .expect('Content-Type', /text\/plain/)
+      .expect(200);
+
+    expect(response.text).toContain('sosedi_http_requests_total');
+    expect(response.text).toContain('sosedi_database_connections');
+    expect(response.text).toContain('sosedi_redis_memory_bytes');
+    expect(response.text).toContain('sosedi_outbox_pending');
+    expect(response.text).not.toContain(process.env.METRICS_TOKEN);
   });
 
   it('returns the standard envelope for DTO validation errors', async () => {

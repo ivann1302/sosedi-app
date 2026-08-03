@@ -4,30 +4,30 @@ import { Queue, type ConnectionOptions } from 'bullmq';
 import type { PhotoProcessingJob } from './upload.types';
 
 const PHOTO_PROCESSING_QUEUE_NAME = 'photo-processing';
-const TOOL_PHOTO_UPLOADED_JOB = 'tool-photo-uploaded';
+const ITEM_PHOTO_UPLOADED_JOB = 'item-photo-uploaded';
 
-export { PHOTO_PROCESSING_QUEUE_NAME, TOOL_PHOTO_UPLOADED_JOB };
+export { PHOTO_PROCESSING_QUEUE_NAME, ITEM_PHOTO_UPLOADED_JOB };
 
 @Injectable()
 export class PhotoProcessingQueue implements OnModuleDestroy {
   private readonly queue: Queue<
     PhotoProcessingJob,
     void,
-    typeof TOOL_PHOTO_UPLOADED_JOB
+    typeof ITEM_PHOTO_UPLOADED_JOB
   >;
 
   constructor(config: ConfigService) {
     this.queue = new Queue<
       PhotoProcessingJob,
       void,
-      typeof TOOL_PHOTO_UPLOADED_JOB
+      typeof ITEM_PHOTO_UPLOADED_JOB
     >(PHOTO_PROCESSING_QUEUE_NAME, {
       connection: this.getConnectionOptions(config),
     });
   }
 
-  async addToolPhotoUploaded(job: PhotoProcessingJob): Promise<void> {
-    await this.queue.add(TOOL_PHOTO_UPLOADED_JOB, job, {
+  async addItemPhotoUploaded(job: PhotoProcessingJob): Promise<void> {
+    await this.queue.add(ITEM_PHOTO_UPLOADED_JOB, job, {
       attempts: 3,
       removeOnComplete: true,
       removeOnFail: 100,

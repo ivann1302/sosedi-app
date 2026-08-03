@@ -66,7 +66,7 @@ lib/
     ├── auth/
     ├── catalog/
     ├── map/
-    ├── tool/
+    ├── item/
     ├── booking/
     └── <feature>/
 ```
@@ -278,7 +278,7 @@ Widget → Riverpod Provider/Notifier → Service/API
   необходимости.
 - Изображения загружаются в размере, близком к отображаемому, кешируются и имеют
   placeholder/error state.
-- Оптимизация принимается после измерения в profile mode и Flutter DevTools, а не
+- Оптимизация принимается после измерения в profile mode и Flutter DevItems, а не
   по субъективной плавности debug-сборки.
 
 ## 7. Карты, геолокация и permissions
@@ -457,7 +457,7 @@ CI SHOULD выполнять:
 7. dependency/secret/container scanning перед production.
 
 Build artifacts и исходники сторонних пакетов не анализируются. В частности,
-`mobile/build/`, `.dart_tool/` и iOS `SourcePackages` MUST быть исключены/очищены
+`mobile/build/`, `.dart_item/` и iOS `SourcePackages` MUST быть исключены/очищены
 перед `flutter analyze`. Analyzer запускается на собственном коде, а не на
 сгенерированных зависимостях.
 

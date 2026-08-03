@@ -11,7 +11,7 @@ void main() {
           'id': 'user-1',
           'phone': '+79991234567',
           'name': null,
-          'role': 'RENTER',
+          'role': 'USER',
           'kycStatus': null,
           'isBlocked': false,
         },

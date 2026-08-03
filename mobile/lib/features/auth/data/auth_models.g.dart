@@ -48,3 +48,26 @@ Map<String, dynamic> _$OtpRequestResultToJson(_OtpRequestResult instance) =>
       'phone': instance.phone,
       'expiresInSeconds': instance.expiresInSeconds,
     };
+
+_UserSession _$UserSessionFromJson(Map<String, dynamic> json) => _UserSession(
+  sessionId: json['sessionId'] as String,
+  installationId: json['installationId'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  lastSeenAt: DateTime.parse(json['lastSeenAt'] as String),
+  isCurrent: json['isCurrent'] as bool,
+);
+
+Map<String, dynamic> _$UserSessionToJson(_UserSession instance) =>
+    <String, dynamic>{
+      'sessionId': instance.sessionId,
+      'installationId': instance.installationId,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'lastSeenAt': instance.lastSeenAt.toIso8601String(),
+      'isCurrent': instance.isCurrent,
+    };
+
+_LogoutResult _$LogoutResultFromJson(Map<String, dynamic> json) =>
+    _LogoutResult(loggedOut: json['loggedOut'] as bool);
+
+Map<String, dynamic> _$LogoutResultToJson(_LogoutResult instance) =>
+    <String, dynamic>{'loggedOut': instance.loggedOut};

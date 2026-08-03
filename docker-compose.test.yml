@@ -2,7 +2,7 @@ name: sosedi-test
 
 services:
   postgres-test:
-    image: postgis/postgis:15-3.5
+    image: postgis/postgis:15-3.5@sha256:54f7933d972e107fda9b696745c21e3fcc643c4263b43f7dc43ba4bdb312fc2c
     # The official PostGIS image does not publish an arm64 manifest.
     # Docker Desktop runs it through Apple Silicon amd64 emulation.
     platform: linux/amd64
@@ -23,7 +23,7 @@ services:
       retries: 30
 
   redis-test:
-    image: redis:7
+    image: redis:7.4.9-bookworm@sha256:a8f08480e1f88f2647fed492d1178c06abb0d0c1fbf02c682a61e2f483fb3954
     command:
       - redis-server
       - --save

@@ -41,7 +41,9 @@ export class JwtAuthGuard implements CanActivate {
     if (
       payload.tokenType !== 'access' ||
       typeof payload.sub !== 'string' ||
-      payload.sub.length === 0
+      payload.sub.length === 0 ||
+      !Number.isInteger(payload.sessionVersion) ||
+      payload.sessionVersion < 0
     ) {
       throw new UnauthorizedException('Недействительный access токен');
     }
@@ -53,12 +55,17 @@ export class JwtAuthGuard implements CanActivate {
         phone: true,
         role: true,
         isBlocked: true,
+        sessionVersion: true,
         deletedAt: true,
       },
     });
 
     if (!user || user.deletedAt) {
       throw new UnauthorizedException('Пользователь не найден');
+    }
+
+    if (payload.sessionVersion !== user.sessionVersion) {
+      throw new UnauthorizedException('Сессия отозвана');
     }
 
     if (user.isBlocked) {

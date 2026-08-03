@@ -1,0 +1,88 @@
+services:
+  backend:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to registry/repository@sha256:digest}
+    env_file:
+      - ${BACKEND_ENV_FILE:?Set BACKEND_ENV_FILE to a protected production env file}
+    environment:
+      TZ: UTC
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    expose:
+      - "3000"
+    networks:
+      - edge
+      - data
+
+  postgres:
+    image: ${OCI_REGISTRY_PREFIX:?Set OCI_REGISTRY_PREFIX}/postgis:15-3.5@sha256:54f7933d972e107fda9b696745c21e3fcc643c4263b43f7dc43ba4bdb312fc2c
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set a production database name}
+      POSTGRES_USER: ${POSTGRES_USER:?Set a least-privilege runtime database user}
+      POSTGRES_PASSWORD: !reset null
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      TZ: UTC
+    secrets:
+      - postgres_password
+    command: ["postgres", "-c", "timezone=UTC", "-c", "log_timezone=UTC"]
+    ports: !reset []
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-sosedi} -d $${POSTGRES_DB:-sosedi}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: ${OCI_REGISTRY_PREFIX:?Set OCI_REGISTRY_PREFIX}/redis:7.4.9-bookworm@sha256:a8f08480e1f88f2647fed492d1178c06abb0d0c1fbf02c682a61e2f483fb3954
+    environment:
+      TZ: UTC
+    secrets:
+      - redis_password
+    read_only: true
+    tmpfs:
+      - /run/redis-auth:rw,noexec,nosuid,size=1m,mode=0700
+    command:
+      - /bin/sh
+      - -ceu
+      - >-
+        printf 'user default off\nuser sosedi_runtime on >%s ~* +@all
+        -ACL -CONFIG -DEBUG -FLUSHALL -FLUSHDB -MIGRATE -MODULE
+        -REPLICAOF -RESTORE -SHUTDOWN -SLAVEOF\n'
+        "$$(cat /run/secrets/redis_password)"
+        > /run/redis-auth/users.acl;
+        exec redis-server --aclfile /run/redis-auth/users.acl
+    ports: !reset []
+    networks:
+      - data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "REDISCLI_AUTH=$$(cat /run/secrets/redis_password) redis-cli --user sosedi_runtime ping",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  edge:
+  data:
+    internal: true
+
+secrets:
+  postgres_password:
+    file: ${POSTGRES_PASSWORD_FILE:?Set a protected PostgreSQL password file}
+  redis_password:
+    file: ${REDIS_PASSWORD_FILE:?Set a protected Redis password file}

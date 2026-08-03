@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Generated dependencies and build output are not project source"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.dart_tool/''',
+  '''(^|/)build/''',
+  '''(^|/)coverage/''',
+  '''(^|/)ios/Pods/''',
+]

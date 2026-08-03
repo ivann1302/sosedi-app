@@ -1,0 +1,45 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  noIndex?: boolean;
+}
+
+const { title, description, noIndex = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#FEA319" />
+    <link rel="icon" href="/logo/sosedi-mark-orange.svg" type="image/svg+xml" />
+    {noIndex && <meta name="robots" content="noindex,nofollow" />}
+    <title>{title} — Соседи</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Перейти к содержанию</a>
+    <header class="site-header">
+      <a class="brand" href="/">
+        <img src="/logo/sosedi-mark-orange.svg" alt="" width="30" height="30" />
+        <span>Соседи</span>
+      </a>
+      <nav aria-label="Основная навигация">
+        <a href="/documents/">Документы</a>
+        <a href="/support/">Поддержка</a>
+        <a href="/account-deletion/">Закрытие аккаунта</a>
+      </nav>
+    </header>
+    <main id="content">
+      <slot />
+    </main>
+    <footer>
+      <p>Черновой public web MVP. Публичное бронирование до legal gate выключено.</p>
+      <a href="/documents/">Версии документов</a>
+    </footer>
+  </body>
+</html>

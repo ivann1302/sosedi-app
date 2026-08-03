@@ -1,11 +1,21 @@
 import {
-  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { KycStatus, Prisma, ToolStatus, UserRole } from '@prisma/client';
+import {
+  AdminCapability,
+  BookingStatus,
+  ItemCondition,
+  ItemStatus,
+  KycStatus,
+  Prisma,
+  UserRole,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { RejectToolDto } from './dto/reject-tool.dto';
+import type { AdminAuditContext } from './admin-audit-context';
+import { BlockUserDto } from './dto/block-user.dto';
+import { RejectItemDto } from './dto/reject-item.dto';
 
 const ADMIN_LIST_LIMIT = 100;
 
@@ -18,12 +28,13 @@ const adminUserSelect = {
   role: true,
   kycStatus: true,
   isBlocked: true,
+  sessionVersion: true,
   deletedAt: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.UserSelect;
 
-const adminToolPhotoSelect = {
+const adminItemPhotoSelect = {
   id: true,
   originalUrl: true,
   thumbnailUrl: true,
@@ -33,18 +44,19 @@ const adminToolPhotoSelect = {
   createdAt: true,
 } as const;
 
-const adminToolSelect = {
+const adminItemSelect = {
   id: true,
   ownerId: true,
   title: true,
   description: true,
+  condition: true,
+  completeness: true,
+  handoverTerms: true,
   pricePerDay: true,
   depositAmount: true,
   status: true,
   rejectReason: true,
-  address: true,
-  latitude: true,
-  longitude: true,
+  publicArea: true,
   createdAt: true,
   updatedAt: true,
   category: {
@@ -58,23 +70,20 @@ const adminToolSelect = {
   owner: {
     select: {
       id: true,
-      phone: true,
       name: true,
-      city: true,
-      avatarUrl: true,
       isBlocked: true,
       deletedAt: true,
     },
   },
   photos: {
     orderBy: [{ isCover: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
-    select: adminToolPhotoSelect,
+    select: adminItemPhotoSelect,
   },
-} as const satisfies Prisma.ToolSelect;
+} as const satisfies Prisma.ItemSelect;
 
 type AdminUserModel = Prisma.UserGetPayload<{ select: typeof adminUserSelect }>;
-type AdminToolModel = Prisma.ToolGetPayload<{ select: typeof adminToolSelect }>;
-type ModerationAction = 'TOOL_APPROVED' | 'TOOL_REJECTED';
+type AdminItemModel = Prisma.ItemGetPayload<{ select: typeof adminItemSelect }>;
+type ModerationAction = 'ITEM_APPROVED' | 'ITEM_REJECTED';
 
 export type AdminUserResponse = {
   id: string;
@@ -90,9 +99,9 @@ export type AdminUserResponse = {
   updatedAt: Date;
 };
 
-export type AdminToolPhotoResponse = {
+export type AdminItemPhotoResponse = {
   id: string;
-  originalUrl: string;
+  originalUrl: string | null;
   thumbnailUrl: string | null;
   previewUrl: string | null;
   sortOrder: number;
@@ -100,17 +109,18 @@ export type AdminToolPhotoResponse = {
   createdAt: Date;
 };
 
-export type AdminToolResponse = {
+export type AdminItemResponse = {
   id: string;
   title: string;
   description: string;
+  condition: ItemCondition;
+  completeness: string;
+  handoverTerms: string;
   pricePerDay: number;
   depositAmount: number | null;
-  status: ToolStatus;
+  status: ItemStatus;
   rejectReason: string | null;
-  address: string;
-  latitude: number;
-  longitude: number;
+  publicArea: string;
   category: {
     id: string;
     name: string;
@@ -119,14 +129,11 @@ export type AdminToolResponse = {
   };
   owner: {
     id: string;
-    phone: string;
     name: string | null;
-    city: string | null;
-    avatarUrl: string | null;
     isBlocked: boolean;
     deletedAt: Date | null;
   };
-  photos: AdminToolPhotoResponse[];
+  photos: AdminItemPhotoResponse[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -158,113 +165,199 @@ export class AdminService {
     return this.toUserResponse(user);
   }
 
-  async listPendingTools(): Promise<AdminToolResponse[]> {
-    const tools = await this.prisma.tool.findMany({
-      where: { status: ToolStatus.PENDING },
+  async listPendingItems(): Promise<AdminItemResponse[]> {
+    const items = await this.prisma.item.findMany({
+      where: { status: ItemStatus.PENDING },
       orderBy: { createdAt: 'asc' },
       take: ADMIN_LIST_LIMIT,
-      select: adminToolSelect,
+      select: adminItemSelect,
     });
 
-    return tools.map((tool) => this.toToolResponse(tool));
+    return items.map((item) => this.toItemResponse(item));
   }
 
-  async approveTool(
+  async blockUser(
     adminId: string,
-    toolId: string,
-    ipAddress?: string,
-  ): Promise<AdminToolResponse> {
-    const tool = await this.prisma.$transaction(async (tx) => {
-      const currentTool = await this.findModeratableTool(tx, toolId);
-      const updatedTool = await tx.tool.update({
-        where: { id: toolId },
+    userId: string,
+    dto: BlockUserDto,
+    context: AdminAuditContext,
+  ): Promise<AdminUserResponse> {
+    if (adminId === userId) {
+      throw new ConflictException('Администратор не может заблокировать себя');
+    }
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const unfinishedBooking = await tx.booking.findFirst({
+        where: {
+          OR: [{ borrowerId: userId }, { lenderId: userId }],
+          status: {
+            in: [
+              BookingStatus.PENDING,
+              BookingStatus.CONFIRMED,
+              BookingStatus.ACTIVE,
+              BookingStatus.RETURNED,
+            ],
+          },
+        },
+        select: { id: true },
+      });
+      if (unfinishedBooking) {
+        throw new ConflictException({
+          code: 'USER_HAS_UNFINISHED_BOOKINGS',
+          message:
+            'Сначала завершите или передайте в support незавершённые бронирования',
+        });
+      }
+
+      const result = await tx.user.updateMany({
+        where: {
+          id: userId,
+          isBlocked: false,
+          deletedAt: null,
+        },
         data: {
-          status: ToolStatus.APPROVED,
+          isBlocked: true,
+          sessionVersion: { increment: 1 },
+        },
+      });
+
+      const updatedUser = await tx.user.findUnique({
+        where: { id: userId },
+        select: adminUserSelect,
+      });
+      if (!updatedUser || updatedUser.deletedAt) {
+        throw new NotFoundException('Пользователь не найден');
+      }
+      if (result.count !== 1) {
+        throw new ConflictException('Пользователь уже заблокирован');
+      }
+
+      await tx.adminAuditLog.create({
+        data: {
+          adminId,
+          action: 'USER_BLOCKED',
+          entityType: 'User',
+          entityId: userId,
+          capability: AdminCapability.MODERATION,
+          reason: dto.reason,
+          requestId: context.requestId,
+          ipAddress: context.ipAddress,
+          deviceId: context.deviceId,
+          before: {
+            isBlocked: false,
+            sessionVersion: updatedUser.sessionVersion - 1,
+          },
+          after: {
+            isBlocked: true,
+            sessionVersion: updatedUser.sessionVersion,
+          },
+        },
+      });
+
+      return updatedUser;
+    });
+
+    return this.toUserResponse(user);
+  }
+
+  async approveItem(
+    adminId: string,
+    itemId: string,
+    context: AdminAuditContext,
+  ): Promise<AdminItemResponse> {
+    const item = await this.prisma.$transaction(async (tx) => {
+      const currentItem = await this.findModeratableItem(tx, itemId);
+      const updatedItem = await tx.item.update({
+        where: { id: itemId },
+        data: {
+          status: ItemStatus.APPROVED,
           rejectReason: null,
         },
-        select: adminToolSelect,
+        select: adminItemSelect,
       });
 
-      await this.logToolModeration(tx, {
+      await this.logItemModeration(tx, {
         adminId,
-        action: 'TOOL_APPROVED',
-        toolId,
-        previousStatus: currentTool.status,
-        ipAddress,
+        action: 'ITEM_APPROVED',
+        itemId,
+        previousStatus: currentItem.status,
+        context,
       });
+      await this.enqueueItemModeration(tx, updatedItem, 'ITEM_APPROVED');
 
-      return updatedTool;
+      return updatedItem;
     });
 
-    return this.toToolResponse(tool);
+    return this.toItemResponse(item);
   }
 
-  async rejectTool(
+  async rejectItem(
     adminId: string,
-    toolId: string,
-    dto: RejectToolDto,
-    ipAddress?: string,
-  ): Promise<AdminToolResponse> {
-    const tool = await this.prisma.$transaction(async (tx) => {
-      const currentTool = await this.findModeratableTool(tx, toolId);
-      const updatedTool = await tx.tool.update({
-        where: { id: toolId },
+    itemId: string,
+    dto: RejectItemDto,
+    context: AdminAuditContext,
+  ): Promise<AdminItemResponse> {
+    const item = await this.prisma.$transaction(async (tx) => {
+      const currentItem = await this.findModeratableItem(tx, itemId);
+      const updatedItem = await tx.item.update({
+        where: { id: itemId },
         data: {
-          status: ToolStatus.REJECTED,
+          status: ItemStatus.REJECTED,
           rejectReason: dto.reason,
         },
-        select: adminToolSelect,
+        select: adminItemSelect,
       });
 
-      await this.logToolModeration(tx, {
+      await this.logItemModeration(tx, {
         adminId,
-        action: 'TOOL_REJECTED',
-        toolId,
-        previousStatus: currentTool.status,
+        action: 'ITEM_REJECTED',
+        itemId,
+        previousStatus: currentItem.status,
         rejectReason: dto.reason,
-        ipAddress,
+        context,
       });
+      await this.enqueueItemModeration(tx, updatedItem, 'ITEM_REJECTED');
 
-      return updatedTool;
+      return updatedItem;
     });
 
-    return this.toToolResponse(tool);
+    return this.toItemResponse(item);
   }
 
-  private async findModeratableTool(
+  private async findModeratableItem(
     tx: Prisma.TransactionClient,
-    toolId: string,
-  ): Promise<{ id: string; status: ToolStatus }> {
-    const tool = await tx.tool.findUnique({
-      where: { id: toolId },
+    itemId: string,
+  ): Promise<{ id: string; status: ItemStatus }> {
+    const item = await tx.item.findUnique({
+      where: { id: itemId },
       select: {
         id: true,
         status: true,
       },
     });
 
-    if (!tool) {
+    if (!item) {
       throw new NotFoundException('Объявление не найдено');
     }
 
-    if (tool.status === ToolStatus.HIDDEN) {
-      throw new BadRequestException(
-        'Скрытое владельцем объявление нельзя модерировать',
+    if (item.status !== ItemStatus.PENDING) {
+      throw new ConflictException(
+        'Модерировать можно только объявление в статусе PENDING',
       );
     }
 
-    return tool;
+    return item;
   }
 
-  private async logToolModeration(
+  private async logItemModeration(
     tx: Prisma.TransactionClient,
     params: {
       adminId: string;
       action: ModerationAction;
-      toolId: string;
-      previousStatus: ToolStatus;
+      itemId: string;
+      previousStatus: ItemStatus;
       rejectReason?: string;
-      ipAddress?: string;
+      context: AdminAuditContext;
     },
   ): Promise<void> {
     // Аудит нужен для разбора спорных решений модерации и требований РФ.
@@ -272,13 +365,43 @@ export class AdminService {
       data: {
         adminId: params.adminId,
         action: params.action,
-        entityType: 'Tool',
-        entityId: params.toolId,
-        metadata: {
-          previousStatus: params.previousStatus,
-          ...(params.rejectReason ? { rejectReason: params.rejectReason } : {}),
+        entityType: 'Item',
+        entityId: params.itemId,
+        capability: AdminCapability.MODERATION,
+        reason: params.rejectReason ?? null,
+        requestId: params.context.requestId,
+        ipAddress: params.context.ipAddress,
+        deviceId: params.context.deviceId,
+        before: {
+          status: params.previousStatus,
         },
-        ipAddress: params.ipAddress ?? null,
+        after: {
+          status:
+            params.action === 'ITEM_APPROVED'
+              ? ItemStatus.APPROVED
+              : ItemStatus.REJECTED,
+          rejectReason: params.rejectReason ?? null,
+        },
+      },
+    });
+  }
+
+  private async enqueueItemModeration(
+    tx: Prisma.TransactionClient,
+    item: AdminItemModel,
+    eventType: ModerationAction,
+  ): Promise<void> {
+    await tx.notificationOutboxEvent.create({
+      data: {
+        recipientId: item.ownerId,
+        itemId: item.id,
+        eventType,
+        deduplicationKey: [
+          'item',
+          item.id,
+          eventType,
+          item.updatedAt.toISOString(),
+        ].join(':'),
       },
     });
   }
@@ -299,23 +422,29 @@ export class AdminService {
     };
   }
 
-  private toToolResponse(tool: AdminToolModel): AdminToolResponse {
+  private toItemResponse(item: AdminItemModel): AdminItemResponse {
     return {
-      id: tool.id,
-      title: tool.title,
-      description: tool.description,
-      pricePerDay: this.decimalToNumber(tool.pricePerDay),
-      depositAmount: this.nullableDecimalToNumber(tool.depositAmount),
-      status: tool.status,
-      rejectReason: tool.rejectReason,
-      address: tool.address,
-      latitude: tool.latitude,
-      longitude: tool.longitude,
-      category: tool.category,
-      owner: tool.owner,
-      photos: tool.photos,
-      createdAt: tool.createdAt,
-      updatedAt: tool.updatedAt,
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      condition: item.condition,
+      completeness: item.completeness,
+      handoverTerms: item.handoverTerms,
+      pricePerDay: this.decimalToNumber(item.pricePerDay),
+      depositAmount: this.nullableDecimalToNumber(item.depositAmount),
+      status: item.status,
+      rejectReason: item.rejectReason,
+      publicArea: item.publicArea,
+      category: item.category,
+      owner: {
+        id: item.owner.id,
+        name: item.owner.name,
+        isBlocked: item.owner.isBlocked,
+        deletedAt: item.owner.deletedAt,
+      },
+      photos: item.photos,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
     };
   }
 

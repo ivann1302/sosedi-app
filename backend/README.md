@@ -1,98 +1,79 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Sosedi Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS monolith for the Sosedi P2P item-rental MVP.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+The current product contract uses `Item`/`ItemPhoto`, `/api/v1/items` and one
+product role, `USER`. A user may both borrow other users' items and publish
+their own; mutation access is checked through object ownership.
 
-## Description
+## Current scope
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- SMS OTP authentication with installation-bound rotating JWT sessions in
+  Redis, self session listing, revoke-one/logout-all and refresh-family replay
+  revocation.
+- Public item list/card with coarse location and no pickup address.
+- Owner-only item create/update/hide operations.
+- Server-side `ALLOWED`/`RESTRICTED`/`PROHIBITED` category policy with mandatory
+  safety notices and deny-by-default listing creation.
+- Presigned item-photo upload with backend-generated keys, single-use intents
+  and BullMQ image processing.
+- Capability-scoped moderation/support admin sessions with TOTP MFA and
+  single-use recovery codes. The operator contract uses an opaque Redis session
+  in an `HttpOnly + Secure + SameSite=Strict` cookie and requires `X-CSRF-Token`
+  for state changes; no admin JWT is returned to browser code.
 
-## Project setup
+Booking, production payments, KYC collection and public legal pages remain
+gated by `MVP_CHECKLIST.md` and accepted ADRs. Do not expose those flows as
+production-ready.
 
-```bash
-$ npm install
-```
+## Local development
 
-## Compile and run the project
+Run commands from the repository root:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+make infra-up
+make backend-prisma-generate
+make backend-dev
 ```
 
-## Run tests
+The API prefix is `/api/v1`. In non-production environments Swagger is
+available at `/api/docs`, with OpenAPI JSON at `/api/docs-json`.
+
+Copy required local values from `.env.example` into `backend/.env`. Production
+secrets must not be committed.
+
+## Checks
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+make backend-lint-check
+make backend-test
+make backend-build
+make backend-test-e2e
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+`make backend-test-e2e` starts isolated PostgreSQL/PostGIS and Redis containers,
+applies all Prisma migrations and runs the HTTP/DB contract tests. Stop them
+afterward with:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+make test-infra-down
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Project layout
 
-## Resources
+```text
+src/auth/        OTP, JWT and session lifecycle
+src/users/       User profile API
+src/categories/  Category launch whitelist
+src/items/       Item REST API and public/private DTO
+src/upload/      Presigned upload and photo processing
+src/admin/       Capability-scoped operator endpoints
+src/common/      API envelopes, workflow contracts and safe logging
+prisma/          Schema, migrations and seed
+test/            E2E contracts
+```
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+The schema reference is [database-schema.md](../docs/database-schema.md), access
+rules are in [endpoint-access-matrix.md](../docs/endpoint-access-matrix.md), and
+workflow states are defined in
+[workflow-state-machines.md](../docs/workflow-state-machines.md).

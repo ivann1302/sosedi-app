@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/core/network/dio_provider.dart';
 import 'package:mobile/core/storage/onboarding_storage.dart';
 import 'package:mobile/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +16,7 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(preferences),
+          apiCompatibilityCheckProvider.overrideWith((ref) async {}),
         ],
         child: const SosediApp(),
       ),

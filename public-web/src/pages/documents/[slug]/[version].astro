@@ -1,0 +1,68 @@
+---
+import {
+  documents,
+  type DocumentVersion,
+  type PublicDocument,
+} from '../../../data/documents';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+export function getStaticPaths() {
+  return documents.flatMap((document) =>
+    document.versions.map((version) => ({
+      params: { slug: document.slug, version: version.id },
+      props: { document, version },
+    })),
+  );
+}
+
+interface Props {
+  document: PublicDocument;
+  version: DocumentVersion;
+}
+
+const { document, version } = Astro.props;
+---
+
+<BaseLayout
+  title={document.title}
+  description={version.summary}
+  noIndex={version.status !== 'EFFECTIVE'}
+>
+  <article class="legal-document">
+    <a class="back-link" href="/documents/">← Все версии</a>
+    <header>
+      <span class:list={['status', version.status.toLowerCase()]}>
+        {version.status}
+      </span>
+      <h1>{document.title}</h1>
+      <dl class="metadata">
+        <div>
+          <dt>Версия</dt>
+          <dd>{version.label}</dd>
+        </div>
+        <div>
+          <dt>Опубликована</dt>
+          <dd>{version.publishedOn}</dd>
+        </div>
+        <div>
+          <dt>Вступает в силу</dt>
+          <dd>{version.effectiveOn ?? 'Не утверждено'}</dd>
+        </div>
+      </dl>
+      <p class="lead">{version.summary}</p>
+    </header>
+    {
+      version.sections.map((section) => (
+        <section>
+          <h2>{section.title}</h2>
+          {section.paragraphs?.map((paragraph) => <p>{paragraph}</p>)}
+          {section.items && (
+            <ul>
+              {section.items.map((item) => <li>{item}</li>)}
+            </ul>
+          )}
+        </section>
+      ))
+    }
+  </article>
+</BaseLayout>

@@ -1,5 +1,12 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { KycStatus, Prisma, ToolStatus, UserRole } from '@prisma/client';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  AdminCapability,
+  ItemCondition,
+  ItemStatus,
+  KycStatus,
+  Prisma,
+  UserRole,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminService } from './admin.service';
 
@@ -12,6 +19,7 @@ type TestUser = {
   role: UserRole;
   kycStatus: KycStatus | null;
   isBlocked: boolean;
+  sessionVersion: number;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -34,15 +42,19 @@ type TestOwner = {
   deletedAt: Date | null;
 };
 
-type TestTool = {
+type TestItem = {
   id: string;
   ownerId: string;
   title: string;
   description: string;
+  condition: ItemCondition;
+  completeness: string;
+  handoverTerms: string;
   pricePerDay: Prisma.Decimal;
   depositAmount: Prisma.Decimal | null;
-  status: ToolStatus;
+  status: ItemStatus;
   rejectReason: string | null;
+  publicArea: string;
   address: string;
   latitude: number;
   longitude: number;
@@ -58,11 +70,22 @@ type TestAuditLog = {
   action: string;
   entityType: string;
   entityId: string;
-  metadata: Record<string, unknown>;
-  ipAddress: string | null;
+  capability: AdminCapability;
+  reason: string | null;
+  requestId: string;
+  ipAddress: string;
+  deviceId: string | null;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
 };
 
-function createService() {
+const auditContext = {
+  requestId: 'request-123',
+  ipAddress: '127.0.0.1',
+  deviceId: 'device-hash',
+};
+
+function createService({ activeBooking = false } = {}) {
   const users = new Map<string, TestUser>([
     [
       'admin-1',
@@ -75,6 +98,7 @@ function createService() {
         role: UserRole.ADMIN,
         kycStatus: null,
         isBlocked: false,
+        sessionVersion: 0,
         deletedAt: null,
         createdAt: new Date('2026-06-01T10:00:00.000Z'),
         updatedAt: new Date('2026-06-01T10:00:00.000Z'),
@@ -88,9 +112,10 @@ function createService() {
         name: 'Иван',
         city: 'Москва',
         avatarUrl: null,
-        role: UserRole.OWNER,
+        role: UserRole.USER,
         kycStatus: KycStatus.PENDING,
         isBlocked: false,
+        sessionVersion: 0,
         deletedAt: null,
         createdAt: new Date('2026-06-02T10:00:00.000Z'),
         updatedAt: new Date('2026-06-02T10:00:00.000Z'),
@@ -100,8 +125,8 @@ function createService() {
 
   const category: TestCategory = {
     id: 'category-1',
-    name: 'Перфораторы',
-    slug: 'perforatory',
+    name: 'Проекторы и экраны',
+    slug: 'proektory-i-ekrany',
     iconName: 'hammer',
   };
   const owner: TestOwner = {
@@ -114,17 +139,22 @@ function createService() {
     deletedAt: null,
   };
 
-  function makeTool(overrides: Partial<TestTool> = {}): TestTool {
+  function makeItem(overrides: Partial<TestItem> = {}): TestItem {
     return {
-      id: overrides.id ?? 'tool-1',
+      id: overrides.id ?? 'item-1',
       ownerId: overrides.ownerId ?? 'owner-1',
-      title: overrides.title ?? 'Перфоратор Bosch',
+      title: overrides.title ?? 'Проектор Epson',
       description:
-        overrides.description ?? 'Надежный перфоратор для ремонта квартиры',
+        overrides.description ?? 'Надежный проектор для ремонта квартиры',
+      condition: overrides.condition ?? ItemCondition.GOOD,
+      completeness: overrides.completeness ?? 'Проектор и кабель питания',
+      handoverTerms:
+        overrides.handoverTerms ?? 'Проверить комплект при передаче',
       pricePerDay: overrides.pricePerDay ?? new Prisma.Decimal(500),
       depositAmount: overrides.depositAmount ?? null,
-      status: overrides.status ?? ToolStatus.PENDING,
+      status: overrides.status ?? ItemStatus.PENDING,
       rejectReason: overrides.rejectReason ?? null,
+      publicArea: overrides.publicArea ?? 'Центральный округ',
       address: overrides.address ?? 'Москва, Тверская 1',
       latitude: overrides.latitude ?? 55.7558,
       longitude: overrides.longitude ?? 37.6173,
@@ -136,27 +166,57 @@ function createService() {
     };
   }
 
-  const tools = new Map<string, TestTool>([
-    ['tool-1', makeTool({ id: 'tool-1', status: ToolStatus.PENDING })],
+  const items = new Map<string, TestItem>([
+    ['item-1', makeItem({ id: 'item-1', status: ItemStatus.PENDING })],
     [
-      'tool-2',
-      makeTool({
-        id: 'tool-2',
+      'item-2',
+      makeItem({
+        id: 'item-2',
         title: 'Дрель Makita',
-        status: ToolStatus.APPROVED,
+        status: ItemStatus.APPROVED,
         createdAt: new Date('2026-06-01T09:00:00.000Z'),
       }),
     ],
-    ['hidden-tool', makeTool({ id: 'hidden-tool', status: ToolStatus.HIDDEN })],
+    ['hidden-item', makeItem({ id: 'hidden-item', status: ItemStatus.HIDDEN })],
   ]);
   const auditLogs: TestAuditLog[] = [];
 
   const tx = {
-    tool: {
+    booking: {
+      findFirst: jest
+        .fn()
+        .mockResolvedValue(activeBooking ? { id: 'booking-1' } : null),
+    },
+    user: {
+      updateMany: jest.fn(
+        ({
+          where,
+          data,
+        }: {
+          where: { id: string; isBlocked: false; deletedAt: null };
+          data: {
+            isBlocked: boolean;
+            sessionVersion: { increment: number };
+          };
+        }) => {
+          const user = users.get(where.id);
+          if (!user || user.isBlocked || user.deletedAt) {
+            return Promise.resolve({ count: 0 });
+          }
+          user.isBlocked = data.isBlocked;
+          user.sessionVersion += data.sessionVersion.increment;
+          return Promise.resolve({ count: 1 });
+        },
+      ),
       findUnique: jest.fn(({ where }: { where: { id: string } }) => {
-        const tool = tools.get(where.id);
+        return Promise.resolve(users.get(where.id) ?? null);
+      }),
+    },
+    item: {
+      findUnique: jest.fn(({ where }: { where: { id: string } }) => {
+        const item = items.get(where.id);
         return Promise.resolve(
-          tool ? { id: tool.id, status: tool.status } : null,
+          item ? { id: item.id, status: item.status } : null,
         );
       }),
       update: jest.fn(
@@ -165,17 +225,17 @@ function createService() {
           data,
         }: {
           where: { id: string };
-          data: Partial<Pick<TestTool, 'status' | 'rejectReason'>>;
+          data: Partial<Pick<TestItem, 'status' | 'rejectReason'>>;
         }) => {
-          const tool = tools.get(where.id);
-          if (!tool) {
+          const item = items.get(where.id);
+          if (!item) {
             return Promise.resolve(null);
           }
 
-          Object.assign(tool, data, {
+          Object.assign(item, data, {
             updatedAt: new Date('2026-06-02T11:00:00.000Z'),
           });
-          return Promise.resolve(tool);
+          return Promise.resolve(item);
         },
       ),
     },
@@ -184,6 +244,11 @@ function createService() {
         auditLogs.push(data);
         return Promise.resolve(data);
       }),
+    },
+    notificationOutboxEvent: {
+      create: jest.fn(({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve({ id: 'event-1', ...data }),
+      ),
     },
   };
 
@@ -204,19 +269,19 @@ function createService() {
         return Promise.resolve(users.get(where.id) ?? null);
       }),
     },
-    tool: {
+    item: {
       findMany: jest.fn(
         ({
           where,
           take,
         }: {
-          where: { status: ToolStatus };
+          where: { status: ItemStatus };
           orderBy: { createdAt: 'asc' };
           take: number;
         }) => {
           return Promise.resolve(
-            Array.from(tools.values())
-              .filter((tool) => tool.status === where.status)
+            Array.from(items.values())
+              .filter((item) => item.status === where.status)
               .sort((left, right) => {
                 return left.createdAt.getTime() - right.createdAt.getTime();
               })
@@ -233,8 +298,9 @@ function createService() {
   return {
     service: new AdminService(prisma),
     auditLogs,
-    tools,
+    items,
     users,
+    notificationOutboxCreate: tx.notificationOutboxEvent.create,
   };
 }
 
@@ -243,7 +309,7 @@ describe('AdminService', () => {
     const { service } = createService();
 
     await expect(service.listUsers()).resolves.toMatchObject([
-      { id: 'owner-1', phone: '+79990000002', role: UserRole.OWNER },
+      { id: 'owner-1', phone: '+79990000002', role: UserRole.USER },
       { id: 'admin-1', phone: '+79990000001', role: UserRole.ADMIN },
     ]);
   });
@@ -260,74 +326,157 @@ describe('AdminService', () => {
     );
   });
 
-  it('returns pending tools for moderation', async () => {
+  it('returns pending items for moderation', async () => {
     const { service } = createService();
 
-    await expect(service.listPendingTools()).resolves.toMatchObject([
-      {
-        id: 'tool-1',
-        status: ToolStatus.PENDING,
-        pricePerDay: 500,
-        owner: { phone: '+79990000002' },
-      },
-    ]);
+    const [item] = await service.listPendingItems();
+
+    expect(item).toMatchObject({
+      id: 'item-1',
+      status: ItemStatus.PENDING,
+      condition: ItemCondition.GOOD,
+      completeness: 'Проектор и кабель питания',
+      pricePerDay: 500,
+      publicArea: 'Центральный округ',
+      owner: { id: 'owner-1', name: 'Иван' },
+    });
+    expect(item).not.toHaveProperty('address');
+    expect(item).not.toHaveProperty('latitude');
+    expect(item).not.toHaveProperty('longitude');
+    expect(item.owner).not.toHaveProperty('phone');
   });
 
-  it('approves tool and writes audit log', async () => {
-    const { service, auditLogs, tools } = createService();
+  it('blocks a user, revokes sessions, and writes audit log', async () => {
+    const { service, auditLogs, users } = createService();
 
     await expect(
-      service.approveTool('admin-1', 'tool-1', '127.0.0.1'),
+      service.blockUser(
+        'admin-1',
+        'owner-1',
+        { reason: 'Подтверждённое злоупотребление' },
+        auditContext,
+      ),
     ).resolves.toMatchObject({
-      id: 'tool-1',
-      status: ToolStatus.APPROVED,
+      id: 'owner-1',
+      isBlocked: true,
+    });
+    expect(users.get('owner-1')?.sessionVersion).toBe(1);
+    expect(auditLogs).toContainEqual({
+      adminId: 'admin-1',
+      action: 'USER_BLOCKED',
+      entityType: 'User',
+      entityId: 'owner-1',
+      capability: AdminCapability.MODERATION,
+      reason: 'Подтверждённое злоупотребление',
+      requestId: 'request-123',
+      ipAddress: '127.0.0.1',
+      deviceId: 'device-hash',
+      before: {
+        isBlocked: false,
+        sessionVersion: 0,
+      },
+      after: { isBlocked: true, sessionVersion: 1 },
+    });
+  });
+
+  it('does not block a participant with an unfinished booking', async () => {
+    const { service, auditLogs, users } = createService({
+      activeBooking: true,
+    });
+
+    await expect(
+      service.blockUser(
+        'admin-1',
+        'owner-1',
+        { reason: 'Подтверждённое злоупотребление' },
+        auditContext,
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(users.get('owner-1')?.isBlocked).toBe(false);
+    expect(auditLogs).toHaveLength(0);
+  });
+
+  it('approves item and writes audit log', async () => {
+    const { service, auditLogs, items, notificationOutboxCreate } =
+      createService();
+
+    await expect(
+      service.approveItem('admin-1', 'item-1', auditContext),
+    ).resolves.toMatchObject({
+      id: 'item-1',
+      status: ItemStatus.APPROVED,
       rejectReason: null,
     });
-    expect(tools.get('tool-1')?.status).toBe(ToolStatus.APPROVED);
+    expect(items.get('item-1')?.status).toBe(ItemStatus.APPROVED);
     expect(auditLogs).toEqual([
       {
         adminId: 'admin-1',
-        action: 'TOOL_APPROVED',
-        entityType: 'Tool',
-        entityId: 'tool-1',
-        metadata: { previousStatus: ToolStatus.PENDING },
+        action: 'ITEM_APPROVED',
+        entityType: 'Item',
+        entityId: 'item-1',
+        capability: AdminCapability.MODERATION,
+        reason: null,
+        requestId: 'request-123',
         ipAddress: '127.0.0.1',
+        deviceId: 'device-hash',
+        before: { status: ItemStatus.PENDING },
+        after: { status: ItemStatus.APPROVED, rejectReason: null },
       },
     ]);
+    expect(notificationOutboxCreate).toHaveBeenCalledWith({
+      data: {
+        recipientId: 'owner-1',
+        itemId: 'item-1',
+        eventType: 'ITEM_APPROVED',
+        deduplicationKey: 'item:item-1:ITEM_APPROVED:2026-06-02T11:00:00.000Z',
+      },
+    });
   });
 
-  it('rejects tool with reason and writes audit log', async () => {
-    const { service, auditLogs, tools } = createService();
-    const reason = 'Фото не показывает состояние инструмента';
+  it('rejects item with reason and writes audit log', async () => {
+    const { service, auditLogs, items, notificationOutboxCreate } =
+      createService();
+    const reason = 'Фото не показывает состояние вещи';
 
     await expect(
-      service.rejectTool('admin-1', 'tool-1', { reason }),
+      service.rejectItem('admin-1', 'item-1', { reason }, auditContext),
     ).resolves.toMatchObject({
-      id: 'tool-1',
-      status: ToolStatus.REJECTED,
+      id: 'item-1',
+      status: ItemStatus.REJECTED,
       rejectReason: reason,
     });
-    expect(tools.get('tool-1')?.rejectReason).toBe(reason);
+    expect(items.get('item-1')?.rejectReason).toBe(reason);
     expect(auditLogs).toMatchObject([
       {
         adminId: 'admin-1',
-        action: 'TOOL_REJECTED',
-        entityType: 'Tool',
-        entityId: 'tool-1',
-        metadata: {
-          previousStatus: ToolStatus.PENDING,
-          rejectReason: reason,
-        },
+        action: 'ITEM_REJECTED',
+        entityType: 'Item',
+        entityId: 'item-1',
+        capability: AdminCapability.MODERATION,
+        reason,
+        requestId: 'request-123',
+        ipAddress: '127.0.0.1',
+        deviceId: 'device-hash',
+        before: { status: ItemStatus.PENDING },
+        after: { status: ItemStatus.REJECTED, rejectReason: reason },
       },
     ]);
+    expect(notificationOutboxCreate).toHaveBeenCalledWith({
+      data: {
+        recipientId: 'owner-1',
+        itemId: 'item-1',
+        eventType: 'ITEM_REJECTED',
+        deduplicationKey: 'item:item-1:ITEM_REJECTED:2026-06-02T11:00:00.000Z',
+      },
+    });
   });
 
-  it('does not moderate owner-hidden tool', async () => {
+  it('does not moderate owner-hidden item', async () => {
     const { service, auditLogs } = createService();
 
     await expect(
-      service.approveTool('admin-1', 'hidden-tool'),
-    ).rejects.toBeInstanceOf(BadRequestException);
+      service.approveItem('admin-1', 'hidden-item', auditContext),
+    ).rejects.toBeInstanceOf(ConflictException);
     expect(auditLogs).toHaveLength(0);
   });
 });

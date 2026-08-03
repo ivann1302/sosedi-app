@@ -842,4 +842,542 @@ as int,
 
 }
 
+
+/// @nodoc
+mixin _$UserSession {
+
+ String get sessionId; String get installationId; DateTime get createdAt; DateTime get lastSeenAt; bool get isCurrent;
+/// Create a copy of UserSession
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$UserSessionCopyWith<UserSession> get copyWith => _$UserSessionCopyWithImpl<UserSession>(this as UserSession, _$identity);
+
+  /// Serializes this UserSession to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserSession&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.installationId, installationId) || other.installationId == installationId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.lastSeenAt, lastSeenAt) || other.lastSeenAt == lastSeenAt)&&(identical(other.isCurrent, isCurrent) || other.isCurrent == isCurrent));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,installationId,createdAt,lastSeenAt,isCurrent);
+
+@override
+String toString() {
+  return 'UserSession(sessionId: $sessionId, installationId: $installationId, createdAt: $createdAt, lastSeenAt: $lastSeenAt, isCurrent: $isCurrent)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $UserSessionCopyWith<$Res>  {
+  factory $UserSessionCopyWith(UserSession value, $Res Function(UserSession) _then) = _$UserSessionCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String installationId, DateTime createdAt, DateTime lastSeenAt, bool isCurrent
+});
+
+
+
+
+}
+/// @nodoc
+class _$UserSessionCopyWithImpl<$Res>
+    implements $UserSessionCopyWith<$Res> {
+  _$UserSessionCopyWithImpl(this._self, this._then);
+
+  final UserSession _self;
+  final $Res Function(UserSession) _then;
+
+/// Create a copy of UserSession
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionId = null,Object? installationId = null,Object? createdAt = null,Object? lastSeenAt = null,Object? isCurrent = null,}) {
+  return _then(_self.copyWith(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,installationId: null == installationId ? _self.installationId : installationId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,lastSeenAt: null == lastSeenAt ? _self.lastSeenAt : lastSeenAt // ignore: cast_nullable_to_non_nullable
+as DateTime,isCurrent: null == isCurrent ? _self.isCurrent : isCurrent // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [UserSession].
+extension UserSessionPatterns on UserSession {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _UserSession value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _UserSession() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _UserSession value)  $default,){
+final _that = this;
+switch (_that) {
+case _UserSession():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _UserSession value)?  $default,){
+final _that = this;
+switch (_that) {
+case _UserSession() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String installationId,  DateTime createdAt,  DateTime lastSeenAt,  bool isCurrent)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _UserSession() when $default != null:
+return $default(_that.sessionId,_that.installationId,_that.createdAt,_that.lastSeenAt,_that.isCurrent);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String installationId,  DateTime createdAt,  DateTime lastSeenAt,  bool isCurrent)  $default,) {final _that = this;
+switch (_that) {
+case _UserSession():
+return $default(_that.sessionId,_that.installationId,_that.createdAt,_that.lastSeenAt,_that.isCurrent);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String installationId,  DateTime createdAt,  DateTime lastSeenAt,  bool isCurrent)?  $default,) {final _that = this;
+switch (_that) {
+case _UserSession() when $default != null:
+return $default(_that.sessionId,_that.installationId,_that.createdAt,_that.lastSeenAt,_that.isCurrent);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _UserSession implements UserSession {
+  const _UserSession({required this.sessionId, required this.installationId, required this.createdAt, required this.lastSeenAt, required this.isCurrent});
+  factory _UserSession.fromJson(Map<String, dynamic> json) => _$UserSessionFromJson(json);
+
+@override final  String sessionId;
+@override final  String installationId;
+@override final  DateTime createdAt;
+@override final  DateTime lastSeenAt;
+@override final  bool isCurrent;
+
+/// Create a copy of UserSession
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$UserSessionCopyWith<_UserSession> get copyWith => __$UserSessionCopyWithImpl<_UserSession>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$UserSessionToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserSession&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.installationId, installationId) || other.installationId == installationId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.lastSeenAt, lastSeenAt) || other.lastSeenAt == lastSeenAt)&&(identical(other.isCurrent, isCurrent) || other.isCurrent == isCurrent));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,installationId,createdAt,lastSeenAt,isCurrent);
+
+@override
+String toString() {
+  return 'UserSession(sessionId: $sessionId, installationId: $installationId, createdAt: $createdAt, lastSeenAt: $lastSeenAt, isCurrent: $isCurrent)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$UserSessionCopyWith<$Res> implements $UserSessionCopyWith<$Res> {
+  factory _$UserSessionCopyWith(_UserSession value, $Res Function(_UserSession) _then) = __$UserSessionCopyWithImpl;
+@override @useResult
+$Res call({
+ String sessionId, String installationId, DateTime createdAt, DateTime lastSeenAt, bool isCurrent
+});
+
+
+
+
+}
+/// @nodoc
+class __$UserSessionCopyWithImpl<$Res>
+    implements _$UserSessionCopyWith<$Res> {
+  __$UserSessionCopyWithImpl(this._self, this._then);
+
+  final _UserSession _self;
+  final $Res Function(_UserSession) _then;
+
+/// Create a copy of UserSession
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? installationId = null,Object? createdAt = null,Object? lastSeenAt = null,Object? isCurrent = null,}) {
+  return _then(_UserSession(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,installationId: null == installationId ? _self.installationId : installationId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,lastSeenAt: null == lastSeenAt ? _self.lastSeenAt : lastSeenAt // ignore: cast_nullable_to_non_nullable
+as DateTime,isCurrent: null == isCurrent ? _self.isCurrent : isCurrent // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$LogoutResult {
+
+ bool get loggedOut;
+/// Create a copy of LogoutResult
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LogoutResultCopyWith<LogoutResult> get copyWith => _$LogoutResultCopyWithImpl<LogoutResult>(this as LogoutResult, _$identity);
+
+  /// Serializes this LogoutResult to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LogoutResult&&(identical(other.loggedOut, loggedOut) || other.loggedOut == loggedOut));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,loggedOut);
+
+@override
+String toString() {
+  return 'LogoutResult(loggedOut: $loggedOut)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LogoutResultCopyWith<$Res>  {
+  factory $LogoutResultCopyWith(LogoutResult value, $Res Function(LogoutResult) _then) = _$LogoutResultCopyWithImpl;
+@useResult
+$Res call({
+ bool loggedOut
+});
+
+
+
+
+}
+/// @nodoc
+class _$LogoutResultCopyWithImpl<$Res>
+    implements $LogoutResultCopyWith<$Res> {
+  _$LogoutResultCopyWithImpl(this._self, this._then);
+
+  final LogoutResult _self;
+  final $Res Function(LogoutResult) _then;
+
+/// Create a copy of LogoutResult
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? loggedOut = null,}) {
+  return _then(_self.copyWith(
+loggedOut: null == loggedOut ? _self.loggedOut : loggedOut // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [LogoutResult].
+extension LogoutResultPatterns on LogoutResult {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LogoutResult value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _LogoutResult() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LogoutResult value)  $default,){
+final _that = this;
+switch (_that) {
+case _LogoutResult():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LogoutResult value)?  $default,){
+final _that = this;
+switch (_that) {
+case _LogoutResult() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool loggedOut)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _LogoutResult() when $default != null:
+return $default(_that.loggedOut);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool loggedOut)  $default,) {final _that = this;
+switch (_that) {
+case _LogoutResult():
+return $default(_that.loggedOut);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool loggedOut)?  $default,) {final _that = this;
+switch (_that) {
+case _LogoutResult() when $default != null:
+return $default(_that.loggedOut);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _LogoutResult implements LogoutResult {
+  const _LogoutResult({required this.loggedOut});
+  factory _LogoutResult.fromJson(Map<String, dynamic> json) => _$LogoutResultFromJson(json);
+
+@override final  bool loggedOut;
+
+/// Create a copy of LogoutResult
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LogoutResultCopyWith<_LogoutResult> get copyWith => __$LogoutResultCopyWithImpl<_LogoutResult>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LogoutResultToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LogoutResult&&(identical(other.loggedOut, loggedOut) || other.loggedOut == loggedOut));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,loggedOut);
+
+@override
+String toString() {
+  return 'LogoutResult(loggedOut: $loggedOut)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LogoutResultCopyWith<$Res> implements $LogoutResultCopyWith<$Res> {
+  factory _$LogoutResultCopyWith(_LogoutResult value, $Res Function(_LogoutResult) _then) = __$LogoutResultCopyWithImpl;
+@override @useResult
+$Res call({
+ bool loggedOut
+});
+
+
+
+
+}
+/// @nodoc
+class __$LogoutResultCopyWithImpl<$Res>
+    implements _$LogoutResultCopyWith<$Res> {
+  __$LogoutResultCopyWithImpl(this._self, this._then);
+
+  final _LogoutResult _self;
+  final $Res Function(_LogoutResult) _then;
+
+/// Create a copy of LogoutResult
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? loggedOut = null,}) {
+  return _then(_LogoutResult(
+loggedOut: null == loggedOut ? _self.loggedOut : loggedOut // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
 // dart format on

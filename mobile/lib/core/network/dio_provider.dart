@@ -1,26 +1,58 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../auth/session_events.dart';
+import '../compatibility/compatibility_gate.dart';
 import '../config/app_config.dart';
+import '../storage/installation_id_storage.dart';
 import '../storage/token_storage.dart';
 import 'api_models.dart';
 
 final dioProvider = Provider<Dio>((ref) {
+  final mobileVersion = PackageInfo.fromPlatform().then((info) => info.version);
   return createApiDio(
     baseUrl: AppConfig.apiBaseUrl,
     tokenStorage: ref.watch(tokenStorageProvider),
+    installationId: ref.watch(installationIdStorageProvider).getOrCreate(),
+    mobileVersion: mobileVersion,
+    mobilePlatform: defaultTargetPlatform.name,
     onSessionInvalidated: () {
       ref.read(sessionInvalidationProvider.notifier).notify();
     },
+    onUpdateRequired: (requirement) {
+      ref
+          .read(compatibilityRequirementProvider.notifier)
+          .requireUpdate(requirement);
+    },
   );
+});
+
+final apiCompatibilityCheckProvider = FutureProvider<void>((ref) async {
+  try {
+    await ref
+        .watch(dioProvider)
+        .get<void>(
+          '/health',
+          options: Options(
+            extra: const {'skipAuth': true, 'skipAuthRefresh': true},
+          ),
+        );
+  } on DioException {
+    // Network failures remain retryable and must not force an update.
+  }
 });
 
 Dio createApiDio({
   required String baseUrl,
   required TokenStorage tokenStorage,
+  Future<String>? installationId,
+  Future<String>? mobileVersion,
+  String? mobilePlatform,
   HttpClientAdapter? adapter,
   void Function()? onSessionInvalidated,
+  void Function(UpdateRequirement)? onUpdateRequired,
 }) {
   final dio = Dio(_baseOptions(baseUrl));
   final transport = Dio(_baseOptions(baseUrl));
@@ -34,7 +66,11 @@ Dio createApiDio({
     _AuthInterceptor(
       tokenStorage: tokenStorage,
       transport: transport,
+      installationId: installationId,
+      mobileVersion: mobileVersion,
+      mobilePlatform: mobilePlatform,
       onSessionInvalidated: onSessionInvalidated,
+      onUpdateRequired: onUpdateRequired,
     ),
   );
 
@@ -55,12 +91,20 @@ class _AuthInterceptor extends Interceptor {
   _AuthInterceptor({
     required this._tokenStorage,
     required this._transport,
+    this._installationId,
+    this._mobileVersion,
+    this._mobilePlatform,
     this._onSessionInvalidated,
+    this._onUpdateRequired,
   });
 
   final TokenStorage _tokenStorage;
   final Dio _transport;
+  final Future<String>? _installationId;
+  final Future<String>? _mobileVersion;
+  final String? _mobilePlatform;
   final void Function()? _onSessionInvalidated;
+  final void Function(UpdateRequirement)? _onUpdateRequired;
   Future<_RefreshResult>? _refreshFuture;
 
   @override
@@ -68,6 +112,12 @@ class _AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    await _addClientHeaders(options.headers);
+    final installationId = await _installationId;
+    if (installationId != null) {
+      options.headers['X-Installation-Id'] = installationId;
+    }
+
     if (options.extra['skipAuth'] == true) {
       handler.next(options);
       return;
@@ -83,6 +133,10 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    final updateRequirement = UpdateRequirement.fromResponse(err.response);
+    if (updateRequirement != null) {
+      _onUpdateRequired?.call(updateRequirement);
+    }
     final options = err.requestOptions;
 
     if (!_shouldRefresh(err)) {
@@ -183,6 +237,7 @@ class _AuthInterceptor extends Interceptor {
       response = await _transport.post<Map<String, dynamic>>(
         '/auth/refresh',
         data: {'refreshToken': refreshToken},
+        options: Options(headers: await _clientHeaders()),
       );
     } on DioException catch (error) {
       final statusCode = error.response?.statusCode;
@@ -234,6 +289,22 @@ class _AuthInterceptor extends Interceptor {
     }
 
     return _RefreshSucceeded(tokens);
+  }
+
+  Future<void> _addClientHeaders(Map<String, dynamic> headers) async {
+    headers.addAll(await _clientHeaders());
+  }
+
+  Future<Map<String, String>> _clientHeaders() async {
+    final headers = <String, String>{'X-Api-Version': '1'};
+    final mobileVersion = await _mobileVersion;
+    if (mobileVersion != null) {
+      headers['X-Mobile-Version'] = mobileVersion;
+    }
+    if (_mobilePlatform case final mobilePlatform?) {
+      headers['X-Mobile-Platform'] = mobilePlatform;
+    }
+    return headers;
   }
 }
 

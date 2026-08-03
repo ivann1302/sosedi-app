@@ -7,11 +7,17 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiError } from '../http/api-response';
+import { redactSensitiveData } from '../logging/sensitive-data-redactor';
 
 type NestErrorResponse = {
   code?: string;
   error?: string;
   message?: string | string[];
+};
+
+type TransportError = Error & {
+  status?: unknown;
+  statusCode?: unknown;
 };
 
 @Catch()
@@ -23,10 +29,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : this.getTransportStatus(exception);
 
-    if (!(exception instanceof HttpException) && exception instanceof Error) {
-      console.error(exception);
+    if (status >= 500 && exception instanceof Error) {
+      console.error(redactSensitiveData(exception));
     }
 
     response.status(status).json({
@@ -38,6 +44,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   private getError(exception: unknown, status: number): ApiError {
     if (!(exception instanceof HttpException)) {
+      if (status === Number(HttpStatus.PAYLOAD_TOO_LARGE)) {
+        return {
+          code: 'PAYLOAD_TOO_LARGE',
+          message: 'Тело запроса превышает допустимый размер',
+        };
+      }
+
       return {
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Внутренняя ошибка сервера',
@@ -73,5 +86,27 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     return HttpStatus[status] ?? 'HTTP_ERROR';
+  }
+
+  private getTransportStatus(exception: unknown): number {
+    if (!(exception instanceof Error)) {
+      return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+
+    const transportError = exception as TransportError;
+    const status =
+      typeof transportError.status === 'number'
+        ? transportError.status
+        : transportError.statusCode;
+    if (
+      typeof status === 'number' &&
+      Number.isInteger(status) &&
+      status >= 400 &&
+      status < 500
+    ) {
+      return status;
+    }
+
+    return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 }

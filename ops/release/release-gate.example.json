@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "replace-with-change-id",
+  "generatedAt": "2026-07-29T00:00:00.000Z",
+  "commitSha": "replace-with-commit-sha",
+  "backendImage": "replace-with-registry-manifest-digest",
+  "ci": {
+    "status": "blocked",
+    "commitSha": "replace-with-commit-sha"
+  },
+  "p0": {
+    "status": "blocked",
+    "openFindings": 0,
+    "checkedAt": "2026-07-29T00:00:00.000Z"
+  },
+  "restore": {
+    "status": "blocked",
+    "completedAt": "2026-07-29T00:00:00.000Z",
+    "postgresRestored": false,
+    "s3ObjectsRestored": false,
+    "rpoHours": 0,
+    "postgresRtoHours": 0,
+    "s3RtoHours": 0,
+    "s3Sample": {
+      "sha256": "pending",
+      "sourceKeySha256": "pending",
+      "sizeBytes": 0,
+      "targetRef": "pending"
+    },
+    "evidenceRef": "blocked-until-rf-drill"
+  },
+  "marketplaceLegalSafety": {
+    "status": "blocked",
+    "documents": {
+      "offer": "pending",
+      "rentalRules": "pending",
+      "privacy": "pending",
+      "prohibitedItems": "pending"
+    },
+    "approvalRef": "pending"
+  },
+  "publicLinks": {
+    "status": "blocked",
+    "checkedAt": "2026-07-29T00:00:00.000Z",
+    "urls": {
+      "offer": "pending",
+      "rentalRules": "pending",
+      "privacy": "pending",
+      "prohibitedItems": "pending",
+      "support": "pending",
+      "accountDeletion": "pending"
+    }
+  },
+  "versionedAcceptance": {
+    "status": "blocked",
+    "checkedAt": "2026-07-29T00:00:00.000Z",
+    "evidenceRef": "pending"
+  },
+  "admin": {
+    "mfaSmoke": "blocked",
+    "operatorSmoke": "blocked",
+    "auditSmoke": "blocked",
+    "checkedAt": "2026-07-29T00:00:00.000Z"
+  },
+  "payment": {
+    "providerMode": "disabled",
+    "legalGate": "not-applicable"
+  },
+  "kyc": {
+    "mode": "disabled",
+    "legalGate": "not-applicable"
+  },
+  "approvals": {
+    "productOwner": "pending",
+    "legalOwner": "pending"
+  }
+}

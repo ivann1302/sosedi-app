@@ -10,14 +10,25 @@ export async function resetTestState(app: INestApplication): Promise<void> {
   const prisma = app.get(PrismaService);
   const redis = app.get(RedisService).getClient();
 
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "admin_audit_logs"');
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "booking_transition_history"');
   await prisma.$transaction([
-    prisma.adminAuditLog.deleteMany(),
+    prisma.adminRecoveryCode.deleteMany(),
+    prisma.adminMfaCredential.deleteMany(),
     prisma.payment.deleteMany(),
+    prisma.supportAttachment.deleteMany(),
+    prisma.supportMessage.deleteMany(),
     prisma.supportTicket.deleteMany(),
-    prisma.toolPhoto.deleteMany(),
+    prisma.userReport.deleteMany(),
+    prisma.userBlock.deleteMany(),
+    prisma.devicePushToken.deleteMany(),
+    prisma.bookingEvidence.deleteMany(),
+    prisma.bookingAct.deleteMany(),
+    prisma.uploadIntent.deleteMany(),
+    prisma.itemPhoto.deleteMany(),
     prisma.booking.deleteMany(),
     prisma.kycDocument.deleteMany(),
-    prisma.tool.deleteMany(),
+    prisma.item.deleteMany(),
     prisma.category.deleteMany(),
     prisma.user.deleteMany(),
   ]);

@@ -1,0 +1,146 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/network/api_exception.dart';
+import '../data/inbox_event.dart';
+import '../data/inbox_service.dart';
+import '../domain/inbox_open_controller.dart';
+
+class InboxScreen extends ConsumerWidget {
+  const InboxScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final events = ref.watch(inboxEventsProvider);
+    final opening = ref.watch(inboxOpenProvider);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Уведомления'),
+        actions: [
+          IconButton(
+            onPressed: () => ref.invalidate(inboxEventsProvider),
+            tooltip: 'Обновить',
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: events.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _InboxError(
+            message: userFacingError(
+              error,
+              fallback: 'Не удалось загрузить уведомления',
+            ),
+            onRetry: () => ref.invalidate(inboxEventsProvider),
+          ),
+          data: (values) => values.isEmpty
+              ? const Center(child: Text('Уведомлений пока нет'))
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: values.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final event = values[index];
+                    return Card(
+                      child: ListTile(
+                        enabled: !opening.isLoading,
+                        onTap: () => _open(context, ref, event),
+                        leading: Icon(_icon(event.eventType)),
+                        title: Text(_title(event.eventType)),
+                        subtitle: Text(_time(event.createdAt)),
+                        trailing: event.readAt == null
+                            ? const Chip(label: Text('Новое'))
+                            : const Icon(Icons.chevron_right),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _open(
+    BuildContext context,
+    WidgetRef ref,
+    InboxEvent event,
+  ) async {
+    final path = await ref.read(inboxOpenProvider.notifier).open(event);
+    if (!context.mounted) {
+      return;
+    }
+    final state = ref.read(inboxOpenProvider);
+    if (state.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            userFacingError(
+              state.error!,
+              fallback: 'Не удалось открыть уведомление',
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+    if (path == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Для уведомления нет доступного экрана')),
+      );
+      return;
+    }
+    context.push(path);
+  }
+
+  String _title(String eventType) => switch (eventType) {
+    'BOOKING_CONFIRMED' => 'Бронирование подтверждено',
+    'HANDOVER_CONFIRMED' => 'Передача подтверждена',
+    'RETURN_CONFIRMED' => 'Возврат подтверждён',
+    'ITEM_APPROVED' => 'Объявление одобрено',
+    'ITEM_REJECTED' => 'Объявление требует изменений',
+    'SUPPORT_REPLIED' || 'SUPPORT_MESSAGE_CREATED' => 'Ответ поддержки',
+    'SUPPORT_TICKET_CLOSED' => 'Обращение закрыто',
+    _ => 'Обновление в Соседях',
+  };
+
+  IconData _icon(String eventType) {
+    if (eventType.startsWith('ITEM_')) {
+      return Icons.inventory_2_outlined;
+    }
+    if (eventType.startsWith('SUPPORT_')) {
+      return Icons.support_agent_outlined;
+    }
+    return Icons.event_available_outlined;
+  }
+
+  String _time(DateTime value) {
+    final local = value.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}.'
+        '${local.month.toString().padLeft(2, '0')}.${local.year} '
+        '${local.hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _InboxError extends StatelessWidget {
+  const _InboxError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(message),
+          const SizedBox(height: 12),
+          FilledButton(onPressed: onRetry, child: const Text('Повторить')),
+        ],
+      ),
+    );
+  }
+}

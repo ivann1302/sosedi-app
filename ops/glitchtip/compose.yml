@@ -1,0 +1,51 @@
+services:
+  glitchtip:
+    image: ${GLITCHTIP_IMAGE:?Set GLITCHTIP_IMAGE to the mirrored exact digest}
+    env_file:
+      - ${GLITCHTIP_ENV_FILE:?Set GLITCHTIP_ENV_FILE to a protected env file}
+    environment:
+      SERVER_ROLE: all_in_one
+      ENABLE_USER_REGISTRATION: "False"
+      ENABLE_SOCIAL_APPS_USER_REGISTRATION: "False"
+      ENABLE_ORGANIZATION_CREATION: "False"
+      ENABLE_ADMIN: "False"
+      ENABLE_OPENAPI: "False"
+      GLITCHTIP_ENABLE_MCP: "False"
+      GLITCHTIP_ENABLE_LOGS: "False"
+      GLITCHTIP_ENABLE_UPTIME: "False"
+      GLITCHTIP_ENABLE_DUCKDB: "False"
+      ENABLE_OBSERVABILITY_API: "True"
+      GLITCHTIP_RETENTION_DAYS: "90"
+      GLITCHTIP_EVENT_HOT_DAYS: "30"
+      GLITCHTIP_TRANSACTION_RETENTION_DAYS: "30"
+      SECURE_HSTS_SECONDS: "31536000"
+      SECURE_HSTS_INCLUDE_SUBDOMAINS: "True"
+    ports:
+      - "127.0.0.1:${GLITCHTIP_PORT:-8000}:8000"
+    volumes:
+      - glitchtip-uploads:/code/uploads
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import os, urllib.request;
+          host=os.environ['ALLOWED_HOSTS'].split(',')[0];
+          request=urllib.request.Request(
+          'http://127.0.0.1:8000/',
+          headers={'Host': host, 'X-Forwarded-Proto': 'https'});
+          urllib.request.urlopen(request, timeout=3)
+      interval: 15s
+      timeout: 5s
+      start_period: 120s
+      retries: 5
+
+volumes:
+  glitchtip-uploads:

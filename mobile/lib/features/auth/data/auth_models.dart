@@ -40,3 +40,27 @@ abstract class OtpRequestResult with _$OtpRequestResult {
   factory OtpRequestResult.fromJson(Map<String, dynamic> json) =>
       _$OtpRequestResultFromJson(json);
 }
+
+@freezed
+abstract class UserSession with _$UserSession {
+  const factory UserSession({
+    required String sessionId,
+    required String installationId,
+    required DateTime createdAt,
+    required DateTime lastSeenAt,
+    required bool isCurrent,
+  }) = _UserSession;
+
+  factory UserSession.fromJson(Map<String, dynamic> json) =>
+      _$UserSessionFromJson(json);
+}
+
+@freezed
+abstract class LogoutResult with _$LogoutResult {
+  const factory LogoutResult({
+    required bool loggedOut,
+  }) = _LogoutResult;
+
+  factory LogoutResult.fromJson(Map<String, dynamic> json) =>
+      _$LogoutResultFromJson(json);
+}

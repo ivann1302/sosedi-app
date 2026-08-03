@@ -34,7 +34,7 @@ HTTP request
 | Auth | `backend/src/auth/` |
 | Users | `backend/src/users/` |
 | Categories | `backend/src/categories/` |
-| Tools | `backend/src/tools/` |
+| Items | `backend/src/items/` |
 | Upload | `backend/src/upload/` |
 | Admin | `backend/src/admin/` |
 
@@ -66,7 +66,7 @@ SwaggerModule.setup('api/docs', app, swaggerDocument);
 AuthModule
 UsersModule
 CategoriesModule
-ToolsModule
+ItemsModule
 UploadModule
 AdminModule
 ```
@@ -77,12 +77,12 @@ AdminModule
 
 Controller принимает HTTP-запрос и почти не содержит бизнес-логики.
 
-Пример из `ToolsController`:
+Пример из `ItemsController`:
 
 ```ts
 @Get()
-async list(@Query() query: ListToolsQueryDto) {
-  return ok(await this.tools.listPublic(query));
+async list(@Query() query: ListItemsQueryDto) {
+  return ok(await this.items.listPublic(query));
 }
 ```
 
@@ -102,7 +102,7 @@ DTO описывает входные данные endpoint.
 - `class-validator` - проверка типа, длины, диапазона, enum, uuid;
 - `class-transformer` - преобразование строк из query/body в нужный тип.
 
-Пример из `CreateToolDto`:
+Пример из `CreateItemDto`:
 
 ```ts
 @Transform(numberFromInput)
@@ -163,7 +163,8 @@ pricePerDay: number;
 ```text
 POST /api/v1/auth/otp/request
 -> normalize phone
--> rate limit in Redis
+-> validate X-Installation-Id UUID v4
+-> phone / installation / direct socket IP rate limit in Redis
 -> generate 6-digit OTP
 -> bcrypt hash
 -> save hash to Redis with TTL
@@ -183,6 +184,9 @@ Redis ключи из `AuthService`:
 | --- | --- |
 | `auth:otp:code:{phone}` | bcrypt hash OTP |
 | `auth:otp:send:{phone}` | лимит выдачи OTP |
+| `auth:otp:send:device:{sha256}` | общий лимит установки приложения |
+| `auth:otp:send:ip:{sha256}` | высокий общий лимит прямого socket IP |
+| `auth:otp:send:global` | общий 24-часовой cap SMS-расходов |
 | `auth:otp:fail:{phone}` | счетчик неверных кодов |
 | `auth:otp:block:{phone}` | блокировка после ошибок |
 | `auth:refresh:{jti}` | активный refresh token |
@@ -191,12 +195,34 @@ Redis ключи из `AuthService`:
 
 - OTP живет 5 минут;
 - 3 OTP за 10 минут;
+- 6 OTP на installation за 10 минут;
+- 60 OTP на direct socket IP за 10 минут, чтобы общий NAT не блокировался раньше
+  отдельного устройства;
+- до 1000 SMS за 24 часа по умолчанию (`OTP_GLOBAL_RATE_LIMIT`);
 - 5 неверных кодов;
 - блокировка на 30 минут;
 - access token по умолчанию 15 минут;
 - refresh token по умолчанию 30 дней.
 
 Refresh token ротируется: при refresh старый `jti` удаляется из Redis, затем выдается новая пара токенов.
+
+Client IP берётся из `X-Forwarded-For` только через перечисленные в
+`TRUSTED_PROXY_IPS` IP/CIDR непосредственных reverse proxy. Пустое значение
+означает `trust proxy = false`; wildcard и сети `/0` запрещены. Rate limit и
+admin audit используют один `getClientIp()`, а будущий provider webhook обязан
+дополнительно проверять собственную криптографическую подпись.
+
+HTTP-периметр настраивается централизованно в `app.setup.ts`:
+
+- в production `CORS_ALLOWED_ORIGINS` обязателен и содержит только точные
+  `http(s)://host[:port]` без path, credentials и wildcard;
+- production-запрос без HTTPS получает `426 HTTPS_REQUIRED`; при TLS termination
+  ingress обязан входить в `TRUSTED_PROXY_IPS` и передавать
+  `X-Forwarded-Proto: https`;
+- `helmet` выставляет базовые security headers;
+- Nest запускается с `bodyParser: false`, затем JSON/form parser получает явный
+  `HTTP_BODY_LIMIT`; бинарные фото идут напрямую в S3 через presigned URL;
+- Node HTTP server получает ограниченные request, headers и keep-alive timeout.
 
 ## 7. Guards и роли
 
@@ -211,9 +237,8 @@ Refresh token ротируется: при refresh старый `jti` удаля
 Пример:
 
 ```ts
-@ApiBearerAuth()
-@Roles(UserRole.ADMIN)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiCookieAuth('__Host-sosedi_admin')
+@UseGuards(AdminSessionGuard)
 @Controller('admin')
 export class AdminController {}
 ```
@@ -222,7 +247,10 @@ export class AdminController {}
 
 - публичные endpoint без guard;
 - личные endpoint через `JwtAuthGuard`;
-- admin/owner действия через `JwtAuthGuard` + `RolesGuard`.
+- admin-действия через `AdminSessionGuard`: opaque HttpOnly cookie, CSRF для
+  mutations и capability decorator;
+- действия владельца объявления через `JwtAuthGuard` и object-level predicate
+  `id + ownerId`.
 
 ## 8. Prisma ORM
 
@@ -250,20 +278,17 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
 - `$transaction`;
 - `$queryRaw` для PostGIS.
 
-Пример транзакции из создания объявления:
+Создание объявления не меняет роль пользователя:
 
 ```ts
-await this.prisma.$transaction(async (tx) => {
-  await tx.user.updateMany({
-    where: { id: ownerId, role: UserRole.RENTER },
-    data: { role: UserRole.OWNER, kycStatus: KycStatus.PENDING },
-  });
-
-  return tx.tool.create({ data, select: toolSelect });
+return this.prisma.item.create({
+  data: { ...data, ownerId },
+  select: itemSelect,
 });
 ```
 
-Почему транзакция нужна: роль пользователя и объявление должны измениться вместе.
+`USER` уже может и брать чужие вещи, и публиковать свои. Изменять роль при
+создании объявления не нужно; доступ к изменению определяется `ownerId`.
 
 ## 9. PostgreSQL и PostGIS
 
@@ -280,9 +305,9 @@ location Unsupported("geography(Point,4326)")?
 Миграция делает:
 
 - `CREATE EXTENSION IF NOT EXISTS postgis`;
-- добавляет `tools.location geography(Point, 4326)`;
-- создает trigger `tools_update_location`;
-- добавляет GiST index `tools_location_idx`.
+- добавляет `items.location geography(Point, 4326)`;
+- создает trigger `items_update_location`;
+- добавляет GiST index `items_location_idx`.
 
 Координаты хранятся отдельно:
 
@@ -300,9 +325,9 @@ location
 ST_MakePoint(longitude, latitude)
 ```
 
-## 10. Геопоиск инструментов
+## 10. Геопоиск вещей
 
-`ToolsService.listPublic()` работает в двух режимах.
+`ItemsService.listPublic()` работает в двух режимах.
 
 Без координат:
 
@@ -351,22 +376,22 @@ new Redis(config.get<string>('REDIS_URL') ?? 'redis://localhost:6379')
 
 Backend не принимает файлы через multipart. Вместо этого он выдает presigned URL, а mobile грузит файл напрямую в S3-compatible storage.
 
-Флоу фото инструмента:
+Флоу фото вещи:
 
 ```text
 POST /api/v1/uploads/presigned-url
 -> проверить contentType и sizeBytes
--> проверить владельца tool
+-> проверить владельца item
 -> создать S3 key
--> отдать PUT uploadUrl
+-> отдать POST uploadUrl + подписанные form fields
 
 Mobile
--> PUT file to uploadUrl
+-> multipart/form-data POST к uploadUrl (file последним полем)
 
-POST /api/v1/uploads/tool-photos/confirm
+POST /api/v1/uploads/item-photos/confirm
 -> проверить owner
 -> проверить key prefix
--> создать ToolPhoto
+-> создать ItemPhoto
 -> поставить BullMQ job
 ```
 
@@ -378,7 +403,7 @@ POST /api/v1/uploads/tool-photos/confirm
 
 Максимальный размер: 10 МБ.
 
-KYC файлы получают URL в приватный bucket. Для них `publicUrl` равен `null`.
+KYC upload запрещён до `ACCEPTED LOCAL_KYC` ADR и не обращается к S3.
 
 ## 13. AWS SDK для S3
 
@@ -428,7 +453,7 @@ photo-processing
 Job:
 
 ```text
-tool-photo-uploaded
+item-photo-uploaded
 ```
 
 `PhotoProcessingWorker`:
@@ -437,33 +462,40 @@ tool-photo-uploaded
 2. делает `thumbnail` 200x200 WebP;
 3. делает `preview` 800x600 WebP;
 4. загружает варианты в S3;
-5. обновляет `thumbnailUrl` и `previewUrl` в `tool_photos`.
+5. обновляет `thumbnailUrl` и `previewUrl` в `item_photos`.
 
 `NODE_ENV=test` отключает worker на старте приложения, чтобы тесты не поднимали реальную очередь.
 
 ## 15. Swagger / OpenAPI
 
-Swagger подключен в `main.ts`:
+Swagger настраивается через `configureSwagger()`:
 
 ```ts
-const swaggerConfig = new DocumentBuilder()
-  .setTitle('Соседи API')
-  .setVersion('1.0')
-  .addBearerAuth()
-  .build();
+configureSwagger(app);
 ```
 
-Адрес:
+В development/test доступны:
 
 ```text
 /api/docs
+/api/docs-json
+/api/docs-yaml
 ```
+
+При `NODE_ENV=production` эти routes не регистрируются и возвращают `404`.
+Политика покрыта HTTP-тестом, поэтому production не раскрывает карту API и DTO.
 
 В controller используются:
 
 - `@ApiTags`;
 - `@ApiBearerAuth`;
 - `@ApiOperation`;
+
+Все Nest logs проходят через `RedactingLogger`. Он рекурсивно очищает токены,
+OTP, cookies, телефоны, адреса, KYC/payment payload и presigned URL, сохраняя
+безопасные доменные ID/status/error code. `HttpExceptionFilter` и BullMQ worker
+передают ошибки только через этот контракт. Подробности и mobile
+`beforeSend`: [observability-data-redaction.md](observability-data-redaction.md).
 - `@ApiParam`;
 - `@ApiProperty` в DTO.
 
@@ -485,7 +517,7 @@ make backend-test-e2e
 - auth;
 - users;
 - categories;
-- tools;
+- items;
 - upload;
 - photo processing worker;
 - admin.
@@ -539,6 +571,12 @@ make backend-prisma-migrate
 
 ```text
 PORT
+TRUSTED_PROXY_IPS
+CORS_ALLOWED_ORIGINS
+HTTP_BODY_LIMIT
+HTTP_REQUEST_TIMEOUT_MS
+HTTP_HEADERS_TIMEOUT_MS
+HTTP_KEEP_ALIVE_TIMEOUT_MS
 DATABASE_URL
 REDIS_URL
 JWT_ACCESS_SECRET

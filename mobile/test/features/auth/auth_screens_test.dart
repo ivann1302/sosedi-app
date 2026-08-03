@@ -127,7 +127,7 @@ const codeSentState = AuthState.codeSent(
 const user = AuthUser(
   id: 'user-1',
   phone: '+79991234567',
-  role: 'RENTER',
+  role: 'USER',
   isBlocked: false,
 );
 

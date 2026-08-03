@@ -5,6 +5,7 @@ import { PhotoProcessingQueue } from './photo-processing.queue';
 import { PhotoProcessingWorker } from './photo-processing.worker';
 import { S3StorageService } from './s3-storage.service';
 import { UploadController } from './upload.controller';
+import { UploadCleanupService } from './upload-cleanup.service';
 import { UploadService } from './upload.service';
 
 @Module({
@@ -15,6 +16,7 @@ import { UploadService } from './upload.service';
     S3StorageService,
     PhotoProcessingQueue,
     PhotoProcessingWorker,
+    UploadCleanupService,
   ],
   exports: [UploadService],
 })

@@ -55,12 +55,17 @@ class CallbackAdapter implements HttpClientAdapter {
   }
 }
 
-ResponseBody jsonResponse(Map<String, Object?> body, {int statusCode = 200}) {
+ResponseBody jsonResponse(
+  Map<String, Object?> body, {
+  int statusCode = 200,
+  Map<String, List<String>> headers = const {},
+}) {
   return ResponseBody.fromString(
     jsonEncode(body),
     statusCode,
     headers: {
       Headers.contentTypeHeader: [Headers.jsonContentType],
+      ...headers,
     },
   );
 }

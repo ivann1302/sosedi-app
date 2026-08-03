@@ -4,6 +4,15 @@ ADR хранит только принятое business, legal, provider или 
 Исполняемые задачи, порядок, Definition of Done и прогресс остаются в
 [`MVP_CHECKLIST.md`](../../MVP_CHECKLIST.md).
 
+## Реестр
+
+| ADR | Status | Решение |
+| --- | --- | --- |
+| [0001](0001-paid-neighbor-item-rental.md) | ACCEPTED | Платная P2P-аренда разрешённых вещей между соседями; domain migration от tool prototype обязательна до следующей продуктовой функции. |
+| [0002](0002-account-data-lifecycle.md) | ACCEPTED | Категорийные сроки export/delete, scoped legal hold и сохранение минимального financial/audit trail. |
+| [0003](0003-launch-category-safety-policy.md) | ACCEPTED | Deny-by-default launch whitelist, запрещённые/ограниченные категории и обязательные safety-предупреждения. |
+| [0004](0004-delivery-out-of-mvp-1.md) | ACCEPTED | Delivery entry point и передача адреса внешнему приложению исключены из MVP 1.0; личный handover независим. |
+
 ## Статусы
 
 - `PROPOSED` — решение обсуждается и не разблокирует зависимые функции.

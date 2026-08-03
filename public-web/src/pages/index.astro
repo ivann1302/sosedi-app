@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Правила и поддержка"
+  description="Публичные документы, правила безопасности и закрытие аккаунта Sosedi"
+>
+  <section class="home-hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Шеринг вещей в вашем районе</p>
+      <h1>Всё нужное уже есть рядом с вами</h1>
+      <p class="lead">
+        «Соседи» помогает найти, забронировать и безопасно передать вещь рядом с
+        домом. Сервис готовится к запуску, а правила уже можно изучить.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="/documents/">Посмотреть правила</a>
+        <a class="button" href="/support/">Поддержка</a>
+      </div>
+      <div class="notice" role="status">
+        Публичное бронирование и production-платежи ещё не запущены.
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <img src="/logo/sosedi-mark-orange.svg" alt="" width="56" height="56" />
+      <div>
+        <strong>Нужная вещь может быть рядом</strong>
+        <p>Понятные условия, даты и безопасная передача.</p>
+      </div>
+    </div>
+  </section>
+  <section class="card-grid" aria-label="Разделы сайта">
+    <a class="card" href="/documents/">
+      <h2>Документы</h2>
+      <p>Оферта, правила аренды, privacy и политика категорий с версиями.</p>
+    </a>
+    <a class="card" href="/support/">
+      <h2>Поддержка</h2>
+      <p>Статус каналов и безопасный порядок обращения.</p>
+    </a>
+    <a class="card" href="/account-deletion/">
+      <h2>Закрытие аккаунта</h2>
+      <p>Что происходит сразу, что может быть отложено и почему.</p>
+    </a>
+  </section>
+</BaseLayout>

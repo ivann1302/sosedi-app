@@ -4,6 +4,8 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/sosedi_logo.dart';
 import '../domain/auth_controller.dart';
 import '../domain/auth_state.dart';
 import '../domain/auth_validators.dart';
@@ -28,25 +30,40 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
           child: FormBuilder(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 36),
-                Icon(
-                  Icons.handyman,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.primary,
+                const SosediLogo(markSize: 32),
+                const SizedBox(height: 52),
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.warmSand,
+                    borderRadius: BorderRadius.circular(AppRadii.medium),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.phone_iphone_rounded,
+                    size: 36,
+                    color: AppColors.slate800,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Вход по SMS',
-                  style: Theme.of(context).textTheme.headlineMedium,
+                  'Рады видеть вас',
+                  style: Theme.of(context).textTheme.displaySmall,
                 ),
                 const SizedBox(height: 8),
-                const Text('Укажите российский номер телефона.'),
+                Text(
+                  'Введите номер — пришлём код для входа.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
+                ),
                 const SizedBox(height: 28),
                 FormBuilderTextField(
                   name: 'phone',
@@ -60,7 +77,10 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Телефон',
                     hintText: '+7 999 123 45 67',
-                    prefixIcon: Icon(Icons.phone),
+                    prefixIcon: Icon(
+                      Icons.phone_outlined,
+                      color: AppColors.slate700,
+                    ),
                   ),
                   onSubmitted: (_) => _submit(),
                 ),
@@ -83,6 +103,11 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                       : const Icon(Icons.sms),
                   label: const Text('Получить код'),
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  'Продолжая, вы подтверждаете согласие с правилами сервиса.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -98,9 +123,9 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     }
 
     final phone = form.value['phone'] as String;
-    final success = await ref.read(authControllerProvider.notifier).requestOtp(
-          phone,
-        );
+    final success = await ref
+        .read(authControllerProvider.notifier)
+        .requestOtp(phone);
 
     if (mounted && success) {
       context.go('/auth/otp');

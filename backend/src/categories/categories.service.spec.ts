@@ -9,12 +9,16 @@ type TestCategory = {
   iconName: string | null;
   sortOrder: number;
   isActive: boolean;
+  isAllowedForListings: boolean;
+  listingPolicy: 'ALLOWED' | 'RESTRICTED' | 'PROHIBITED';
+  safetyNotice: string;
   createdAt: Date;
   updatedAt: Date;
 };
 
 function createService(initialCategories: TestCategory[] = []) {
   const categories = new Map<string, TestCategory>();
+  const auditEntries: Array<Record<string, unknown>> = [];
 
   for (const category of initialCategories) {
     categories.set(category.id, category);
@@ -25,7 +29,9 @@ function createService(initialCategories: TestCategory[] = []) {
       findMany: jest.fn(() => {
         return Promise.resolve(
           Array.from(categories.values())
-            .filter((category) => category.isActive)
+            .filter(
+              (category) => category.isActive && category.isAllowedForListings,
+            )
             .sort(
               (left, right) =>
                 left.sortOrder - right.sortOrder ||
@@ -53,6 +59,11 @@ function createService(initialCategories: TestCategory[] = []) {
           iconName: data.iconName ?? null,
           sortOrder: data.sortOrder ?? 0,
           isActive: data.isActive ?? true,
+          isAllowedForListings: data.isAllowedForListings ?? false,
+          listingPolicy: data.listingPolicy ?? 'RESTRICTED',
+          safetyNotice:
+            data.safetyNotice ??
+            'Категория требует отдельной проверки перед публикацией.',
           createdAt: new Date('2026-06-01T10:00:00.000Z'),
           updatedAt: new Date('2026-06-01T10:00:00.000Z'),
         };
@@ -79,32 +90,52 @@ function createService(initialCategories: TestCategory[] = []) {
         },
       ),
     },
+    adminAuditLog: {
+      create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
+        auditEntries.push(data);
+        return Promise.resolve(data);
+      }),
+    },
+    $transaction: jest.fn(
+      (
+        callback: (transaction: typeof prisma) => Promise<unknown>,
+      ): Promise<unknown> => callback(prisma),
+    ),
   } as unknown as PrismaService;
 
   return {
     service: new CategoriesService(prisma),
     categories,
+    auditEntries,
   };
 }
 
 const baseCategories: TestCategory[] = [
   {
     id: 'category-1',
-    name: 'Перфораторы',
-    slug: 'perforatory',
-    iconName: 'hammer',
+    name: 'Проекторы и экраны',
+    slug: 'proektory-i-ekrany',
+    iconName: 'projector',
     sortOrder: 20,
     isActive: true,
+    isAllowedForListings: true,
+    listingPolicy: 'ALLOWED',
+    safetyNotice:
+      'Перед передачей проверьте комплектность, кабели и исправность устройства.',
     createdAt: new Date('2026-06-01T10:00:00.000Z'),
     updatedAt: new Date('2026-06-01T10:00:00.000Z'),
   },
   {
     id: 'category-2',
-    name: 'Дрели и шуруповерты',
-    slug: 'dreli-i-shurupoverty',
-    iconName: 'drill',
+    name: 'Фото и видео',
+    slug: 'foto-i-video',
+    iconName: 'camera',
     sortOrder: 10,
     isActive: true,
+    isAllowedForListings: true,
+    listingPolicy: 'ALLOWED',
+    safetyNotice:
+      'Перед передачей проверьте комплектность, аккумулятор и удалите личные данные.',
     createdAt: new Date('2026-06-01T10:00:00.000Z'),
     updatedAt: new Date('2026-06-01T10:00:00.000Z'),
   },
@@ -115,28 +146,42 @@ const baseCategories: TestCategory[] = [
     iconName: null,
     sortOrder: 5,
     isActive: false,
+    isAllowedForListings: false,
+    listingPolicy: 'PROHIBITED',
+    safetyNotice: 'Публикация этой категории запрещена правилами площадки.',
     createdAt: new Date('2026-06-01T10:00:00.000Z'),
     updatedAt: new Date('2026-06-01T10:00:00.000Z'),
   },
 ];
 
 describe('CategoriesService', () => {
+  const auditContext = {
+    requestId: 'category-request-1',
+    ipAddress: '127.0.0.1',
+    deviceId: 'device-hash',
+  };
+
   it('returns active categories ordered for public list', async () => {
     const { service } = createService(baseCategories);
 
     await expect(service.listActive()).resolves.toMatchObject([
-      { slug: 'dreli-i-shurupoverty', isActive: true },
-      { slug: 'perforatory', isActive: true },
+      { slug: 'foto-i-video', isActive: true },
+      { slug: 'proektory-i-ekrany', isActive: true },
     ]);
   });
 
   it('returns active category by slug', async () => {
     const { service } = createService(baseCategories);
 
-    await expect(service.getBySlug('perforatory')).resolves.toMatchObject({
+    await expect(
+      service.getBySlug('proektory-i-ekrany'),
+    ).resolves.toMatchObject({
       id: 'category-1',
-      name: 'Перфораторы',
-      slug: 'perforatory',
+      name: 'Проекторы и экраны',
+      slug: 'proektory-i-ekrany',
+      listingPolicy: 'ALLOWED',
+      safetyNotice:
+        'Перед передачей проверьте комплектность, кабели и исправность устройства.',
     });
   });
 
@@ -149,40 +194,80 @@ describe('CategoriesService', () => {
   });
 
   it('creates, updates and disables category', async () => {
-    const { service, categories } = createService();
+    const { service, categories, auditEntries } = createService();
 
-    const created = await service.create({
-      name: 'Компрессоры',
-      slug: 'kompressory',
-      iconName: 'gauge',
-      sortOrder: 60,
-    });
+    const created = await service.create(
+      'admin-1',
+      {
+        name: 'Фото и видео',
+        slug: 'kompressory',
+        iconName: 'gauge',
+        sortOrder: 60,
+      },
+      auditContext,
+    );
 
     await expect(
-      service.update(created.id, {
-        name: 'Компрессоры и пневмоинструмент',
-        iconName: null,
-      }),
+      service.update(
+        'admin-1',
+        created.id,
+        {
+          name: 'Фото и видео',
+          iconName: null,
+        },
+        auditContext,
+      ),
     ).resolves.toMatchObject({
-      name: 'Компрессоры и пневмоинструмент',
+      name: 'Фото и видео',
       iconName: null,
     });
 
-    await expect(service.disable(created.id)).resolves.toMatchObject({
+    await expect(
+      service.disable('admin-1', created.id, auditContext),
+    ).resolves.toMatchObject({
       isActive: false,
     });
     expect(categories.get(created.id)?.isActive).toBe(false);
+    expect(created.isAllowedForListings).toBe(false);
+    expect(created.listingPolicy).toBe('RESTRICTED');
+    expect(created.safetyNotice).toBe(
+      'Категория требует отдельной проверки перед публикацией.',
+    );
+    expect(auditEntries).toMatchObject([
+      {
+        adminId: 'admin-1',
+        action: 'CATEGORY_CREATED',
+        entityId: created.id,
+        requestId: auditContext.requestId,
+      },
+      {
+        adminId: 'admin-1',
+        action: 'CATEGORY_UPDATED',
+        entityId: created.id,
+      },
+      {
+        adminId: 'admin-1',
+        action: 'CATEGORY_DISABLED',
+        entityId: created.id,
+      },
+    ]);
+    expect(JSON.stringify(auditEntries)).not.toContain('safetyNotice');
   });
 
-  it.each(['name', 'slug', 'sortOrder', 'isActive'])(
+  it.each(['name', 'slug', 'sortOrder'])(
     'rejects null update for required field %s',
     async (field) => {
       const { service } = createService(baseCategories);
 
       await expect(
-        service.update('category-1', {
-          [field]: null,
-        }),
+        service.update(
+          'admin-1',
+          'category-1',
+          {
+            [field]: null,
+          },
+          auditContext,
+        ),
       ).rejects.toBeInstanceOf(BadRequestException);
     },
   );

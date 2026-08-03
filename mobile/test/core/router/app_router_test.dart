@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/compatibility/compatibility_gate.dart';
 import 'package:mobile/core/router/app_router.dart';
 import 'package:mobile/core/storage/onboarding_storage.dart';
 import 'package:mobile/features/auth/data/auth_models.dart';
@@ -10,7 +11,7 @@ void main() {
   const user = AuthUser(
     id: 'user-1',
     phone: '+79991234567',
-    role: 'RENTER',
+    role: 'USER',
     isBlocked: false,
   );
 
@@ -150,6 +151,33 @@ void main() {
       );
     });
   }
+
+  test('forces the update route before onboarding or authentication', () {
+    const requirement = UpdateRequirement(
+      code: 'MOBILE_UPDATE_REQUIRED',
+      message: 'Требуется обновление',
+      minimumVersion: '2.0.0',
+    );
+
+    expect(
+      appRedirect(
+        const AuthState.unauthenticated(),
+        false,
+        '/onboarding',
+        updateRequirement: requirement,
+      ),
+      '/update-required',
+    );
+    expect(
+      appRedirect(
+        const AuthState.authenticated(user: user),
+        true,
+        '/update-required',
+        updateRequirement: requirement,
+      ),
+      isNull,
+    );
+  });
 
   test('keeps one router instance across auth and onboarding updates', () {
     final container = ProviderContainer(

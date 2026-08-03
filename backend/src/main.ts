@@ -1,19 +1,18 @@
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { Server } from 'node:http';
 import { AppModule } from './app.module';
-import { configureApp } from './app.setup';
+import { configureApp, configureHttpServer } from './app.setup';
+import { RedactingLogger } from './common/logging/redacting-logger';
+import { configureSwagger } from './swagger.setup';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+    logger: new RedactingLogger(),
+  });
   configureApp(app);
-
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Соседи API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
+  configureSwagger(app);
+  configureHttpServer(app.getHttpServer() as Server);
 
   await app.listen(process.env.PORT ?? 3000);
 }

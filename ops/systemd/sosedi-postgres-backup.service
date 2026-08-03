@@ -1,0 +1,32 @@
+[Unit]
+Description=Sosedi encrypted PostgreSQL backup
+Wants=network-online.target
+After=network-online.target
+ConditionPathIsDirectory=/opt/sosedi/current/backend
+
+[Service]
+Type=oneshot
+User=sosedi-backup
+Group=sosedi-backup
+WorkingDirectory=/opt/sosedi/current/backend
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/sosedi/backup.env
+ExecStartPre=/usr/bin/test -r /etc/sosedi/backup.env
+ExecStart=/usr/bin/node dist/src/operations/postgres-backup.js
+TimeoutStartSec=60min
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+ReadWritePaths=/var/lib/node_exporter/textfile_collector
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sosedi-postgres-backup

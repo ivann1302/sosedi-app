@@ -18,7 +18,7 @@ export class RequestUploadUrlDto {
   @IsEnum(UploadPurpose)
   purpose: UploadPurpose;
 
-  @ApiProperty({ example: 'perforator.jpg' })
+  @ApiProperty({ example: 'projector.jpg' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(180)
@@ -36,8 +36,20 @@ export class RequestUploadUrlDto {
   @Max(MAX_UPLOAD_SIZE_BYTES)
   sizeBytes: number;
 
-  @ApiPropertyOptional({ description: 'Обязательно для фото инструмента' })
+  @ApiPropertyOptional({ description: 'Обязательно для фото вещи' })
   @IsOptional()
   @IsUUID()
-  toolId?: string;
+  itemId?: string;
+
+  @ApiPropertyOptional({ description: 'Обязательно для evidence бронирования' })
+  @IsOptional()
+  @IsUUID()
+  bookingId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Обязательно для вложения обычного обращения',
+  })
+  @IsOptional()
+  @IsUUID()
+  supportTicketId?: string;
 }

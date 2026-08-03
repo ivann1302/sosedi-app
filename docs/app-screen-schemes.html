@@ -1,0 +1,2029 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Соседи — схемы экранов мобильного приложения</title>
+    <style>
+      :root {
+        --ink: #17332f;
+        --muted: #6e7d79;
+        --paper: #f4f1e9;
+        --surface: #fffdf8;
+        --surface-2: #f8f6f0;
+        --line: #dcded7;
+        --green: #0f766e;
+        --green-dark: #095a54;
+        --green-soft: #dcedea;
+        --yellow: #f4c95d;
+        --yellow-soft: #fff3cd;
+        --coral: #e4775b;
+        --shadow: 0 28px 70px rgba(23, 51, 47, 0.13);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-width: 1180px;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 8% 0%, rgba(244, 201, 93, 0.22), transparent 25rem),
+          radial-gradient(circle at 92% 26%, rgba(15, 118, 110, 0.1), transparent 30rem),
+          var(--paper);
+        font-family:
+          Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      .page {
+        width: min(1440px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 30px 0 70px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        place-items: center;
+        border-radius: 15px;
+        color: white;
+        background: var(--green);
+        box-shadow: 0 10px 24px rgba(15, 118, 110, 0.25);
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .brand-name {
+        font-size: 20px;
+        font-weight: 850;
+        letter-spacing: -0.02em;
+      }
+
+      .brand-note {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .version {
+        padding: 9px 13px;
+        border: 1px solid rgba(15, 118, 110, 0.18);
+        border-radius: 99px;
+        color: var(--green-dark);
+        background: rgba(255, 255, 255, 0.62);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+        gap: 28px;
+        align-items: end;
+        margin-bottom: 34px;
+      }
+
+      h1 {
+        max-width: 850px;
+        margin: 0;
+        font-size: clamp(40px, 6vw, 76px);
+        line-height: 0.95;
+        letter-spacing: -0.065em;
+      }
+
+      .hero p {
+        max-width: 560px;
+        margin: 0 0 4px auto;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.55;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 240px minmax(410px, 1fr) 280px;
+        gap: 18px;
+        min-height: 780px;
+        padding: 18px;
+        border: 1px solid rgba(23, 51, 47, 0.08);
+        border-radius: 34px;
+        background: rgba(255, 253, 248, 0.72);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .panel {
+        border: 1px solid rgba(23, 51, 47, 0.08);
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .navigator {
+        padding: 18px;
+      }
+
+      .eyebrow {
+        margin-bottom: 12px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .screen-list {
+        display: grid;
+        gap: 6px;
+      }
+
+      .screen-link {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 10px;
+        align-items: center;
+        width: 100%;
+        padding: 8px;
+        border: 0;
+        border-radius: 12px;
+        text-align: left;
+        background: transparent;
+        cursor: pointer;
+        transition: 160ms ease;
+      }
+
+      .screen-link:hover {
+        background: var(--surface-2);
+      }
+
+      .screen-link.active {
+        color: var(--green-dark);
+        background: var(--green-soft);
+      }
+
+      .screen-number {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 10px;
+        background: white;
+        font-size: 11px;
+        font-weight: 850;
+      }
+
+      .screen-link.active .screen-number {
+        color: white;
+        background: var(--green);
+      }
+
+      .screen-label {
+        font-size: 13px;
+        font-weight: 780;
+      }
+
+      .screen-role {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .stage {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 744px;
+        overflow: hidden;
+        border-radius: 22px;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)),
+          linear-gradient(90deg, rgba(15, 118, 110, 0.05) 1px, transparent 1px),
+          linear-gradient(rgba(15, 118, 110, 0.05) 1px, transparent 1px);
+        background-size: auto, 28px 28px, 28px 28px;
+      }
+
+      .stage::before,
+      .stage::after {
+        position: absolute;
+        border-radius: 50%;
+        content: "";
+        filter: blur(2px);
+      }
+
+      .stage::before {
+        top: 9%;
+        right: 10%;
+        width: 150px;
+        height: 150px;
+        background: rgba(244, 201, 93, 0.28);
+      }
+
+      .stage::after {
+        bottom: 7%;
+        left: 8%;
+        width: 190px;
+        height: 190px;
+        background: rgba(15, 118, 110, 0.11);
+      }
+
+      .phone {
+        position: relative;
+        z-index: 1;
+        width: 360px;
+        height: 720px;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.78);
+        border-radius: 45px;
+        background: #18332f;
+        box-shadow:
+          0 36px 70px rgba(23, 51, 47, 0.24),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+      }
+
+      .phone::before {
+        position: absolute;
+        z-index: 4;
+        top: 17px;
+        left: 50%;
+        width: 104px;
+        height: 24px;
+        border-radius: 99px;
+        background: #18332f;
+        content: "";
+        transform: translateX(-50%);
+      }
+
+      .phone-screen {
+        position: relative;
+        height: 100%;
+        overflow: hidden;
+        border-radius: 36px;
+        background: var(--surface);
+      }
+
+      .statusbar {
+        position: absolute;
+        z-index: 5;
+        top: 0;
+        left: 0;
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        height: 42px;
+        padding: 12px 20px 0;
+        font-size: 10px;
+        font-weight: 800;
+        pointer-events: none;
+      }
+
+      .screen {
+        position: absolute;
+        inset: 0;
+        display: none;
+        overflow: auto;
+        scrollbar-width: none;
+      }
+
+      .screen::-webkit-scrollbar {
+        display: none;
+      }
+
+      .screen.active {
+        display: block;
+        animation: screen-in 220ms ease;
+      }
+
+      @keyframes screen-in {
+        from {
+          opacity: 0;
+          transform: translateY(7px);
+        }
+      }
+
+      .screen-body {
+        min-height: 100%;
+        padding: 54px 18px 90px;
+      }
+
+      .screen-body.no-nav {
+        padding-bottom: 24px;
+      }
+
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+
+      .app-header h2,
+      .page-title {
+        margin: 0;
+        font-size: 25px;
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+      }
+
+      .greeting {
+        margin: 0 0 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .icon-button,
+      .back-button {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: white;
+        cursor: pointer;
+      }
+
+      .back-button {
+        margin-bottom: 16px;
+      }
+
+      .avatar {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border: 2px solid white;
+        border-radius: 50%;
+        color: white;
+        background: var(--green);
+        box-shadow: 0 0 0 1px var(--line);
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .search {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 13px;
+        padding: 12px 13px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        color: var(--muted);
+        background: white;
+        font-size: 12px;
+      }
+
+      .chips {
+        display: flex;
+        gap: 7px;
+        margin: 0 -18px 16px;
+        padding: 0 18px;
+        overflow: hidden;
+      }
+
+      .chip {
+        flex: 0 0 auto;
+        padding: 8px 11px;
+        border: 1px solid var(--line);
+        border-radius: 99px;
+        background: white;
+        font-size: 10px;
+        font-weight: 720;
+      }
+
+      .chip.active {
+        color: white;
+        border-color: var(--green);
+        background: var(--green);
+      }
+
+      .section-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 13px 0 10px;
+      }
+
+      .section-row h3 {
+        margin: 0;
+        font-size: 15px;
+        letter-spacing: -0.02em;
+      }
+
+      .section-row span {
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 750;
+      }
+
+      .promo {
+        display: grid;
+        grid-template-columns: 1.3fr 0.7fr;
+        min-height: 112px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        border-radius: 18px;
+        color: white;
+        background: var(--green);
+      }
+
+      .promo-copy {
+        padding: 16px;
+      }
+
+      .promo small {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 9px;
+        font-weight: 750;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .promo strong {
+        display: block;
+        margin-top: 7px;
+        font-size: 17px;
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+      }
+
+      .promo-visual {
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18), transparent 58%);
+        font-size: 52px;
+        transform: rotate(-8deg);
+      }
+
+      .item-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .item-card {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: white;
+        cursor: pointer;
+      }
+
+      .item-photo {
+        position: relative;
+        display: grid;
+        height: 112px;
+        place-items: center;
+        background:
+          radial-gradient(circle at 50% 40%, white, transparent 60%),
+          #e8ede9;
+        font-size: 48px;
+      }
+
+      .item-photo.warm {
+        background:
+          radial-gradient(circle at 50% 40%, white, transparent 60%),
+          #f5ead7;
+      }
+
+      .item-photo.blue {
+        background:
+          radial-gradient(circle at 50% 40%, white, transparent 60%),
+          #e1ecf1;
+      }
+
+      .heart {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: grid;
+        width: 25px;
+        height: 25px;
+        place-items: center;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.88);
+        font-size: 11px;
+      }
+
+      .item-copy {
+        padding: 10px;
+      }
+
+      .item-copy strong {
+        display: block;
+        min-height: 29px;
+        font-size: 12px;
+        line-height: 1.2;
+      }
+
+      .item-price {
+        margin-top: 7px;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .item-meta {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        z-index: 4;
+        right: 10px;
+        bottom: 10px;
+        left: 10px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        height: 69px;
+        padding: 8px 5px;
+        border-radius: 0 0 34px 34px;
+        background: rgba(255, 253, 248, 0.94);
+        box-shadow: 0 -10px 24px rgba(23, 51, 47, 0.06);
+        backdrop-filter: blur(12px);
+      }
+
+      .nav-item {
+        display: grid;
+        place-items: center;
+        align-content: center;
+        gap: 3px;
+        border: 0;
+        color: var(--muted);
+        background: transparent;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      .nav-item span {
+        font-size: 8px;
+        font-weight: 700;
+      }
+
+      .nav-item.active {
+        color: var(--green);
+      }
+
+      .details-hero {
+        position: relative;
+        display: grid;
+        height: 270px;
+        margin: -54px -18px 18px;
+        place-items: center;
+        background:
+          radial-gradient(circle at 50% 40%, white, transparent 55%),
+          #e7ece8;
+        font-size: 108px;
+      }
+
+      .details-actions {
+        position: absolute;
+        top: 54px;
+        right: 16px;
+        left: 16px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .image-count {
+        position: absolute;
+        right: 15px;
+        bottom: 13px;
+        padding: 6px 9px;
+        border-radius: 99px;
+        color: white;
+        background: rgba(23, 51, 47, 0.72);
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .detail-title {
+        margin: 0 0 7px;
+        font-size: 24px;
+        line-height: 1.06;
+        letter-spacing: -0.035em;
+      }
+
+      .detail-price {
+        font-size: 18px;
+        font-weight: 850;
+      }
+
+      .detail-price span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 550;
+      }
+
+      .trust-row {
+        display: flex;
+        gap: 8px;
+        margin: 15px 0;
+      }
+
+      .trust-pill {
+        padding: 8px 9px;
+        border-radius: 10px;
+        color: var(--green-dark);
+        background: var(--green-soft);
+        font-size: 9px;
+        font-weight: 750;
+      }
+
+      .description {
+        color: #52625e;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .owner-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 15px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: white;
+      }
+
+      .owner-copy {
+        flex: 1;
+      }
+
+      .owner-copy strong {
+        display: block;
+        font-size: 11px;
+      }
+
+      .owner-copy span {
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .sticky-action {
+        position: absolute;
+        z-index: 3;
+        right: 10px;
+        bottom: 10px;
+        left: 10px;
+        display: flex;
+        gap: 10px;
+        padding: 12px 12px 13px;
+        border-radius: 0 0 34px 34px;
+        background: rgba(255, 253, 248, 0.96);
+        box-shadow: 0 -8px 24px rgba(23, 51, 47, 0.07);
+      }
+
+      .primary-button,
+      .secondary-button {
+        display: grid;
+        min-height: 44px;
+        place-items: center;
+        border-radius: 13px;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .primary-button {
+        flex: 1;
+        border: 0;
+        color: white;
+        background: var(--green);
+        box-shadow: 0 8px 18px rgba(15, 118, 110, 0.2);
+      }
+
+      .primary-button:hover {
+        background: var(--green-dark);
+      }
+
+      .secondary-button {
+        border: 1px solid var(--line);
+        background: white;
+      }
+
+      .map-canvas {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background:
+          linear-gradient(31deg, transparent 46%, rgba(255, 255, 255, 0.8) 47%, rgba(255, 255, 255, 0.8) 52%, transparent 53%),
+          linear-gradient(117deg, transparent 46%, rgba(255, 255, 255, 0.7) 47%, rgba(255, 255, 255, 0.7) 51%, transparent 52%),
+          linear-gradient(74deg, transparent 47%, rgba(134, 184, 156, 0.25) 48%, rgba(134, 184, 156, 0.25) 60%, transparent 61%),
+          #e9e9dd;
+        background-size: 180px 230px, 240px 190px, 200px 300px, auto;
+      }
+
+      .map-top {
+        position: absolute;
+        z-index: 2;
+        top: 50px;
+        right: 16px;
+        left: 16px;
+      }
+
+      .map-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 13px;
+        border-radius: 15px;
+        background: white;
+        box-shadow: 0 10px 28px rgba(23, 51, 47, 0.14);
+        font-size: 11px;
+      }
+
+      .map-pin {
+        position: absolute;
+        display: grid;
+        min-width: 42px;
+        height: 29px;
+        place-items: center;
+        padding: 0 8px;
+        border: 2px solid white;
+        border-radius: 99px 99px 99px 8px;
+        color: white;
+        background: var(--green);
+        box-shadow: 0 6px 14px rgba(23, 51, 47, 0.2);
+        font-size: 9px;
+        font-weight: 850;
+        transform: rotate(-6deg);
+      }
+
+      .map-pin span {
+        transform: rotate(6deg);
+      }
+
+      .map-pin.one {
+        top: 210px;
+        left: 72px;
+      }
+
+      .map-pin.two {
+        top: 300px;
+        right: 54px;
+      }
+
+      .map-pin.three {
+        top: 400px;
+        left: 138px;
+      }
+
+      .map-location {
+        position: absolute;
+        right: 18px;
+        bottom: 207px;
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 13px;
+        background: white;
+        box-shadow: 0 8px 18px rgba(23, 51, 47, 0.12);
+      }
+
+      .map-sheet {
+        position: absolute;
+        z-index: 2;
+        right: 10px;
+        bottom: 10px;
+        left: 10px;
+        height: 188px;
+        padding: 11px 14px 78px;
+        border-radius: 24px 24px 34px 34px;
+        background: white;
+        box-shadow: 0 -16px 32px rgba(23, 51, 47, 0.12);
+      }
+
+      .sheet-handle {
+        width: 36px;
+        height: 4px;
+        margin: 0 auto 11px;
+        border-radius: 99px;
+        background: var(--line);
+      }
+
+      .mini-item {
+        display: grid;
+        grid-template-columns: 82px 1fr;
+        gap: 11px;
+      }
+
+      .mini-photo {
+        display: grid;
+        height: 78px;
+        place-items: center;
+        border-radius: 14px;
+        background: #e7ece8;
+        font-size: 36px;
+      }
+
+      .mini-item strong {
+        font-size: 12px;
+      }
+
+      .mini-item p {
+        margin: 5px 0;
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .mini-item b {
+        font-size: 12px;
+      }
+
+      .form-section {
+        margin-top: 18px;
+      }
+
+      .form-section h3 {
+        margin: 0 0 10px;
+        font-size: 13px;
+      }
+
+      .photo-upload {
+        display: grid;
+        grid-template-columns: 1.3fr 0.7fr 0.7fr;
+        gap: 8px;
+      }
+
+      .photo-box {
+        display: grid;
+        height: 84px;
+        place-items: center;
+        border: 1px dashed #aebbb7;
+        border-radius: 14px;
+        color: var(--muted);
+        background: white;
+        text-align: center;
+        font-size: 9px;
+      }
+
+      .photo-box.filled {
+        border-style: solid;
+        background: #e7ece8;
+        font-size: 32px;
+      }
+
+      .field {
+        margin-bottom: 9px;
+        padding: 11px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: white;
+      }
+
+      .field label {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 8px;
+        font-weight: 700;
+      }
+
+      .field div {
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+      }
+
+      .hint-card {
+        display: flex;
+        gap: 9px;
+        margin: 12px 0;
+        padding: 11px;
+        border-radius: 12px;
+        color: #705a1d;
+        background: var(--yellow-soft);
+        font-size: 9px;
+        line-height: 1.35;
+      }
+
+      .calendar {
+        margin: 15px 0;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: white;
+      }
+
+      .calendar-head {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        text-align: center;
+        font-size: 9px;
+      }
+
+      .calendar-grid span {
+        display: grid;
+        height: 26px;
+        place-items: center;
+        border-radius: 8px;
+      }
+
+      .calendar-grid .day-name {
+        height: 18px;
+        color: var(--muted);
+        font-size: 7px;
+        font-weight: 800;
+      }
+
+      .calendar-grid .selected {
+        color: white;
+        background: var(--green);
+      }
+
+      .calendar-grid .range {
+        color: var(--green-dark);
+        background: var(--green-soft);
+      }
+
+      .summary-card {
+        padding: 13px;
+        border-radius: 16px;
+        background: #eff4f1;
+      }
+
+      .summary-line {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 10px;
+      }
+
+      .summary-line.total {
+        margin: 12px 0 0;
+        padding-top: 11px;
+        border-top: 1px solid #d4ddd8;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .segment {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        margin: 15px 0;
+        padding: 3px;
+        border-radius: 12px;
+        background: #eceee9;
+      }
+
+      .segment button {
+        padding: 9px;
+        border: 0;
+        border-radius: 9px;
+        color: var(--muted);
+        background: transparent;
+        font-size: 10px;
+        font-weight: 750;
+      }
+
+      .segment button.active {
+        color: var(--ink);
+        background: white;
+        box-shadow: 0 2px 7px rgba(23, 51, 47, 0.08);
+      }
+
+      .booking-card,
+      .notification-card {
+        margin-bottom: 10px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: white;
+      }
+
+      .booking-card {
+        display: grid;
+        grid-template-columns: 66px 1fr;
+        gap: 10px;
+      }
+
+      .booking-photo {
+        display: grid;
+        height: 66px;
+        place-items: center;
+        border-radius: 12px;
+        background: #e7ece8;
+        font-size: 29px;
+      }
+
+      .booking-copy strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 11px;
+      }
+
+      .booking-copy p {
+        margin: 0 0 7px;
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .status {
+        display: inline-block;
+        padding: 5px 7px;
+        border-radius: 7px;
+        color: var(--green-dark);
+        background: var(--green-soft);
+        font-size: 8px;
+        font-weight: 800;
+      }
+
+      .status.yellow {
+        color: #7c5b00;
+        background: var(--yellow-soft);
+      }
+
+      .notification-card {
+        display: grid;
+        grid-template-columns: 34px 1fr auto;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .notification-icon {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 11px;
+        background: var(--green-soft);
+      }
+
+      .notification-copy strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 10px;
+      }
+
+      .notification-copy p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 9px;
+        line-height: 1.35;
+      }
+
+      .notification-time {
+        color: var(--muted);
+        font-size: 8px;
+      }
+
+      .profile-hero {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin: 10px 0 20px;
+      }
+
+      .avatar.large {
+        width: 62px;
+        height: 62px;
+        font-size: 19px;
+      }
+
+      .profile-hero h3 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+
+      .profile-hero p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .mode-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+        margin-bottom: 18px;
+      }
+
+      .mode-card {
+        padding: 13px;
+        border-radius: 14px;
+        background: var(--green-soft);
+      }
+
+      .mode-card.yellow {
+        background: var(--yellow-soft);
+      }
+
+      .mode-card span {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 18px;
+      }
+
+      .mode-card strong {
+        font-size: 10px;
+      }
+
+      .mode-card p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 8px;
+      }
+
+      .menu {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: white;
+      }
+
+      .menu-row {
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        align-items: center;
+        min-height: 48px;
+        padding: 0 12px;
+        border-bottom: 1px solid #eceee9;
+        font-size: 10px;
+        font-weight: 680;
+      }
+
+      .menu-row:last-child {
+        border-bottom: 0;
+      }
+
+      .onboarding {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100%;
+        padding: 82px 24px 28px;
+        text-align: center;
+        background:
+          radial-gradient(circle at 50% 28%, rgba(244, 201, 93, 0.35), transparent 180px),
+          var(--surface);
+      }
+
+      .onboarding-art {
+        position: relative;
+        display: grid;
+        width: 230px;
+        height: 230px;
+        margin-bottom: 30px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--green-soft);
+      }
+
+      .onboarding-art::before,
+      .onboarding-art::after {
+        position: absolute;
+        width: 58px;
+        height: 58px;
+        border: 8px solid var(--surface);
+        border-radius: 50%;
+        background: var(--yellow);
+        content: "";
+      }
+
+      .onboarding-art::before {
+        top: 16px;
+        right: 3px;
+      }
+
+      .onboarding-art::after {
+        bottom: 8px;
+        left: 0;
+        background: var(--coral);
+      }
+
+      .neighbor-art {
+        z-index: 1;
+        font-size: 92px;
+      }
+
+      .onboarding h2 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.04;
+        letter-spacing: -0.04em;
+      }
+
+      .onboarding p {
+        margin: 12px 0 24px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .dots {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 22px;
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 99px;
+        background: #d4d8d2;
+      }
+
+      .dot.active {
+        width: 24px;
+        background: var(--green);
+      }
+
+      .full-width {
+        width: 100%;
+      }
+
+      .auth-logo {
+        display: grid;
+        width: 54px;
+        height: 54px;
+        margin: 38px 0 24px;
+        place-items: center;
+        border-radius: 17px;
+        color: white;
+        background: var(--green);
+        font-size: 26px;
+        font-weight: 900;
+      }
+
+      .phone-field {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 26px 0 12px;
+        padding: 14px;
+        border: 1.5px solid var(--green);
+        border-radius: 14px;
+        background: white;
+        font-size: 13px;
+      }
+
+      .phone-field span {
+        color: var(--muted);
+      }
+
+      .fine-print {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 8px;
+        line-height: 1.45;
+        text-align: center;
+      }
+
+      .notes {
+        display: flex;
+        flex-direction: column;
+        padding: 18px;
+      }
+
+      .note-block {
+        padding: 14px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .note-block:first-of-type {
+        border-top: 0;
+      }
+
+      .note-title {
+        margin-bottom: 7px;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .note-text {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.48;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: auto;
+        padding-top: 18px;
+      }
+
+      .legend span {
+        padding: 6px 8px;
+        border-radius: 8px;
+        color: var(--muted);
+        background: var(--surface-2);
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .flow-section {
+        margin-top: 46px;
+      }
+
+      .flow-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .flow-heading h2 {
+        margin: 0;
+        font-size: clamp(28px, 4vw, 44px);
+        letter-spacing: -0.045em;
+      }
+
+      .flow-heading p {
+        max-width: 430px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .flows {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .flow-card {
+        padding: 24px;
+        border: 1px solid rgba(23, 51, 47, 0.08);
+        border-radius: 24px;
+        background: rgba(255, 253, 248, 0.82);
+      }
+
+      .flow-card h3 {
+        margin: 0 0 18px;
+        font-size: 17px;
+      }
+
+      .flow-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: auto;
+        scrollbar-width: none;
+      }
+
+      .flow-node {
+        flex: 0 0 auto;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: white;
+        font-size: 10px;
+        font-weight: 760;
+      }
+
+      .flow-node.primary {
+        color: white;
+        border-color: var(--green);
+        background: var(--green);
+      }
+
+      .flow-arrow {
+        flex: 0 0 auto;
+        color: #9aa7a3;
+        font-size: 14px;
+      }
+
+      .scope-note {
+        margin-top: 16px;
+        padding: 18px 20px;
+        border-left: 4px solid var(--yellow);
+        border-radius: 0 15px 15px 0;
+        color: #5f5b4c;
+        background: rgba(255, 243, 205, 0.75);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">С</div>
+          <div>
+            <div class="brand-name">Соседи</div>
+            <div class="brand-note">Product UI · mobile MVP</div>
+          </div>
+        </div>
+        <div class="version">Концепт 01 · 27 июля 2026</div>
+      </header>
+
+      <section class="hero">
+        <h1>Вещи рядом.<br />Люди рядом.</h1>
+        <p>
+          Схема ключевых экранов P2P-аренды. Выберите экран слева или нажимайте
+          на активные элементы внутри телефона, чтобы пройти основные сценарии.
+        </p>
+      </section>
+
+      <section class="workspace">
+        <aside class="navigator panel">
+          <div class="eyebrow">Экраны</div>
+          <nav class="screen-list" aria-label="Список экранов">
+            <button class="screen-link active" data-screen-link="onboarding">
+              <span class="screen-number">01</span>
+              <span class="screen-label">Знакомство<span class="screen-role">первый запуск</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="auth">
+              <span class="screen-number">02</span>
+              <span class="screen-label">Вход по SMS<span class="screen-role">авторизация</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="catalog">
+              <span class="screen-number">03</span>
+              <span class="screen-label">Каталог<span class="screen-role">поиск рядом</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="map">
+              <span class="screen-number">04</span>
+              <span class="screen-label">Карта<span class="screen-role">примерные точки</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="item">
+              <span class="screen-number">05</span>
+              <span class="screen-label">Карточка вещи<span class="screen-role">условия аренды</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="booking">
+              <span class="screen-number">06</span>
+              <span class="screen-label">Бронирование<span class="screen-role">даты и цена</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="create">
+              <span class="screen-number">07</span>
+              <span class="screen-label">Сдать вещь<span class="screen-role">новое объявление</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="rentals">
+              <span class="screen-number">08</span>
+              <span class="screen-label">Мои аренды<span class="screen-role">беру и сдаю</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="inbox">
+              <span class="screen-number">09</span>
+              <span class="screen-label">Уведомления<span class="screen-role">in-app inbox</span></span>
+            </button>
+            <button class="screen-link" data-screen-link="profile">
+              <span class="screen-number">10</span>
+              <span class="screen-label">Профиль<span class="screen-role">аккаунт и помощь</span></span>
+            </button>
+          </nav>
+        </aside>
+
+        <div class="stage">
+          <div class="phone" aria-label="Интерактивный макет телефона">
+            <div class="phone-screen">
+              <div class="statusbar"><span>9:41</span><span>● ◔ ▰</span></div>
+
+              <section class="screen active" data-screen="onboarding" style="display: block">
+                <div class="onboarding">
+                  <div class="onboarding-art">
+                    <div class="neighbor-art">🤝</div>
+                  </div>
+                  <h2>Полезные вещи<br />живут рядом</h2>
+                  <p>
+                    Берите нужное у соседей или сдавайте своё. Понятные условия,
+                    проверенные объявления и личная передача.
+                  </p>
+                  <div class="dots" aria-label="Слайд 1 из 3">
+                    <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+                  </div>
+                  <button class="primary-button full-width" data-go="auth">Продолжить</button>
+                </div>
+              </section>
+
+              <section class="screen" data-screen="auth">
+                <div class="screen-body no-nav">
+                  <button class="back-button" data-go="onboarding" aria-label="Назад">←</button>
+                  <div class="auth-logo">С</div>
+                  <h2 class="page-title">Вход по SMS</h2>
+                  <p class="description">
+                    Укажите российский номер телефона. Мы отправим короткий код
+                    подтверждения.
+                  </p>
+                  <div class="phone-field"><b>🇷🇺 +7</b><span>999 123-45-67</span></div>
+                  <button class="primary-button full-width" data-go="catalog">Получить код</button>
+                  <div class="fine-print">
+                    Продолжая, вы принимаете условия сервиса и политику конфиденциальности.
+                  </div>
+                </div>
+              </section>
+
+              <section class="screen" data-screen="catalog">
+                <div class="screen-body">
+                  <header class="app-header">
+                    <div>
+                      <p class="greeting">Доброе утро, Анна</p>
+                      <h2>Что найдём?</h2>
+                    </div>
+                    <div class="avatar" data-go="profile">А</div>
+                  </header>
+                  <div class="search">⌕ <span>Поиск среди вещей рядом</span></div>
+                  <div class="chips">
+                    <span class="chip active">Все</span>
+                    <span class="chip">Для дома</span>
+                    <span class="chip">Отдых</span>
+                    <span class="chip">Детское</span>
+                  </div>
+                  <div class="promo">
+                    <div class="promo-copy">
+                      <small>Рядом с вами</small>
+                      <strong>Не покупайте<br />на один раз</strong>
+                    </div>
+                    <div class="promo-visual">🏕️</div>
+                  </div>
+                  <div class="section-row">
+                    <h3>Популярно поблизости</h3>
+                    <span data-go="map">На карте →</span>
+                  </div>
+                  <div class="item-grid">
+                    <article class="item-card" data-go="item">
+                      <div class="item-photo"><span class="heart">♡</span>📽️</div>
+                      <div class="item-copy">
+                        <strong>Проектор Xiaomi</strong>
+                        <div class="item-price">700 ₽ / день</div>
+                        <div class="item-meta">1–2 км · Хамовники</div>
+                      </div>
+                    </article>
+                    <article class="item-card">
+                      <div class="item-photo warm"><span class="heart">♡</span>🏕️</div>
+                      <div class="item-copy">
+                        <strong>Палатка на 3 места</strong>
+                        <div class="item-price">550 ₽ / день</div>
+                        <div class="item-meta">до 1 км · Арбат</div>
+                      </div>
+                    </article>
+                    <article class="item-card">
+                      <div class="item-photo blue"><span class="heart">♡</span>🧹</div>
+                      <div class="item-copy">
+                        <strong>Моющий пылесос</strong>
+                        <div class="item-price">900 ₽ / день</div>
+                        <div class="item-meta">2–3 км · Пресня</div>
+                      </div>
+                    </article>
+                    <article class="item-card">
+                      <div class="item-photo warm"><span class="heart">♡</span>🪑</div>
+                      <div class="item-copy">
+                        <strong>Детский стульчик</strong>
+                        <div class="item-price">350 ₽ / день</div>
+                        <div class="item-meta">1–2 км · Якиманка</div>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+                <nav class="bottom-nav">
+                  <button class="nav-item active" data-go="catalog">⌂<span>Главная</span></button>
+                  <button class="nav-item" data-go="map">⌖<span>Карта</span></button>
+                  <button class="nav-item" data-go="rentals">▣<span>Аренды</span></button>
+                  <button class="nav-item" data-go="profile">●<span>Профиль</span></button>
+                </nav>
+              </section>
+
+              <section class="screen" data-screen="map">
+                <div class="map-canvas">
+                  <div class="map-top">
+                    <div class="map-search">⌕ Проектор <span style="margin-left:auto">☷</span></div>
+                  </div>
+                  <div class="map-pin one"><span>700 ₽</span></div>
+                  <div class="map-pin two"><span>550 ₽</span></div>
+                  <div class="map-pin three"><span>900 ₽</span></div>
+                  <div class="map-location">⌖</div>
+                  <div class="map-sheet">
+                    <div class="sheet-handle"></div>
+                    <article class="mini-item" data-go="item">
+                      <div class="mini-photo">📽️</div>
+                      <div>
+                        <strong>Проектор Xiaomi</strong>
+                        <p>★ 4,9 · Хамовники · 1–2 км</p>
+                        <b>700 ₽ / день</b>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+                <nav class="bottom-nav">
+                  <button class="nav-item" data-go="catalog">⌂<span>Главная</span></button>
+                  <button class="nav-item active" data-go="map">⌖<span>Карта</span></button>
+                  <button class="nav-item" data-go="rentals">▣<span>Аренды</span></button>
+                  <button class="nav-item" data-go="profile">●<span>Профиль</span></button>
+                </nav>
+              </section>
+
+              <section class="screen" data-screen="item">
+                <div class="screen-body no-nav">
+                  <div class="details-hero">
+                    📽️
+                    <div class="details-actions">
+                      <button class="icon-button" data-go="catalog">←</button>
+                      <button class="icon-button">♡</button>
+                    </div>
+                    <span class="image-count">1 / 4</span>
+                  </div>
+                  <h2 class="detail-title">Проектор Xiaomi<br />Smart Projector 2</h2>
+                  <div class="detail-price">700 ₽ <span>/ день</span></div>
+                  <div class="trust-row">
+                    <span class="trust-pill">✓ Проверено</span>
+                    <span class="trust-pill">★ 4,9 · 12 отзывов</span>
+                  </div>
+                  <div class="description">
+                    Яркий Full HD проектор. В комплекте пульт, HDMI-кабель и
+                    мягкий чехол. Передача у метро после 18:00.
+                  </div>
+                  <div class="owner-card">
+                    <div class="avatar">М</div>
+                    <div class="owner-copy">
+                      <strong>Михаил · сосед с 2025</strong>
+                      <span>Обычно отвечает за 15 минут</span>
+                    </div>
+                    <span>›</span>
+                  </div>
+                  <div class="hint-card">
+                    <span>⌖</span>
+                    <span>Хамовники · примерно 1–2 км. Точный адрес откроется после подтверждения брони.</span>
+                  </div>
+                </div>
+                <div class="sticky-action">
+                  <button class="secondary-button" style="width:46px">✉</button>
+                  <button class="primary-button" data-go="booking">Выбрать даты</button>
+                </div>
+              </section>
+
+              <section class="screen" data-screen="booking">
+                <div class="screen-body no-nav">
+                  <button class="back-button" data-go="item">←</button>
+                  <h2 class="page-title">Выберите даты</h2>
+                  <p class="description">Проектор Xiaomi · 700 ₽ в день</p>
+                  <div class="calendar">
+                    <div class="calendar-head"><span>Август 2026</span><span>‹ &nbsp; ›</span></div>
+                    <div class="calendar-grid">
+                      <span class="day-name">ПН</span><span class="day-name">ВТ</span><span class="day-name">СР</span><span class="day-name">ЧТ</span><span class="day-name">ПТ</span><span class="day-name">СБ</span><span class="day-name">ВС</span>
+                      <span></span><span></span><span></span><span></span><span></span><span>1</span><span>2</span>
+                      <span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+                      <span>10</span><span>11</span><span class="selected">12</span><span class="range">13</span><span class="selected">14</span><span>15</span><span>16</span>
+                      <span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span>
+                    </div>
+                  </div>
+                  <div class="summary-card">
+                    <div class="summary-line"><span>12–14 августа · 3 дня</span><b>2 100 ₽</b></div>
+                    <div class="summary-line"><span>Комиссия сервиса</span><b>0 ₽</b></div>
+                    <div class="summary-line"><span>Залог</span><b>Без залога</b></div>
+                    <div class="summary-line total"><span>Итого</span><span>2 100 ₽</span></div>
+                  </div>
+                  <div class="hint-card">
+                    <span>i</span>
+                    <span>На пилоте оплата происходит при личной передаче. Сервис не принимает деньги.</span>
+                  </div>
+                  <button class="primary-button full-width" data-go="rentals">Отправить запрос</button>
+                </div>
+              </section>
+
+              <section class="screen" data-screen="create">
+                <div class="screen-body no-nav">
+                  <button class="back-button" data-go="profile">←</button>
+                  <h2 class="page-title">Сдать вещь</h2>
+                  <p class="description">Заполните главное — детали можно изменить до публикации.</p>
+                  <div class="form-section">
+                    <h3>Фотографии</h3>
+                    <div class="photo-upload">
+                      <div class="photo-box filled">📽️</div>
+                      <div class="photo-box">＋<br />Добавить</div>
+                      <div class="photo-box">＋</div>
+                    </div>
+                  </div>
+                  <div class="form-section">
+                    <div class="field"><label>Название</label><div>Проектор Xiaomi Smart 2</div></div>
+                    <div class="field"><label>Категория</label><div>Электроника и досуг &nbsp;⌄</div></div>
+                    <div class="field-row">
+                      <div class="field"><label>Цена в день</label><div>700 ₽</div></div>
+                      <div class="field"><label>Состояние</label><div>Отличное ⌄</div></div>
+                    </div>
+                    <div class="field"><label>Район передачи</label><div>Хамовники</div></div>
+                  </div>
+                  <div class="hint-card">
+                    <span>✓</span>
+                    <span>Перед публикацией объявление пройдёт модерацию. Точный адрес публично не показывается.</span>
+                  </div>
+                  <button class="primary-button full-width" data-go="rentals">Отправить на проверку</button>
+                </div>
+              </section>
+
+              <section class="screen" data-screen="rentals">
+                <div class="screen-body">
+                  <header class="app-header">
+                    <h2>Мои аренды</h2>
+                    <button class="icon-button" data-go="create">＋</button>
+                  </header>
+                  <div class="segment">
+                    <button class="active">Беру</button>
+                    <button>Сдаю</button>
+                  </div>
+                  <div class="section-row"><h3>Активные</h3><span>1 аренда</span></div>
+                  <article class="booking-card" data-go="item">
+                    <div class="booking-photo">📽️</div>
+                    <div class="booking-copy">
+                      <strong>Проектор Xiaomi</strong>
+                      <p>12–14 августа · 2 100 ₽</p>
+                      <span class="status yellow">Ждём ответа владельца</span>
+                    </div>
+                  </article>
+                  <div class="section-row"><h3>Предстоящие</h3></div>
+                  <article class="booking-card">
+                    <div class="booking-photo" style="background:#f5ead7">🏕️</div>
+                    <div class="booking-copy">
+                      <strong>Палатка на 3 места</strong>
+                      <p>21–24 августа · Арбат</p>
+                      <span class="status">Подтверждено</span>
+                    </div>
+                  </article>
+                  <div class="hint-card">
+                    <span>↔</span>
+                    <span>Вы можете одновременно брать чужие вещи и сдавать свои — отдельная роль не нужна.</span>
+                  </div>
+                </div>
+                <nav class="bottom-nav">
+                  <button class="nav-item" data-go="catalog">⌂<span>Главная</span></button>
+                  <button class="nav-item" data-go="map">⌖<span>Карта</span></button>
+                  <button class="nav-item active" data-go="rentals">▣<span>Аренды</span></button>
+                  <button class="nav-item" data-go="profile">●<span>Профиль</span></button>
+                </nav>
+              </section>
+
+              <section class="screen" data-screen="inbox">
+                <div class="screen-body">
+                  <header class="app-header">
+                    <h2>Уведомления</h2>
+                    <span style="font-size:9px;color:var(--green);font-weight:750">Прочитать все</span>
+                  </header>
+                  <article class="notification-card">
+                    <div class="notification-icon">✓</div>
+                    <div class="notification-copy">
+                      <strong>Бронирование подтверждено</strong>
+                      <p>Михаил подтвердил аренду проектора на 12–14 августа.</p>
+                    </div>
+                    <span class="notification-time">сейчас</span>
+                  </article>
+                  <article class="notification-card">
+                    <div class="notification-icon" style="background:var(--yellow-soft)">✉</div>
+                    <div class="notification-copy">
+                      <strong>Новое сообщение</strong>
+                      <p>«Добрый вечер! Смогу передать после 18:00…»</p>
+                    </div>
+                    <span class="notification-time">12 мин</span>
+                  </article>
+                  <article class="notification-card">
+                    <div class="notification-icon" style="background:#f2e6e2">⌂</div>
+                    <div class="notification-copy">
+                      <strong>Объявление опубликовано</strong>
+                      <p>Ваш моющий пылесос прошёл модерацию и виден в каталоге.</p>
+                    </div>
+                    <span class="notification-time">вчера</span>
+                  </article>
+                  <div class="hint-card">
+                    <span>i</span>
+                    <span>Этот экран — источник истины. Push содержит только eventId, детали загружаются после входа.</span>
+                  </div>
+                </div>
+                <nav class="bottom-nav">
+                  <button class="nav-item" data-go="catalog">⌂<span>Главная</span></button>
+                  <button class="nav-item" data-go="map">⌖<span>Карта</span></button>
+                  <button class="nav-item active" data-go="inbox">●<span>События</span></button>
+                  <button class="nav-item" data-go="profile">●<span>Профиль</span></button>
+                </nav>
+              </section>
+
+              <section class="screen" data-screen="profile">
+                <div class="screen-body">
+                  <header class="app-header">
+                    <h2>Профиль</h2>
+                    <button class="icon-button">⚙</button>
+                  </header>
+                  <div class="profile-hero">
+                    <div class="avatar large">А</div>
+                    <div>
+                      <h3>Анна Петрова</h3>
+                      <p>Москва · сосед с июля 2026</p>
+                    </div>
+                  </div>
+                  <div class="mode-cards">
+                    <div class="mode-card" data-go="rentals">
+                      <span>🛍️</span><strong>Беру в аренду</strong><p>2 предстоящие</p>
+                    </div>
+                    <div class="mode-card yellow" data-go="create">
+                      <span>🏠</span><strong>Сдаю вещи</strong><p>Добавить объявление</p>
+                    </div>
+                  </div>
+                  <div class="menu">
+                    <div class="menu-row" data-go="inbox"><span>●</span><span>Уведомления</span><b>3 ›</b></div>
+                    <div class="menu-row"><span>♡</span><span>Избранное</span><b>›</b></div>
+                    <div class="menu-row"><span>?</span><span>Помощь и поддержка</span><b>›</b></div>
+                    <div class="menu-row"><span>§</span><span>Правила и документы</span><b>›</b></div>
+                    <div class="menu-row"><span>⌁</span><span>Безопасность и сессии</span><b>›</b></div>
+                  </div>
+                </div>
+                <nav class="bottom-nav">
+                  <button class="nav-item" data-go="catalog">⌂<span>Главная</span></button>
+                  <button class="nav-item" data-go="map">⌖<span>Карта</span></button>
+                  <button class="nav-item" data-go="rentals">▣<span>Аренды</span></button>
+                  <button class="nav-item active" data-go="profile">●<span>Профиль</span></button>
+                </nav>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <aside class="notes panel">
+          <div class="eyebrow">Логика экрана</div>
+          <div id="screen-notes">
+            <div class="note-block">
+              <div class="note-title">Задача</div>
+              <div class="note-text">За один слайд объяснить пользу сервиса без перегрузки правилами.</div>
+            </div>
+            <div class="note-block">
+              <div class="note-title">Главное действие</div>
+              <div class="note-text">Перейти к безопасному входу по номеру телефона.</div>
+            </div>
+            <div class="note-block">
+              <div class="note-title">Доверие</div>
+              <div class="note-text">Личная передача, модерация и понятные условия звучат до первой аренды.</div>
+            </div>
+          </div>
+          <div class="legend">
+            <span>MVP</span><span>Material 3</span><span>RF privacy</span><span>1 вещь</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="flow-section">
+        <div class="flow-heading">
+          <h2>Два главных пути</h2>
+          <p>
+            Один аккаунт поддерживает оба сценария. Переключатель взаимоисключающих
+            ролей не нужен: права проверяются для конкретной вещи и бронирования.
+          </p>
+        </div>
+        <div class="flows">
+          <article class="flow-card">
+            <h3>Беру вещь</h3>
+            <div class="flow-line">
+              <span class="flow-node primary">Каталог</span><span class="flow-arrow">→</span>
+              <span class="flow-node">Карточка</span><span class="flow-arrow">→</span>
+              <span class="flow-node">Даты</span><span class="flow-arrow">→</span>
+              <span class="flow-node">Запрос</span><span class="flow-arrow">→</span>
+              <span class="flow-node">Передача</span>
+            </div>
+          </article>
+          <article class="flow-card">
+            <h3>Сдаю свою</h3>
+            <div class="flow-line">
+              <span class="flow-node primary">Профиль</span><span class="flow-arrow">→</span>
+              <span class="flow-node">Новое объявление</span><span class="flow-arrow">→</span>
+              <span class="flow-node">Модерация</span><span class="flow-arrow">→</span>
+              <span class="flow-node">Запрос</span><span class="flow-arrow">→</span>
+              <span class="flow-node">Передача</span>
+            </div>
+          </article>
+        </div>
+        <div class="scope-note">
+          Это UX-концепт, а не отметка готовности функций. Публичное бронирование и
+          production-платежи остаются закрыты до legal/safety и provider gates из
+          <strong>MVP_CHECKLIST.md</strong>. В показанном пилотном сценарии комиссия
+          сервиса — 0%, оплата происходит при личной передаче.
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const screenNotes = {
+        onboarding: [
+          ["Задача", "За один слайд объяснить пользу сервиса без перегрузки правилами."],
+          ["Главное действие", "Перейти к безопасному входу по номеру телефона."],
+          ["Доверие", "Личная передача, модерация и понятные условия звучат до первой аренды."]
+        ],
+        auth: [
+          ["Задача", "Минимальный OTP-вход без пароля и выбора продуктовой роли."],
+          ["Главное действие", "Получить код и продолжить в каталог."],
+          ["Ограничение", "Ответы и ошибки не должны раскрывать существование пользователя."]
+        ],
+        catalog: [
+          ["Задача", "Быстро показать доступные вещи рядом и дать простой поиск."],
+          ["Главное действие", "Открыть карточку вещи или перейти на карту."],
+          ["Privacy", "В списке видны только район и distance bucket, без точного адреса."]
+        ],
+        map: [
+          ["Задача", "Оценить предложение рядом, не превращая карту в каталог точных адресов."],
+          ["Главное действие", "Выбрать примерную точку и открыть карточку."],
+          ["Privacy", "Точки строятся по стабильной серверной coarse-cell; усреднение ответов не раскрывает адрес."]
+        ],
+        item: [
+          ["Задача", "До выбора дат ответить на вопросы о цене, комплекте, состоянии и передаче."],
+          ["Главное действие", "Выбрать даты аренды."],
+          ["Доверие", "Модерация, рейтинг и понятное объяснение скрытого адреса."]
+        ],
+        booking: [
+          ["Задача", "Показать доступность, полный price snapshot и условия до подтверждения."],
+          ["Главное действие", "Отправить владельцу идемпотентный запрос."],
+          ["Gate", "Показан разрешённый fallback-пилот: оплата при передаче, комиссия Sosedi 0%."]
+        ],
+        create: [
+          ["Задача", "Создать объявление за один короткий проход, сохранив важные safety-поля."],
+          ["Главное действие", "Отправить заполненное объявление на модерацию."],
+          ["Safety", "Категория выбирается только из whitelist; фото и адрес проверяются отдельно."]
+        ],
+        rentals: [
+          ["Задача", "Собрать аренды пользователя в одном месте: USER может и брать чужие вещи, и сдавать свои."],
+          ["Главное действие", "Проверить статус и перейти к деталям передачи."],
+          ["Модель", "Сегменты «Беру» и «Сдаю» — представления данных, а не взаимоисключающие права."]
+        ],
+        inbox: [
+          ["Задача", "Дать надёжную историю событий, даже если push не был доставлен."],
+          ["Главное действие", "Открыть бронь, сообщение или результат модерации."],
+          ["Security", "Push несёт только opaque eventId; детали загружаются после авторизации."]
+        ],
+        profile: [
+          ["Задача", "Собрать оба продуктовых сценария, поддержку и управление аккаунтом."],
+          ["Главное действие", "Перейти в свои аренды или добавить вещь."],
+          ["Account", "Отсюда доступны документы, сессии, экспорт и безопасное закрытие аккаунта."]
+        ]
+      };
+
+      const links = [...document.querySelectorAll("[data-screen-link]")];
+      const screens = [...document.querySelectorAll("[data-screen]")];
+      const notes = document.querySelector("#screen-notes");
+
+      function showScreen(name) {
+        if (!screenNotes[name]) return;
+
+        screens.forEach((screen) => {
+          const isActive = screen.dataset.screen === name;
+          screen.classList.toggle("active", isActive);
+          screen.style.display = isActive ? "block" : "none";
+          if (isActive) screen.scrollTop = 0;
+        });
+        links.forEach((link) => {
+          link.classList.toggle("active", link.dataset.screenLink === name);
+        });
+        notes.innerHTML = screenNotes[name]
+          .map(([title, text]) => `
+            <div class="note-block">
+              <div class="note-title">${title}</div>
+              <div class="note-text">${text}</div>
+            </div>
+          `)
+          .join("");
+      }
+
+      document.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-screen-link], [data-go]");
+        if (!target) return;
+        showScreen(target.dataset.screenLink || target.dataset.go);
+      });
+    </script>
+  </body>
+</html>

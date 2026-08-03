@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/session_events.dart';
+import '../../../core/analytics/analytics.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/token_storage.dart';
 import '../data/auth_service.dart';
@@ -14,6 +15,8 @@ final authControllerProvider = NotifierProvider<AuthController, AuthState>(
 );
 
 class AuthController extends Notifier<AuthState> {
+  Future<void>? _sessionRestore;
+
   @override
   AuthState build() {
     ref.listen<int>(sessionInvalidationProvider, (previous, next) {
@@ -22,7 +25,7 @@ class AuthController extends Notifier<AuthState> {
       }
     });
 
-    unawaited(restoreSession());
+    unawaited(Future<void>.microtask(restoreSession));
     return const AuthState.loading();
   }
 
@@ -39,6 +42,9 @@ class AuthController extends Notifier<AuthState> {
       state = AuthState.codeSent(
         phone: result.phone,
         expiresInSeconds: result.expiresInSeconds,
+      );
+      unawaited(
+        ref.read(analyticsServiceProvider).track(AnalyticsEvent.otpRequested),
       );
       return true;
     } catch (error) {
@@ -60,6 +66,9 @@ class AuthController extends Notifier<AuthState> {
           .read(authServiceProvider)
           .verifyOtp(phone: currentState.phone, code: code);
       state = AuthState.authenticated(user: tokens.user);
+      unawaited(
+        ref.read(analyticsServiceProvider).track(AnalyticsEvent.loginCompleted),
+      );
       return true;
     } catch (error) {
       state = currentState.copyWith(
@@ -75,7 +84,31 @@ class AuthController extends Notifier<AuthState> {
     await ref.read(authServiceProvider).logout();
   }
 
-  Future<void> restoreSession() async {
+  Future<void> validateSessionOnResume() {
+    if (state is! AuthAuthenticated) {
+      return Future<void>.value();
+    }
+
+    return restoreSession();
+  }
+
+  Future<void> restoreSession() {
+    final activeRestore = _sessionRestore;
+    if (activeRestore != null) {
+      return activeRestore;
+    }
+
+    final restore = _restoreSession();
+    _sessionRestore = restore;
+    return restore.whenComplete(() {
+      if (identical(_sessionRestore, restore)) {
+        _sessionRestore = null;
+      }
+    });
+  }
+
+  Future<void> _restoreSession() async {
+    state = const AuthState.loading();
     final storage = ref.read(tokenStorageProvider);
 
     try {

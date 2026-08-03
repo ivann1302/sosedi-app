@@ -1,0 +1,251 @@
+groups:
+  - name: sosedi-backend
+    rules:
+      - alert: SosediMetricsMissing
+        expr: absent(sosedi_process_start_time_seconds)
+        for: 5m
+        labels:
+          severity: critical
+          owner: product-owner
+        annotations:
+          summary: Sosedi backend metrics are unavailable
+          threshold: backend metrics absent for 5m
+          runbook: docs/monitoring-alert-runbooks.md#metrics-and-api
+
+      - alert: SosediApiHigh5xxRate
+        expr: >
+          sum(rate(sosedi_http_requests_total{status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(sosedi_http_requests_total[5m])), 0.01)
+          > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          owner: product-owner
+        annotations:
+          summary: Sosedi API 5xx rate is above 5%
+          threshold: 5xx ratio above 5% for 10m
+          runbook: docs/monitoring-alert-runbooks.md#metrics-and-api
+
+      - alert: SosediApiHighLatency
+        expr: >
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(sosedi_http_request_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: Sosedi API p95 latency is above 1 second
+          threshold: p95 above 1s for 10m
+          runbook: docs/monitoring-alert-runbooks.md#metrics-and-api
+
+      - alert: SosediDatabaseConnectionsHigh
+        expr: sosedi_database_connections / sosedi_database_max_connections > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: PostgreSQL connections exceed 80%
+          threshold: connections above 80% for 10m
+          runbook: docs/monitoring-alert-runbooks.md#database-and-disk
+
+      - alert: SosediNodeDiskLow
+        expr: >
+          node_filesystem_avail_bytes{
+            job=~"backend-node|postgres-node|monitoring-node",
+            fstype!~"tmpfs|overlay"
+          }
+          /
+          node_filesystem_size_bytes{
+            job=~"backend-node|postgres-node|monitoring-node",
+            fstype!~"tmpfs|overlay"
+          }
+          < 0.15
+        for: 15m
+        labels:
+          severity: critical
+          owner: product-owner
+        annotations:
+          summary: Production node filesystem has less than 15% free
+          threshold: filesystem free space below 15% for 15m
+          runbook: docs/monitoring-alert-runbooks.md#database-and-disk
+
+      - alert: SosediRedisMaxMemoryMissing
+        expr: sosedi_redis_memory_bytes{kind="max"} == 0
+        for: 15m
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: Redis maxmemory is not configured
+          threshold: maxmemory equals zero for 15m
+          runbook: docs/monitoring-alert-runbooks.md#redis
+
+      - alert: SosediRedisMemoryHigh
+        expr: >
+          (
+            sosedi_redis_memory_bytes{kind="used"}
+            /
+            ignoring(kind) sosedi_redis_memory_bytes{kind="max"}
+            > 0.8
+          )
+          and ignoring(kind)
+          (sosedi_redis_memory_bytes{kind="max"} > 0)
+        for: 10m
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: Redis memory usage exceeds 80%
+          threshold: used memory above 80% for 10m
+          runbook: docs/monitoring-alert-runbooks.md#redis
+
+      - alert: SosediBullMqFailedJobs
+        expr: sosedi_bullmq_jobs{state="failed"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: BullMQ has failed jobs
+          threshold: one or more failed jobs for 5m
+          runbook: docs/monitoring-alert-runbooks.md#queues-and-outbox
+
+      - alert: SosediBullMqStalledJobs
+        expr: increase(sosedi_bullmq_stalled_total[10m]) > 0
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: BullMQ reported a stalled job
+          threshold: one or more stalled events in 10m
+          runbook: docs/monitoring-alert-runbooks.md#queues-and-outbox
+
+      - alert: SosediOutboxDelayed
+        expr: sosedi_outbox_oldest_pending_age_seconds > 60
+        for: 5m
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: Notification outbox delivery is delayed
+          threshold: oldest pending event above 60s for 5m
+          runbook: docs/monitoring-alert-runbooks.md#queues-and-outbox
+
+      - alert: SosediPushDeliveryDelayed
+        expr: sosedi_push_delivery_oldest_pending_age_seconds > 300
+        for: 10m
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: Push delivery is delayed
+          threshold: oldest outstanding push above 300s for 10m
+          runbook: docs/monitoring-alert-runbooks.md#queues-and-outbox
+
+      - alert: SosediOperationFailures
+        expr: >
+          sum by (operation) (
+            increase(sosedi_operation_total{result="failure"}[10m])
+          ) > 0
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: "Sosedi operation failures: {{ $labels.operation }}"
+          threshold: one or more operation failures in 10m
+          runbook: docs/monitoring-alert-runbooks.md#provider-operation
+
+      - alert: SosediPostgresBackupMissing
+        expr: >
+          absent(sosedi_backup_last_success_timestamp_seconds)
+          or
+          (time() - sosedi_backup_last_success_timestamp_seconds > 25200)
+        for: 15m
+        labels:
+          severity: critical
+          owner: product-owner
+        annotations:
+          summary: PostgreSQL backup success metric is missing or older than 7 hours
+          threshold: metric absent or last verified backup older than 7h for 15m
+          runbook: docs/monitoring-alert-runbooks.md#backup
+
+      - alert: SosediPostgresBackupSchedulerFailed
+        expr: >
+          node_systemd_unit_state{name="sosedi-postgres-backup.service",state="failed"}
+          == 1
+        for: 1m
+        labels:
+          severity: critical
+          owner: product-owner
+        annotations:
+          summary: PostgreSQL backup scheduler unit failed
+          threshold: sosedi-postgres-backup.service remains failed for 1m
+          runbook: docs/monitoring-alert-runbooks.md#backup
+
+  - name: sosedi-external-readiness
+    rules:
+      - alert: SosediTlsCertificateExpiring
+        expr: >
+          (probe_ssl_earliest_cert_expiry - time() < 14 * 24 * 60 * 60)
+          and (probe_ssl_earliest_cert_expiry > 0)
+        for: 1h
+        labels:
+          severity: critical
+          owner: product-owner
+        annotations:
+          summary: "TLS certificate expires in less than 14 days: {{ $labels.instance }}"
+          threshold: certificate lifetime below 14d for 1h
+          runbook: docs/monitoring-alert-runbooks.md#tls-and-domain
+
+      - alert: SosediDomainDnsUnavailable
+        expr: probe_success{job="blackbox-dns"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          owner: product-owner
+        annotations:
+          summary: "DNS probe failed: {{ $labels.instance }}"
+          threshold: DNS probe unsuccessful for 5m
+          runbook: docs/monitoring-alert-runbooks.md#tls-and-domain
+
+      - alert: SosediDomainRegistrationExpiring
+        expr: sosedi_domain_expiry_timestamp_seconds - time() < 30 * 24 * 60 * 60
+        for: 1h
+        labels:
+          severity: critical
+          owner: product-owner
+        annotations:
+          summary: "Domain registration expires in less than 30 days: {{ $labels.domain }}"
+          threshold: domain registration lifetime below 30d for 1h
+          runbook: docs/monitoring-alert-runbooks.md#tls-and-domain
+
+      - alert: SosediProviderCredentialExpiring
+        expr: >
+          sosedi_provider_credential_expiry_timestamp_seconds - time()
+          < 30 * 24 * 60 * 60
+        for: 1h
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: "Provider credential expires in less than 30 days: {{ $labels.provider }}"
+          threshold: provider credential lifetime below 30d for 1h
+          runbook: docs/monitoring-alert-runbooks.md#provider-expiry
+
+      - alert: SosediExpiryInventoryMissing
+        expr: >
+          absent(sosedi_domain_expiry_timestamp_seconds)
+          or absent(sosedi_provider_credential_expiry_timestamp_seconds)
+        for: 1h
+        labels:
+          severity: warning
+          owner: on-call-operator
+        annotations:
+          summary: Domain or provider expiry inventory metric is missing
+          threshold: required expiry inventory absent for 1h
+          runbook: docs/monitoring-alert-runbooks.md#provider-expiry

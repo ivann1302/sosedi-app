@@ -175,6 +175,58 @@ void main() {
       expect(adapter.requests, isEmpty);
     },
   );
+
+  test('lists sessions without exposing tokens', () async {
+    final service = createService(
+      MemoryTokenStorage(),
+      CallbackAdapter((options) {
+        expect(options.method, 'GET');
+        expect(options.path, '/auth/sessions');
+        return jsonResponse({
+          'success': true,
+          'data': [
+            {
+              'sessionId': '11111111-1111-4111-8111-111111111111',
+              'installationId': '22222222-2222-4222-8222-222222222222',
+              'createdAt': '2026-07-29T00:00:00.000Z',
+              'lastSeenAt': '2026-07-29T01:00:00.000Z',
+              'isCurrent': true,
+            },
+          ],
+          'error': null,
+        });
+      }),
+    );
+
+    final sessions = await service.sessions();
+
+    expect(sessions, hasLength(1));
+    expect(sessions.single.isCurrent, isTrue);
+  });
+
+  test('revokes one session and then all sessions through self endpoints', () async {
+    final adapter = CallbackAdapter(
+      (_) => jsonResponse({
+        'success': true,
+        'data': {'loggedOut': true},
+        'error': null,
+      }),
+    );
+    final service = createService(MemoryTokenStorage(), adapter);
+
+    await service.revokeSession(
+      '11111111-1111-4111-8111-111111111111',
+    );
+    await service.revokeAllSessions();
+
+    expect(
+      adapter.requests.map((request) => '${request.method} ${request.path}'),
+      [
+        'DELETE /auth/sessions/11111111-1111-4111-8111-111111111111',
+        'DELETE /auth/sessions',
+      ],
+    );
+  });
 }
 
 AuthService createService(MemoryTokenStorage storage, CallbackAdapter adapter) {
@@ -193,7 +245,7 @@ ResponseBody authTokensResponse() {
         'id': 'user-1',
         'phone': '+79991234567',
         'name': null,
-        'role': 'RENTER',
+        'role': 'USER',
         'kycStatus': null,
         'isBlocked': false,
       },

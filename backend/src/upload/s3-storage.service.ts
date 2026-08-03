@@ -1,11 +1,16 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { StoredObject, UploadedObjectInfo } from './upload.types';
 
 @Injectable()
 export class S3StorageService {
@@ -13,21 +18,42 @@ export class S3StorageService {
 
   constructor(private readonly config: ConfigService) {}
 
-  async createPresignedPutUrl(
+  async createPresignedPostUpload(
     bucket: string,
     key: string,
     contentType: string,
+    sizeBytes: number,
     expiresInSeconds: number,
-  ): Promise<string> {
-    const command = new PutObjectCommand({
+  ): Promise<{ uploadUrl: string; fields: Record<string, string> }> {
+    const presignedPost = await createPresignedPost(this.getClient(), {
       Bucket: bucket,
       Key: key,
-      ContentType: contentType,
+      Fields: {
+        'Content-Type': contentType,
+      },
+      Conditions: [['content-length-range', sizeBytes, sizeBytes]],
+      Expires: expiresInSeconds,
     });
 
-    return getSignedUrl(this.getClient(), command, {
-      expiresIn: expiresInSeconds,
-    });
+    return {
+      uploadUrl: presignedPost.url,
+      fields: presignedPost.fields,
+    };
+  }
+
+  async createPresignedDownloadUrl(
+    bucket: string,
+    key: string,
+    expiresInSeconds: number,
+  ): Promise<string> {
+    return getSignedUrl(
+      this.getClient(),
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+      { expiresIn: expiresInSeconds },
+    );
   }
 
   async getObjectBuffer(bucket: string, key: string): Promise<Buffer> {
@@ -46,6 +72,44 @@ export class S3StorageService {
     return Buffer.from(bytes);
   }
 
+  async inspectUploadedObject(
+    bucket: string,
+    key: string,
+  ): Promise<UploadedObjectInfo | null> {
+    try {
+      const metadata = await this.getClient().send(
+        new HeadObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        }),
+      );
+      let prefix = Buffer.alloc(0);
+      if (metadata.ContentLength && metadata.ContentLength > 0) {
+        const object = await this.getClient().send(
+          new GetObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            Range: 'bytes=0-11',
+          }),
+        );
+        prefix = object.Body
+          ? Buffer.from(await object.Body.transformToByteArray())
+          : Buffer.alloc(0);
+      }
+
+      return {
+        sizeBytes: metadata.ContentLength ?? null,
+        contentType: metadata.ContentType ?? null,
+        prefix,
+      };
+    } catch (error) {
+      if (this.isNotFound(error)) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
   async putObject(
     bucket: string,
     key: string,
@@ -60,6 +124,43 @@ export class S3StorageService {
         ContentType: contentType,
       }),
     );
+  }
+
+  async deleteObject(bucket: string, key: string): Promise<void> {
+    await this.getClient().send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+    );
+  }
+
+  async listObjects(bucket: string, prefix: string): Promise<StoredObject[]> {
+    const objects: StoredObject[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const response = await this.getClient().send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      for (const object of response.Contents ?? []) {
+        if (object.Key) {
+          objects.push({
+            key: object.Key,
+            lastModified: object.LastModified ?? null,
+          });
+        }
+      }
+      continuationToken = response.IsTruncated
+        ? response.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+
+    return objects;
   }
 
   getPublicBucket(): string {
@@ -96,6 +197,22 @@ export class S3StorageService {
     }
 
     return this.client;
+  }
+
+  private isNotFound(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+
+    const candidate = error as {
+      name?: string;
+      $metadata?: { httpStatusCode?: number };
+    };
+    return (
+      candidate.name === 'NotFound' ||
+      candidate.name === 'NoSuchKey' ||
+      candidate.$metadata?.httpStatusCode === 404
+    );
   }
 
   private getRequiredConfig(key: string): string {

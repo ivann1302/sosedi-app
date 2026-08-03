@@ -4,7 +4,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Category, Prisma } from '@prisma/client';
+import {
+  AdminCapability,
+  Category,
+  CategoryListingPolicy,
+  Prisma,
+} from '@prisma/client';
+import type { AdminAuditContext } from '../admin/admin-audit-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -17,6 +23,9 @@ type CategoryModel = Pick<
   | 'iconName'
   | 'sortOrder'
   | 'isActive'
+  | 'isAllowedForListings'
+  | 'listingPolicy'
+  | 'safetyNotice'
   | 'createdAt'
   | 'updatedAt'
 >;
@@ -28,6 +37,9 @@ export type CategoryResponse = {
   iconName: string | null;
   sortOrder: number;
   isActive: boolean;
+  isAllowedForListings: boolean;
+  listingPolicy: CategoryListingPolicy;
+  safetyNotice: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -38,7 +50,11 @@ export class CategoriesService {
 
   async listActive(): Promise<CategoryResponse[]> {
     const categories = await this.prisma.category.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        isAllowedForListings: true,
+        listingPolicy: CategoryListingPolicy.ALLOWED,
+      },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       select: this.categorySelect(),
     });
@@ -48,7 +64,12 @@ export class CategoriesService {
 
   async getBySlug(slug: string): Promise<CategoryResponse> {
     const category = await this.prisma.category.findFirst({
-      where: { slug, isActive: true },
+      where: {
+        slug,
+        isActive: true,
+        isAllowedForListings: true,
+        listingPolicy: CategoryListingPolicy.ALLOWED,
+      },
       select: this.categorySelect(),
     });
 
@@ -59,17 +80,36 @@ export class CategoriesService {
     return this.toCategoryResponse(category);
   }
 
-  async create(dto: CreateCategoryDto): Promise<CategoryResponse> {
+  async create(
+    adminId: string,
+    dto: CreateCategoryDto,
+    context: AdminAuditContext,
+  ): Promise<CategoryResponse> {
     try {
-      const category = await this.prisma.category.create({
-        data: {
-          name: dto.name,
-          slug: dto.slug,
-          iconName: dto.iconName ?? null,
-          sortOrder: dto.sortOrder ?? 0,
-          isActive: dto.isActive ?? true,
-        },
-        select: this.categorySelect(),
+      const category = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.category.create({
+          data: {
+            name: dto.name,
+            slug: dto.slug,
+            iconName: dto.iconName ?? null,
+            sortOrder: dto.sortOrder ?? 0,
+            isActive: dto.isActive ?? true,
+            isAllowedForListings: false,
+            listingPolicy: CategoryListingPolicy.RESTRICTED,
+            safetyNotice:
+              'Категория требует отдельной проверки перед публикацией.',
+          },
+          select: this.categorySelect(),
+        });
+        await this.writeAudit(tx, {
+          adminId,
+          action: 'CATEGORY_CREATED',
+          categoryId: created.id,
+          context,
+          before: { exists: false },
+          after: this.auditSnapshot(created),
+        });
+        return created;
       });
 
       return this.toCategoryResponse(category);
@@ -79,19 +119,35 @@ export class CategoriesService {
     }
   }
 
-  async update(id: string, dto: UpdateCategoryDto): Promise<CategoryResponse> {
+  async update(
+    adminId: string,
+    id: string,
+    dto: UpdateCategoryDto,
+    context: AdminAuditContext,
+  ): Promise<CategoryResponse> {
     const data = this.buildUpdateData(dto);
-    const currentCategory = await this.findById(id);
-
-    if (Object.keys(data).length === 0) {
-      return this.toCategoryResponse(currentCategory);
-    }
 
     try {
-      const category = await this.prisma.category.update({
-        where: { id },
-        data,
-        select: this.categorySelect(),
+      const category = await this.prisma.$transaction(async (tx) => {
+        const current = await this.findById(id, tx);
+        if (Object.keys(data).length === 0) {
+          return current;
+        }
+
+        const updated = await tx.category.update({
+          where: { id },
+          data,
+          select: this.categorySelect(),
+        });
+        await this.writeAudit(tx, {
+          adminId,
+          action: 'CATEGORY_UPDATED',
+          categoryId: id,
+          context,
+          before: this.auditSnapshot(current),
+          after: this.auditSnapshot(updated),
+        });
+        return updated;
       });
 
       return this.toCategoryResponse(category);
@@ -101,20 +157,37 @@ export class CategoriesService {
     }
   }
 
-  async disable(id: string): Promise<CategoryResponse> {
-    await this.findById(id);
-
-    const category = await this.prisma.category.update({
-      where: { id },
-      data: { isActive: false },
-      select: this.categorySelect(),
+  async disable(
+    adminId: string,
+    id: string,
+    context: AdminAuditContext,
+  ): Promise<CategoryResponse> {
+    const category = await this.prisma.$transaction(async (tx) => {
+      const current = await this.findById(id, tx);
+      const updated = await tx.category.update({
+        where: { id },
+        data: { isActive: false },
+        select: this.categorySelect(),
+      });
+      await this.writeAudit(tx, {
+        adminId,
+        action: 'CATEGORY_DISABLED',
+        categoryId: id,
+        context,
+        before: { isActive: current.isActive },
+        after: { isActive: updated.isActive },
+      });
+      return updated;
     });
 
     return this.toCategoryResponse(category);
   }
 
-  private async findById(id: string): Promise<CategoryModel> {
-    const category = await this.prisma.category.findUnique({
+  private async findById(
+    id: string,
+    client: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<CategoryModel> {
+    const category = await client.category.findUnique({
       where: { id },
       select: this.categorySelect(),
     });
@@ -124,6 +197,45 @@ export class CategoriesService {
     }
 
     return category;
+  }
+
+  private writeAudit(
+    tx: Prisma.TransactionClient,
+    input: {
+      adminId: string;
+      action: string;
+      categoryId: string;
+      context: AdminAuditContext;
+      before: Prisma.InputJsonObject;
+      after: Prisma.InputJsonObject;
+    },
+  ) {
+    return tx.adminAuditLog.create({
+      data: {
+        adminId: input.adminId,
+        action: input.action,
+        entityType: 'Category',
+        entityId: input.categoryId,
+        capability: AdminCapability.MODERATION,
+        requestId: input.context.requestId,
+        ipAddress: input.context.ipAddress,
+        deviceId: input.context.deviceId,
+        before: input.before,
+        after: input.after,
+      },
+    });
+  }
+
+  private auditSnapshot(category: CategoryModel): Prisma.InputJsonObject {
+    return {
+      name: category.name,
+      slug: category.slug,
+      iconName: category.iconName,
+      sortOrder: category.sortOrder,
+      isActive: category.isActive,
+      isAllowedForListings: category.isAllowedForListings,
+      listingPolicy: category.listingPolicy,
+    };
   }
 
   private buildUpdateData(dto: UpdateCategoryDto): Prisma.CategoryUpdateInput {
@@ -147,15 +259,11 @@ export class CategoriesService {
       data.sortOrder = dto.sortOrder;
     }
 
-    if (Object.hasOwn(dto, 'isActive')) {
-      data.isActive = dto.isActive;
-    }
-
     return data;
   }
 
   private rejectNullRequiredUpdateFields(dto: Record<string, unknown>): void {
-    const requiredFields = ['name', 'slug', 'sortOrder', 'isActive'];
+    const requiredFields = ['name', 'slug', 'sortOrder'];
 
     if (
       requiredFields.some(
@@ -185,6 +293,9 @@ export class CategoriesService {
       iconName: category.iconName,
       sortOrder: category.sortOrder,
       isActive: category.isActive,
+      isAllowedForListings: category.isAllowedForListings,
+      listingPolicy: category.listingPolicy,
+      safetyNotice: category.safetyNotice,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };
@@ -198,6 +309,9 @@ export class CategoriesService {
       iconName: true,
       sortOrder: true,
       isActive: true,
+      isAllowedForListings: true,
+      listingPolicy: true,
+      safetyNotice: true,
       createdAt: true,
       updatedAt: true,
     } as const;

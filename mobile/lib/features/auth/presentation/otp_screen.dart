@@ -4,6 +4,8 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/sosedi_logo.dart';
 import '../domain/auth_controller.dart';
 import '../domain/auth_state.dart';
 import '../domain/auth_validators.dart';
@@ -23,9 +25,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final authState = ref.watch(authControllerProvider);
 
     if (authState is! AuthCodeSent) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -38,18 +38,25 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: FormBuilder(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SosediLogo(markSize: 28),
+                const SizedBox(height: 48),
                 Text(
                   'Введите код',
-                  style: Theme.of(context).textTheme.headlineMedium,
+                  style: Theme.of(context).textTheme.displaySmall,
                 ),
                 const SizedBox(height: 8),
-                Text('SMS отправлено на ${authState.phone}'),
+                Text(
+                  'SMS отправлено на ${authState.phone}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
+                ),
                 const SizedBox(height: 28),
                 FormBuilderTextField(
                   name: 'code',
@@ -63,7 +70,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   validator: AuthValidators.validateOtp,
                   decoration: const InputDecoration(
                     labelText: 'Код из SMS',
-                    prefixIcon: Icon(Icons.sms),
+                    prefixIcon: Icon(
+                      Icons.sms_outlined,
+                      color: AppColors.slate700,
+                    ),
                   ),
                   onSubmitted: (_) => _submit(),
                 ),
@@ -101,9 +111,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     }
 
     final code = form.value['code'] as String;
-    final success = await ref.read(authControllerProvider.notifier).verifyOtp(
-          code,
-        );
+    final success = await ref
+        .read(authControllerProvider.notifier)
+        .verifyOtp(code);
 
     if (mounted && success) {
       context.go('/home');

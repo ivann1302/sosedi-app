@@ -29,7 +29,15 @@ jobs:
         run: npm ci
         working-directory: backend
 
+      - name: Cache generated Prisma client
+        id: prisma-client-cache
+        uses: actions/cache@v4
+        with:
+          path: backend/node_modules/.prisma
+          key: ${{ runner.os }}-node22-prisma-${{ hashFiles('backend/package-lock.json', 'backend/prisma/schema.prisma') }}
+
       - name: Generate Prisma client
+        if: steps.prisma-client-cache.outputs.cache-hit != 'true'
         run: npx prisma generate
         working-directory: backend
 
@@ -57,6 +65,12 @@ jobs:
       - name: Build
         run: make backend-build
 
+      - name: Build production backend image
+        env:
+          BACKEND_RELEASE: ci-${{ github.sha }}
+          BACKEND_IMAGE_TAG: sosedi-backend:ci
+        run: make backend-image-build
+
   mobile:
     name: Mobile
     runs-on: ubuntu-latest
@@ -69,6 +83,8 @@ jobs:
         with:
           flutter-version: '3.44.7'
           cache: true
+          pub-cache: true
+          pub-cache-key: flutter-pub-${{ runner.os }}-3.44.7-${{ hashFiles('mobile/pubspec.lock') }}
 
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
@@ -87,3 +103,71 @@ jobs:
           name: mobile-coverage
           path: mobile/coverage/lcov.info
           if-no-files-found: warn
+
+  ios-smoke:
+    name: iOS no-codesign smoke
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.7'
+          cache: true
+          pub-cache: true
+          pub-cache-key: flutter-pub-${{ runner.os }}-3.44.7-${{ hashFiles('mobile/pubspec.lock') }}
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            mobile/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('mobile/ios/Podfile.lock') }}
+
+      - name: Build locked graph without signing
+        run: make mobile-ios-smoke
+
+  operator:
+    name: Operator web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: operator/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: operator
+
+      - name: Type-check and build
+        run: make operator-build
+
+  public-web:
+    name: Public legal/support web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: public-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: public-web
+
+      - name: Type-check, lint, build and smoke
+        run: make public-web-check

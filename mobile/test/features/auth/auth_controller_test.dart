@@ -52,6 +52,48 @@ void main() {
     expect(storage.clearCount, 0);
   });
 
+  test('hides protected state while revalidating a resumed session', () async {
+    final storage = MemoryTokenStorage(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    );
+    final resumedResponse = Completer<ResponseBody>();
+    var meRequests = 0;
+    final container = createContainer(storage, (options) {
+      if (options.path != '/auth/me') {
+        return notFoundResponse();
+      }
+
+      meRequests += 1;
+      if (meRequests == 1) {
+        return userResponse();
+      }
+
+      return resumedResponse.future;
+    });
+    addTearDown(container.dispose);
+    await waitForState<AuthAuthenticated>(container);
+
+    final validation = container
+        .read(authControllerProvider.notifier)
+        .validateSessionOnResume();
+
+    expect(container.read(authControllerProvider), isA<AuthLoading>());
+
+    resumedResponse.complete(
+      jsonResponse({
+        'success': false,
+        'data': null,
+        'error': {'code': 'UNAUTHORIZED', 'message': 'Войдите заново'},
+      }, statusCode: 401),
+    );
+    await validation;
+
+    expect(container.read(authControllerProvider), isA<AuthUnauthenticated>());
+    expect(storage.accessToken, isNull);
+    expect(storage.refreshToken, isNull);
+  });
+
   test('clears a session rejected by the server', () async {
     final storage = MemoryTokenStorage(
       accessToken: 'expired-access',
@@ -271,7 +313,7 @@ Map<String, Object?> userJson() {
     'id': 'user-1',
     'phone': '+79991234567',
     'name': null,
-    'role': 'RENTER',
+    'role': 'USER',
     'kycStatus': null,
     'isBlocked': false,
   };
