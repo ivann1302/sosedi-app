@@ -12,6 +12,7 @@ ADR хранит только принятое business, legal, provider или 
 | [0002](0002-account-data-lifecycle.md) | ACCEPTED | Категорийные сроки export/delete, scoped legal hold и сохранение минимального financial/audit trail. |
 | [0003](0003-launch-category-safety-policy.md) | ACCEPTED | Deny-by-default launch whitelist, запрещённые/ограниченные категории и обязательные safety-предупреждения. |
 | [0004](0004-delivery-out-of-mvp-1.md) | ACCEPTED | Delivery entry point и передача адреса внешнему приложению исключены из MVP 1.0; личный handover независим. |
+| [0005](0005-monetized-safe-deal-provider.md) | PROPOSED | Монетизированный Safe Deal; основной кандидат ЮKassa, fallback Т‑Банк, окончательный выбор заблокирован до договора и тарифа. |
 
 ## Статусы
 

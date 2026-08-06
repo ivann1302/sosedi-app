@@ -144,6 +144,14 @@ function createService({
 }
 
 describe('BookingService', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-29T12:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('takes lender and inclusive price total from backend', async () => {
     const { service, create } = createService();
 

@@ -971,6 +971,11 @@ Fake provider и доменные TDD-тесты не блокируются.
 - [ ] Зафиксировать формулу цены: кто платит platform fee, процент/фиксированная
   часть, база, min/max, округление до копеек, НДС/комиссия provider, owner payout
   и правило сохранения равенства всех сумм.
+  **DOING 06.08.2026:** для fake-provider чистая bigint-формула использует
+  рабочий 1% из выплаты владельцу, без наценки арендатору, и округляет половину
+  копейки вверх; unit-тест проверяет breakdown и точное равенство. Итоговые
+  процент/min/max, provider cost, НДС и refund остаются BLOCKED до provider и
+  legal/accounting gate; Booking/API продолжают `PAY_ON_HANDOVER` с fee 0.
 - [ ] Хранить и передавать деньги как точные minor units/`Decimal` с валютой `RUB`,
   не использовать JavaScript/Dart binary float; добавить DB/API constraints на
   scale, неотрицательность и допустимые min/max.

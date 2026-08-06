@@ -136,6 +136,18 @@ describe('Booking availability (e2e)', () => {
   }
 
   beforeAll(async () => {
+    jest.useFakeTimers({
+      doNotFake: [
+        'hrtime',
+        'nextTick',
+        'performance',
+        'queueMicrotask',
+        'setImmediate',
+        'setInterval',
+        'setTimeout',
+      ],
+    });
+    jest.setSystemTime(new Date('2026-07-29T12:00:00.000Z'));
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -1119,5 +1131,6 @@ describe('Booking availability (e2e)', () => {
 
   afterAll(async () => {
     await app?.close();
+    jest.useRealTimers();
   });
 });
