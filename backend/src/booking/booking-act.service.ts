@@ -1,14 +1,24 @@
 import {
+  BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingActStage, BookingStatus, Prisma } from '@prisma/client';
+import {
+  BookingActStage,
+  BookingMessageAuthorRole,
+  BookingStatus,
+  Prisma,
+} from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingEventType, bookingEventKey } from './booking-events';
-import { BookingActResponseDto } from './dto/booking-act-response.dto';
+import {
+  BookingActResponseDto,
+  BookingReadinessResponseDto,
+} from './dto/booking-act-response.dto';
 import { CreateBookingActDto } from './dto/create-booking-act.dto';
 
 const actInclude = {
@@ -17,6 +27,10 @@ const actInclude = {
     orderBy: { createdAt: 'asc' as const },
   },
 } satisfies Prisma.BookingActInclude;
+
+type BookingActRecord = Prisma.BookingActGetPayload<{
+  include: typeof actInclude;
+}>;
 
 @Injectable()
 export class BookingActService {
@@ -30,11 +44,12 @@ export class BookingActService {
     bookingId: string,
   ): Promise<BookingActResponseDto[]> {
     await this.requireParticipant(actorId, bookingId);
-    return this.prisma.bookingAct.findMany({
+    const acts = await this.prisma.bookingAct.findMany({
       where: { bookingId },
       include: actInclude,
       orderBy: { createdAt: 'asc' },
     });
+    return acts.map((act) => this.toResponse(act));
   }
 
   async create(
@@ -52,8 +67,10 @@ export class BookingActService {
       include: actInclude,
     });
     if (replay) {
-      return replay;
+      return this.toResponse(replay);
     }
+
+    this.ensureReadiness(dto);
 
     const verified = await this.upload.verifyBookingEvidenceIntent(
       actorId,
@@ -61,53 +78,70 @@ export class BookingActService {
       dto.intentId,
     );
     try {
-      return await this.prisma.$transaction(
-        async (tx) => {
-          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${bookingId}))`;
-          const booking = await tx.booking.findFirst({
-            where: {
-              id: bookingId,
-              OR: [{ borrowerId: actorId }, { lenderId: actorId }],
-            },
-            select: { id: true, status: true },
-          });
-          if (!booking) {
-            throw new NotFoundException('Бронирование не найдено');
-          }
-          this.ensureStageState(dto.stage, booking.status);
+      return await this.prisma
+        .$transaction(
+          async (tx) => {
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${bookingId}))`;
+            const booking = await tx.booking.findFirst({
+              where: {
+                id: bookingId,
+                OR: [{ borrowerId: actorId }, { lenderId: actorId }],
+              },
+              select: {
+                id: true,
+                status: true,
+                borrowerId: true,
+                lenderId: true,
+              },
+            });
+            if (!booking) {
+              throw new NotFoundException('Бронирование не найдено');
+            }
+            this.ensureStageState(dto.stage, booking.status);
+            this.ensureStageActor(dto.stage, actorId, booking);
 
-          const consumed = await tx.uploadIntent.updateMany({
-            where: {
-              id: verified.intentId,
-              actorId,
-              entityId: bookingId,
-              confirmedAt: null,
-              expiresAt: { gt: new Date() },
-            },
-            data: { confirmedAt: new Date() },
-          });
-          if (consumed.count !== 1) {
-            throw new ConflictException('Upload intent уже использован');
-          }
+            const consumed = await tx.uploadIntent.updateMany({
+              where: {
+                id: verified.intentId,
+                actorId,
+                entityId: bookingId,
+                confirmedAt: null,
+                expiresAt: { gt: new Date() },
+              },
+              data: { confirmedAt: new Date() },
+            });
+            if (consumed.count !== 1) {
+              throw new ConflictException('Upload intent уже использован');
+            }
 
-          return tx.bookingAct.create({
-            data: {
-              bookingId,
-              authorId: actorId,
-              stage: dto.stage,
-              evidence: {
-                create: {
-                  uploadIntentId: verified.intentId,
-                  storageKey: verified.objectKey,
-                  sha256: verified.sha256,
+            const declaredAt = new Date();
+            return tx.bookingAct.create({
+              data: {
+                bookingId,
+                authorId: actorId,
+                stage: dto.stage,
+                readinessIsWorking: dto.readiness?.isWorking,
+                readinessIsComplete: dto.readiness?.isComplete,
+                readinessVisibleDefects:
+                  dto.readiness?.visibleDefects.trim() ?? undefined,
+                readinessDeclaredAt:
+                  dto.stage === BookingActStage.HANDOVER
+                    ? declaredAt
+                    : undefined,
+                evidence: {
+                  create: {
+                    uploadIntentId: verified.intentId,
+                    storageKey: verified.objectKey,
+                    sha256: verified.sha256,
+                  },
                 },
               },
-            },
-            include: actInclude,
-          });
-        },
-        { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
-      );
+              include: actInclude,
+            });
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+        )
+        .then((act) => this.toResponse(act));
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -151,7 +185,7 @@ export class BookingActService {
         }
         if (act.confirmedAt) {
           if (act.confirmedById === actorId) {
-            return act;
+            return this.toResponse(act);
           }
           throw new ConflictException('Акт уже подтверждён');
         }
@@ -174,6 +208,16 @@ export class BookingActService {
         await tx.booking.update({
           where: { id: bookingId },
           data: { status: nextStatus },
+        });
+        await tx.bookingMessage.create({
+          data: {
+            bookingId,
+            authorRole: BookingMessageAuthorRole.SYSTEM,
+            body:
+              nextStatus === BookingStatus.ACTIVE
+                ? 'Передача подтверждена обеими сторонами. Аренда началась.'
+                : 'Возврат подтверждён обеими сторонами.',
+          },
         });
         await tx.bookingTransitionHistory.create({
           data: {
@@ -199,7 +243,7 @@ export class BookingActService {
             deduplicationKey: bookingEventKey(bookingId, eventType),
           },
         });
-        return confirmed;
+        return this.toResponse(confirmed);
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
     );
@@ -247,5 +291,65 @@ export class BookingActService {
         message: 'Акт недоступен в текущем состоянии бронирования',
       });
     }
+  }
+
+  private ensureReadiness(dto: CreateBookingActDto): void {
+    if (dto.stage === BookingActStage.HANDOVER && !dto.readiness) {
+      throw new BadRequestException(
+        'Перед передачей владелец должен заполнить чек-лист',
+      );
+    }
+    if (dto.stage === BookingActStage.RETURN && dto.readiness) {
+      throw new BadRequestException(
+        'Чек-лист готовности доступен только для передачи',
+      );
+    }
+  }
+
+  private ensureStageActor(
+    stage: BookingActStage,
+    actorId: string,
+    booking: { borrowerId: string; lenderId: string },
+  ): void {
+    const expectedActorId =
+      stage === BookingActStage.HANDOVER
+        ? booking.lenderId
+        : booking.borrowerId;
+    if (actorId !== expectedActorId) {
+      throw new ForbiddenException(
+        stage === BookingActStage.HANDOVER
+          ? 'Акт передачи создаёт владелец'
+          : 'Акт возврата создаёт арендатор',
+      );
+    }
+  }
+
+  private toResponse(act: BookingActRecord): BookingActResponseDto {
+    let readiness: BookingReadinessResponseDto | null = null;
+    if (
+      act.readinessIsWorking != null &&
+      act.readinessIsComplete != null &&
+      act.readinessVisibleDefects != null &&
+      act.readinessDeclaredAt != null
+    ) {
+      readiness = {
+        isWorking: act.readinessIsWorking,
+        isComplete: act.readinessIsComplete,
+        visibleDefects: act.readinessVisibleDefects,
+        declaredAt: act.readinessDeclaredAt,
+        declaration: 'LENDER_SELF_DECLARATION',
+      };
+    }
+    return {
+      id: act.id,
+      bookingId: act.bookingId,
+      authorId: act.authorId,
+      stage: act.stage,
+      createdAt: act.createdAt,
+      confirmedById: act.confirmedById,
+      confirmedAt: act.confirmedAt,
+      evidence: act.evidence,
+      readiness,
+    };
   }
 }

@@ -48,6 +48,17 @@ enum BookingStatus {
   CANCELLED
 }
 
+enum BookingMessageAuthorRole {
+  BORROWER
+  LENDER
+  SYSTEM
+}
+
+enum ReviewAuthorRole {
+  BORROWER
+  LENDER
+}
+
 enum BookingActStage {
   HANDOVER
   RETURN
@@ -115,6 +126,8 @@ enum ReportTargetType {
   ITEM
   USER
   BOOKING
+  MESSAGE
+  REVIEW
 }
 
 enum ReportReason {
@@ -188,6 +201,10 @@ model User {
   authoredBookingActs      BookingAct[]               @relation("BookingActAuthor")
   confirmedBookingActs     BookingAct[]               @relation("BookingActConfirmer")
   bookingTransitions       BookingTransitionHistory[]
+  bookingMessages          BookingMessage[]            @relation("BookingMessageAuthor")
+  reviewsAuthored          Review[]                    @relation("ReviewAuthor")
+  reviewsReceived          Review[]                    @relation("ReviewTarget")
+  reviewsModerated         Review[]                    @relation("ReviewModerator")
   supportMessages          SupportMessage[]
   reportsCreated           UserReport[]               @relation("ReportReporter")
   reportsReviewed          UserReport[]               @relation("ReportReviewer")
@@ -373,6 +390,8 @@ model Booking {
   inboxEvents    InboxEvent[]
   acts           BookingAct[]
   transitions    BookingTransitionHistory[]
+  messages       BookingMessage[]
+  reviews        Review[]
 
   @@unique([borrowerId, clientRequestId])
   @@index([itemId])
@@ -382,6 +401,53 @@ model Booking {
   @@index([expiresAt])
   @@index([startDate, endDate])
   @@map("bookings")
+}
+
+model BookingMessage {
+  id              String                   @id @default(uuid())
+  bookingId       String
+  authorId        String?
+  authorRole      BookingMessageAuthorRole
+  clientMessageId String?
+  body            String                   @db.VarChar(2000)
+  createdAt       DateTime                 @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  author  User?   @relation("BookingMessageAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@unique([authorId, clientMessageId])
+  @@index([bookingId, createdAt, id])
+  @@index([authorId])
+  @@map("booking_messages")
+}
+
+model Review {
+  id             String           @id @default(uuid())
+  bookingId      String
+  authorId       String?
+  targetId       String
+  authorRole     ReviewAuthorRole
+  clientReviewId String?
+  rating         Int
+  text           String?          @db.VarChar(1000)
+  publishAt      DateTime
+  hiddenAt       DateTime?
+  hiddenById     String?
+  hiddenReason   String?
+  createdAt      DateTime         @default(now())
+
+  booking  Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  author   User?   @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  target   User    @relation("ReviewTarget", fields: [targetId], references: [id], onDelete: Restrict)
+  hiddenBy User?   @relation("ReviewModerator", fields: [hiddenById], references: [id], onDelete: SetNull)
+
+  @@unique([bookingId, authorRole])
+  @@unique([authorId, clientReviewId])
+  @@index([targetId, publishAt, createdAt, id])
+  @@index([bookingId, createdAt])
+  @@index([authorId])
+  @@index([hiddenById])
+  @@map("reviews")
 }
 
 model BookingTransitionHistory {
@@ -413,6 +479,10 @@ model BookingAct {
   createdAt     DateTime        @default(now())
   confirmedById String?
   confirmedAt   DateTime?
+  readinessIsWorking      Boolean?
+  readinessIsComplete     Boolean?
+  readinessVisibleDefects String?
+  readinessDeclaredAt     DateTime?
 
   booking     Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   author      User              @relation("BookingActAuthor", fields: [authorId], references: [id])

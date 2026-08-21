@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/identifiers/uuid_v4.dart';
 import '../data/booking_service.dart';
+import '../data/booking_models.dart';
 
 final bookingActionProvider =
     AsyncNotifierProvider<BookingActionController, String?>(
@@ -37,24 +38,33 @@ class BookingActionController extends AsyncNotifier<String?> {
     );
   }
 
-  Future<void> reportIssue({
+  Future<BookingIssueReceipt?> reportIssue({
     required String bookingId,
     required String reason,
     required String details,
   }) async {
+    BookingIssueReceipt? receipt;
     await _run(
       actionKey: 'issue:$bookingId:$reason',
       bookingId: bookingId,
-      command: (_) => ref
-          .read(bookingServiceProvider)
-          .reportIssue(bookingId: bookingId, reason: reason, details: details),
+      command: (_) async {
+        receipt = await ref
+            .read(bookingServiceProvider)
+            .reportIssue(
+              bookingId: bookingId,
+              reason: reason,
+              details: details,
+            );
+      },
     );
+    return receipt;
   }
 
   Future<void> createAct({
     required String bookingId,
     required String stage,
     required XFile photo,
+    HandoverReadinessInput? readiness,
   }) async {
     await _run(
       actionKey: 'act:create:$bookingId:$stage',
@@ -62,7 +72,12 @@ class BookingActionController extends AsyncNotifier<String?> {
       command: (_) async {
         await ref
             .read(bookingServiceProvider)
-            .createAct(bookingId: bookingId, stage: stage, photo: photo);
+            .createAct(
+              bookingId: bookingId,
+              stage: stage,
+              photo: photo,
+              readiness: readiness,
+            );
       },
     );
   }

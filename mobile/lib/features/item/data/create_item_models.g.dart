@@ -6,6 +6,34 @@ part of 'create_item_models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_LocalCreateItemDraft _$LocalCreateItemDraftFromJson(
+  Map<String, dynamic> json,
+) => _LocalCreateItemDraft(
+  step: (json['step'] as num?)?.toInt() ?? 0,
+  categoryId: json['categoryId'] as String?,
+  title: json['title'] as String?,
+  description: json['description'] as String?,
+  condition: json['condition'] as String?,
+  completeness: json['completeness'] as String?,
+  handoverTerms: json['handoverTerms'] as String?,
+  pricePerDay: json['pricePerDay'] as String?,
+  publicArea: json['publicArea'] as String?,
+);
+
+Map<String, dynamic> _$LocalCreateItemDraftToJson(
+  _LocalCreateItemDraft instance,
+) => <String, dynamic>{
+  'step': instance.step,
+  'categoryId': instance.categoryId,
+  'title': instance.title,
+  'description': instance.description,
+  'condition': instance.condition,
+  'completeness': instance.completeness,
+  'handoverTerms': instance.handoverTerms,
+  'pricePerDay': instance.pricePerDay,
+  'publicArea': instance.publicArea,
+};
+
 _CreateItemDraft _$CreateItemDraftFromJson(Map<String, dynamic> json) =>
     _CreateItemDraft(
       categoryId: json['categoryId'] as String,

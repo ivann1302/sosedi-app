@@ -11,6 +11,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   BOOKING_COMPETING_CANCELLATION_REASON,
   BOOKING_MAX_ACTIVE_PENDING,
+  BOOKING_MAX_COMPETING_PENDING,
+  BOOKING_PENDING_TTL_MS,
   BookingService,
 } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -36,6 +38,7 @@ function createService({
   hasCalendarConflict = false,
   hasInteractionBlock = false,
   activePendingCount = 0,
+  competingPendingCount = 0,
   depositAmount = null,
   legalTermsVersion = '2026-08-01.1',
 }: {
@@ -44,6 +47,7 @@ function createService({
   hasCalendarConflict?: boolean;
   hasInteractionBlock?: boolean;
   activePendingCount?: number;
+  competingPendingCount?: number;
   depositAmount?: Prisma.Decimal | null;
   legalTermsVersion?: string | null;
 } = {}) {
@@ -108,12 +112,20 @@ function createService({
       ),
     },
     booking: {
-      count: jest.fn(() => Promise.resolve(activePendingCount)),
+      count: jest.fn(({ where }: { where: { itemId?: string } }) =>
+        Promise.resolve(
+          where.itemId ? competingPendingCount : activePendingCount,
+        ),
+      ),
       findUnique: jest.fn(() => Promise.resolve(null)),
       findFirst: jest.fn(() =>
         Promise.resolve(hasConflict ? { id: 'booking-existing' } : null),
       ),
       create,
+    },
+    bookingMessage: {
+      create: jest.fn(() => Promise.resolve({ id: 'message-1' })),
+      createMany: jest.fn(() => Promise.resolve({ count: 1 })),
     },
     notificationOutboxEvent: {
       create: jest.fn(() => Promise.resolve({ id: 'event-1' })),
@@ -188,6 +200,10 @@ describe('BookingService', () => {
         },
       },
     });
+    expect(create.mock.calls[0]?.[0].data.expiresAt).toEqual(
+      new Date('2026-07-30T00:00:00.000Z'),
+    );
+    expect(BOOKING_PENDING_TTL_MS).toBe(12 * 60 * 60 * 1000);
     const termsSnapshot = create.mock.calls[0]?.[0].data.termsSnapshot;
     expect(termsSnapshot).toHaveProperty('acceptance.acceptedAt');
   });
@@ -303,6 +319,17 @@ describe('BookingService', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  it('limits live overlapping requests per item and period', async () => {
+    const { service, create } = createService({
+      competingPendingCount: BOOKING_MAX_COMPETING_PENDING,
+    });
+
+    await expect(
+      service.create('borrower-1', acceptedRequest({ endDate: '2026-08-01' })),
+    ).rejects.toBeInstanceOf(TooManyRequestsException);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('confirms one request and cancels overlapping pending competitors', async () => {
     const pending = {
       id: 'booking-1',
@@ -321,10 +348,16 @@ describe('BookingService', () => {
     };
     const updateMany = jest.fn().mockResolvedValue({ count: 1 });
     const createMany = jest.fn().mockResolvedValue({ count: 2 });
+    const createSystemMessages = jest.fn().mockResolvedValue({ count: 2 });
     const tx = {
       $executeRaw: jest.fn().mockResolvedValue(1),
+      itemUnavailablePeriod: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
       booking: {
-        findFirst: jest.fn().mockResolvedValue(pending),
+        findFirst: jest.fn(({ where }: { where: { status?: unknown } }) =>
+          Promise.resolve(where.status ? null : pending),
+        ),
         findMany: jest.fn().mockResolvedValue([{ id: 'booking-2' }]),
         update: jest.fn().mockResolvedValue({
           ...pending,
@@ -333,6 +366,7 @@ describe('BookingService', () => {
         }),
         updateMany,
       },
+      bookingMessage: { createMany: createSystemMessages },
       notificationOutboxEvent: { createMany },
       bookingTransitionHistory: {
         createMany: jest.fn().mockResolvedValue({ count: 2 }),
@@ -363,9 +397,16 @@ describe('BookingService', () => {
       data: {
         status: BookingStatus.CANCELLED,
         cancellationReason: BOOKING_COMPETING_CANCELLATION_REASON,
+        expiresAt: null,
       },
     });
     expect(createMany).toHaveBeenCalledTimes(1);
+    expect(createSystemMessages).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({ bookingId: 'booking-1' }),
+        expect.objectContaining({ bookingId: 'booking-2' }),
+      ],
+    });
     expect(createMany).toHaveBeenCalledWith({
       data: [
         {

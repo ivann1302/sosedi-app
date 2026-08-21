@@ -1,0 +1,1 @@
+ALTER TYPE "ReportTargetType" ADD VALUE 'MESSAGE';

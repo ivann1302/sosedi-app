@@ -37,6 +37,111 @@ provider decision → KYC ADR → production payment integration.
 ниши. Раздел `0.3` мигрирует их в единый `Item`-контракт и модель `USER`, не
 теряя доказанные security/privacy гарантии prototype.
 
+### Подтверждённое направление store-ready MVP — 09.08.2026
+
+- Первый рынок — несколько смежных районов Москвы. Точный список районов пока
+  `TBD`: это не блокирует общую разработку каталога/карты, но блокирует набор
+  предложения и публичный пилот.
+- Продукт ориентирован на обычных жителей без узкой профессиональной ниши.
+  Визуальный канон — текущий brandbook: тёплый orange/graphite, Manrope,
+  практичность и доверие.
+- Главный вход — единый `Найти`: каталог и карта используют одни поиск, даты и
+  фильтры. На телефоне карта полноэкранная с лентой/bottom sheet, на широком
+  экране допустим split view.
+- Карта входит в пилот. Публично она показывает только стабильные приблизительные
+  точки; точный адрес и системный контакт не раскрываются до подтверждения
+  владельцем и разрешённого private access window бронирования.
+- Supply-модель целевая смешанная: стартовые вещи проекта плюс объявления
+  внешних владельцев. P2P остаётся текущим разрешённым сценарием; имущество
+  ИП/ООО Sosedi нельзя маскировать под P2P и нельзя публиковать до отдельного
+  legal/accounting gate и принятого ADR.
+- Цель монетизированного Safe Deal-пилота — platform fee 1%. После пилота
+  продуктовая цель — 5% маржи Sosedi; точное определение маржи и будущий
+  пользовательский тариф остаются `TBD` до provider/legal/accounting расчёта.
+  Кто платит 1%, как показывается полная цена и кто покрывает provider cost, пока
+  не решено; текущая fake-формула не принимает это решение за владельца продукта.
+- Booking-scoped текстовый чат открывается после создания заявки, в том числе до
+  подтверждения/оплаты. Свободные DM из карточки вещи, медиа и обязательный
+  realtime не входят в MVP.
+- Отзывы/рейтинги после завершённой аренды и проверка личности владельца входят в
+  trust scope; предпочтительная KYC-ветка — provider-managed без паспорта/селфи в
+  Sosedi, но она включается только после соответствующего gate.
+- Один release manifest/product version готовится для App Store, Google Play и
+  RuStore параллельно. Каждый магазин получает свой подписанный artifact и
+  допустимый platform/push config; общий API/legal/public contract совпадает.
+  Публичное окно координируется после готовности всех трёх либо отдельно
+  зафиксированного исключения.
+
+Продуктовые ориентиры: Hygglo — логика соседской аренды, Airbnb — ясность
+карточки/бронирования, ShareGrid — передача и evidence, Avito — привычный
+российский marketplace UX, Yandex Maps — поведение карты. Не копировать их scope,
+бренд или сложность целиком.
+
+### Решения после конкурентного аудита RuStore — 10.08.2026
+
+- Публичные каталог и карточка вещи доступны гостю без SMS. Авторизация нужна
+  только при намерении забронировать, написать участнику, создать объявление или
+  открыть приватный раздел; после OTP приложение возвращает пользователя к
+  исходному действию.
+- Два главных сценария MVP — «найти вещь» и «сдать вещь». В первом сначала
+  показываются фото и предложения, а вторичные фильтры не занимают основной
+  экран; во втором публикация укладывается максимум в три понятных шага без
+  ручного ввода координат.
+- Доверие строится на полной цене до подтверждения, server-derived следующем
+  действии, явной готовности вещи к передаче и коротком пути «Есть проблема» с
+  серверным временем/статусом. Самодекларация владельца не называется проверкой
+  платформы и сама не решает финансовый спор.
+- AI-описания, социальная лента, бартер, почасовая аренда, QR-lock и собственная
+  доставка не входят в MVP до данных пилота: они не улучшают основной P2P-flow
+  достаточно, чтобы оправдать дополнительную сложность.
+
+### Очередь задач с участием владельца — от простого к сложному
+
+Эта отдельная owner-lane задаёт порядок только для действий, которые Codex не
+может выполнить без владельца, физического устройства, внешнего кабинета или
+профильного специалиста. Она не создаёт повторных checklist-пунктов: статус и
+Definition of Done остаются у канонических задач по ссылкам в последней колонке.
+Независимую разработку Codex продолжает в числовом dependency-порядке roadmap.
+
+| № | Результат от владельца | Оценка участия | Канонический gate |
+|---:|---|---:|---|
+| 0 | Сообщить только статусы доступов, домена, устройств и внешних ресурсов, без секретов | 10–15 мин | Инвентаризация для `0.1`, `7.1`, `7.3`, `18` |
+| 1 | Утвердить публичный support-контакт | 10–20 мин | `7.2`, `7.3` |
+| 2 | Выбрать и оформить основной домен с MFA/recovery владельца | 30–60 мин | `7.3` |
+| 3 | Создать независимый private Git backup repository и scoped credential | 30–60 мин | `0.1` |
+| 4 | Создать private OCI registry в РФ и две scoped identity | 45–90 мин | `0.1` |
+| 5 | Закрыть кабинеты Apple/Google/RuStore, signing backup и первые internal builds | 2–4 ч плюс проверка магазинов | `7.1` |
+| 6 | После `7.1` создать ограниченный MapKit key и предоставить реальные iPhone/Android для visual smoke | 1–2 ч | `8.2`, `9`, `12`, `18` |
+| 7 | Создать production-аккаунты SMS.ru, push и выбранного российского S3 с минимальными правами | 2–4 ч | `17`, `17.3` |
+| 8 | Выбрать и оплатить production-инфраструктуру в РФ, backup destination и secret storage | 1–2 дня | `17.3` |
+| 9 | С российским профильным специалистом утвердить marketplace/legal/privacy пакет | несколько дней | `7.2`, `7.3`, `16`, `16.1`, `16.2` |
+| 10 | Получить условия Safe Deal, согласовать экономику 1%, налоги/чеки и выбрать одну KYC-ветку | дни/недели | `13.1`, `14`, `15` |
+| 11 | Утвердить районы, собрать supply, назначить операцию и провести smoke с пятью новыми пользователями | недели | `18`, `19` |
+
+Правило исполнения: перед каждой ступенью Codex готовит минимальную инструкцию и
+шаблон результата; владелец выполняет только недоступное автоматизации; затем
+Codex проверяет evidence, завершает техническую часть и обновляет канонический
+пункт. Не переходить к более сложной ступени, пока доступна незакрытая более
+простая; ожидание внешней проверки не мешает начать следующую ступень. MapKit
+всегда остаётся после Store readiness, а production payments/KYC — после
+marketplace/legal и provider gates.
+
+**Owner inventory 10.08.2026:** Apple Developer, Google Play и RuStore ждут
+создания юрлица заказчика; не открывать временные личные store-аккаунты. Домен
+`sosedi-app.ru` уже используется промолендингом и принят как основной кандидат:
+landing остаётся на `/`, а public documents/support/account deletion размещаются
+на отдельных path того же HTTPS-домена. Текущий hosting — SprintHost, доступ к
+нему подтверждён. Решение изменено 10.08.2026: перенести public site в Timeweb
+только через технический preview, сохранив SprintHost и старые DNS как rollback
+до успешного smoke. Live landing является Next.js-сборкой; её исходников в этом
+repository нет, поэтому migration ждёт source repository/local path либо export
+из SprintHost. Аккаунт Timeweb Cloud доступен и также подходит как кандидат для
+российского compute/OCI, но отдельный production pull-only registry token не
+подтверждён официальной документацией и требует ответа provider support. Public
+support-контакт утверждён как `sosedi.rs@yandex.ru`; устройства и проектные
+OTP-номера остаются `UNKNOWN`.
+В компании есть общий юрист, его marketplace/IT/payment scope ещё не подтверждён.
+
 ## Как применять TDD внутри roadmap
 
 TDD не является отдельной фазой перед разработкой. Каждый следующий пункт
@@ -520,15 +625,30 @@ TDD не является отдельной фазой перед разраб�
   стороны договора аренды и границы ответственности платформы.
 - [ ] Подготовить оферту/пользовательское соглашение, правила аренды, privacy/
   consent-документы и контакты поддержки; согласовать версии для web/store listing.
+  **PARTIAL 10.08.2026:** публичный контакт поддержки утверждён как
+  `sosedi.rs@yandex.ru`; legal/privacy документы и их production-версии остаются
+  на согласовании.
 - [ ] Зафиксировать прозрачное раскрытие цены, комиссии, залога или его отсутствия,
   отмены, возврата, no-show, повреждения, просрочки и финансового спора до
   подтверждения брони.
 - [ ] Утвердить age/eligibility, право владельца распоряжаться вещью,
   требования к состоянию, комплектации и безопасной передаче.
+- [ ] Для смешанной supply-модели принять отдельный ADR и письменно разделить
+  стороннее P2P-объявление и аренду имущества ИП/ООО Sosedi: реальную сторону
+  договора, видимый статус арендодателя, ответственность, возвраты/гарантии,
+  налоги, кассу/чеки, payment flow и immutable Booking snapshot. До закрытия
+  gate разрешать публично только текущий P2P-сценарий ADR-0001.
 - [x] Утвердить launch whitelist и список запрещённых/ограниченных вещей;
   не публиковать регулируемые, опасные, расходуемые и гигиенически рискованные
   категории до отдельной проверки. Решение:
   [ADR-0003](docs/adr/0003-launch-category-safety-policy.md).
+- [ ] Подготовить вторую волну категорий и принять обновлённый safety/legal ADR до
+  их открытия: audio/караоке, presentation/event equipment, офисная техника без
+  носителей данных, бытовая уборочная и безопасная климатическая техника,
+  творчество/хобби, многоразовый декор, багаж и незащитные travel-аксессуары.
+  Для каждой категории зафиксировать границы, запреты и safety notice; включать
+  её data-only изменением whitelist только при наличии минимум пяти качественных
+  объявлений. Текущие `RESTRICTED` категории не открывать этим пунктом.
 - [ ] Записывать user ID, версию документа, timestamp и способ принятия; повторное
   согласие запрашивать только при существенном изменении условий.
   **DOING 30.07.2026:** create Booking требует обе текущие approved версии и два
@@ -552,12 +672,17 @@ TDD не является отдельной фазой перед разраб�
 
 ## 7.3 Public legal/support web — до публичной аренды
 
-- [ ] Создать минимальный статический Astro-сайт с офертой, правилами аренды,
+- [x] Создать минимальный статический Astro-сайт с офертой, правилами аренды,
   privacy/consent, запрещёнными категориями и контактами поддержки.
-  **DOING 29.07.2026:** локальный статический сайт и все обязательные разделы
-  готовы; закрытие ждёт утверждённый публичный support-контакт.
+  **DONE 10.08.2026:** локальный static build содержит versioned draft offer/
+  rules/privacy, принятую prohibited-items policy, support и account-deletion;
+  обе контактные страницы публикуют `sosedi.rs@yandex.ru`. Typecheck/lint/build
+  и smoke восьми маршрутов прошли. Это не утверждает draft legal-тексты и не
+  заменяет production deploy.
 - [ ] Опубликовать отдельную страницу с инструкцией/каналом удаления аккаунта и
   объяснением retention/активных обязательств для требований магазинов.
+  **READY 10.08.2026:** локальная страница и резервный email готовы; закрытие
+  ждёт HTTPS deploy на `sosedi-app.ru` и проверку публичного URL.
 - [x] Показывать номер версии и дату вступления документов; старые версии хранить
   доступными для доказательства условий конкретной Booking.
 - [x] Не добавлять авторизацию, пользовательские ПД и analytics до отдельного
@@ -565,7 +690,9 @@ TDD не является отдельной фазой перед разраб�
 - [ ] Настроить домен, HTTPS/security headers, accessibility, responsive layout и
   резервное обновление страниц при недоступности основного backend.
   **DOING 29.07.2026:** CSP/headers, semantic accessibility и responsive layout
-  готовы в static output; закрытие ждёт RF-домен, HTTPS и независимый deploy.
+  готовы в static output. **MIGRATION 10.08.2026:** выбран Timeweb App Platform с
+  preview на technical domain и DNS rollback на SprintHost; закрытие ждёт source
+  текущего Next.js landing, preview, RF HTTPS/header smoke и controlled cutover.
 - [ ] Зафиксировать эти URL в App Store Connect, Google Play Console, RuStore и
   внутри mobile; проверить production links перед каждым release.
   **DOING 30.07.2026:** mobile compile-time config и pre-build verifier готовы;
@@ -616,6 +743,49 @@ TDD не является отдельной фазой перед разраб�
 - [x] Покрыть widget/integration-тестами edit, offline/error, session revoke и
   account deletion при активной аренде.
 
+## 8.2 Mobile product shell и визуальное качество
+
+- [x] Добавить постоянную нижнюю навигацию `Найти / Брони / Сдать / Входящие /
+  Профиль`: `Найти` открывается первым, deep link ведёт сразу в целевой экран,
+  back и переключение вкладок сохраняют только допустимое состояние без утечки
+  приватных данных.
+  **DONE 09.08.2026:** `StatefulShellRoute.indexedStack` объединяет пять
+  существующих продуктовых разделов, сохраняет отдельный navigator каждой
+  вкладки и сбрасывает активную ветку повторным нажатием. Авторизованный root и
+  OTP ведут в `/catalog`, старый `/home` оставлен безопасным redirect; создание
+  объявления возвращает в `/items/mine`. Profile/support и booking details
+  остаются внутри своих веток, auth redirect и существующий private-state cleanup
+  не дают открыть shell после logout. `make mobile-analyze` и все 192
+  `make mobile-test` проверки прошли. **DEVICE 09.08.2026:** onboarding → SMS OTP
+  → авторизованный shell успешно пройден на Android API 35 emulator; три
+  устаревших текстовых ожидания smoke синхронизированы с production UI.
+  Физические Android/iPhone остаются частью финального release gate.
+- [x] Открыть гостевой read-only путь `onboarding → Найти → публичная Item
+  Details` без SMS, используя только публичные DTO и не сохраняя приватное
+  состояние. Auth показывать по intent при бронировании, чате, публикации и
+  приватных вкладках; после успешного OTP восстанавливать безопасный целевой
+  route/action, а cancel возвращает к публичной карточке.
+  **TDD/DoD:** router/widget-тесты покрывают cold start, deep link, cancel и
+  post-auth resume; logout очищает private providers/cache, но не блокирует
+  публичный каталог; backend public endpoints не расширяют состав данных.
+  **DONE 10.08.2026:** onboarding теперь пропускаемый и ведёт в
+  гостевой Catalog/Item Details. Protected intent кодируется в
+  allowlisted `returnTo`, отмена возвращает в public route, а OTP восстанавливает
+  цель. External URL отбрасывается; public DTO/backend не менялись.
+- [ ] Провести единый photo-first UI refresh ключевых экранов по текущему
+  brandbook orange/graphite/Manrope: `Найти` сначала показывает предложения и
+  компактные chips поиска/дат/района/категории, вторичные фильтры открывает в
+  bottom sheet, а список работает до подключения карты и затем делит с ней одно
+  состояние. Onboarding оставлять коротким и пропускаемым; формы, CTA,
+  loading/empty/error и accessibility проверять на iPhone/Android. Старый зелёный
+  HTML-концепт не использовать как визуальный источник.
+  **DOING 10.08.2026:** production theme соответствует brandbook; Catalog и
+  Item Details используют photo-first карточки/галерею, явные
+  loading/empty/error и основной CTA. `Найти` показывает предложения
+  до расширенных фильтров, даты/категории вынесены в chips, а
+  цена/радиус — в bottom sheet. Все 220 mobile tests и analyzer проходят;
+  закрытие ждёт MapKit и ручной visual smoke на iPhone/Android.
+
 ## 9. Mobile Map
 
 > **Решение от 25.07.2026**
@@ -635,6 +805,11 @@ TDD не является отдельной фазой перед разраб�
 > подключается к release targets, а Mobile Map остаётся BLOCKED. Это dependency,
 > а не отдельная повторно считаемая задача.
 
+**LOCAL DEMO 21.08.2026:** для проверки текущего UX local/debug Catalog может
+переключиться на code-native демо-карту из уже загруженных публичных coarse-точек.
+Она не использует MapKit, геолокацию или точный адрес и всегда скрыта в
+production/release. Это не закрывает ни один пункт gate или Mobile Map.
+
 - [ ] Получить отдельный MapKit API key для Sosedi.
 - [ ] Настроить доступные ограничения по Android package/iOS bundle ID и подписи.
 - [ ] Передавать ключ через CI/`--dart-define` и не коммитить его в репозиторий.
@@ -651,7 +826,9 @@ TDD не является отдельной фазой перед разраб�
 
 - [ ] Создать `features/map`.
 - [ ] Подключить Yandex MapKit.
-- [ ] Добавить экран карты.
+- [ ] Добавить режим карты внутри общего `Найти`: одни query/даты/фильтры и
+  выбранная карточка сохраняются при `Список ↔ Карта`; на телефоне использовать
+  полноэкранную карту с bottom sheet/лентой, на широком экране — split view.
 - [ ] Получать текущую позицию пользователя.
 - [ ] Загружать объявления рядом.
 - [ ] Отображать маркеры вещей.
@@ -661,7 +838,8 @@ TDD не является отдельной фазой перед разраб�
   **BLOCKED 29.07.2026:** backend требует реальную пару `latitude/longitude`;
   получение позиции относится к заблокированному Store readiness gate раздела 9.
   Фиктивный центр города или точные координаты без consent не используются.
-- [ ] Обработать отсутствие геолокации.
+- [ ] Обработать отсутствие геолокации: ручной выбор района/области, понятный
+  empty state и кнопка «Искать в этой области» без фиктивной точной позиции.
 
 ## 10. Mobile Catalog
 
@@ -754,6 +932,21 @@ TDD не является отдельной фазой перед разраб�
   модерацию. Неподдерживаемый залог не предлагается.
 - [x] После значимого изменения текста, категории или фото возвращать объявление
   на модерацию, не изменяя snapshot уже созданных бронирований.
+- [ ] Перестроить mobile-публикацию максимум в три пользовательских шага:
+  `Фото → описание и цена → место и доступность`. Сохранять локальный черновик и
+  прогресс upload, явно выбирать главное фото, группировать обязательные
+  декларации перед submit и не просить latitude/longitude: пользователь выбирает
+  адрес/безопасную точку через общий location control, а backend формирует точные
+  координаты и публичную coarse-локацию. Не менять существующие moderation,
+  ownership, upload и safety contracts.
+  **TDD/DoD:** widget-тесты покрывают resume черновика, back между шагами,
+  upload/error/retry и единственный submit; финальный location picker зависит от
+  MapKit-раздела 9, остальные два шага не должны ждать SDK.
+  **PARTIAL 10.08.2026:** готовы три шага, явный выбор главного фото,
+  back/validation/submit и encrypted resume без фото, file path, точного
+  адреса, координат и legal checkbox. Черновик очищается после submit/logout;
+  замена временных latitude/longitude на общий MapKit control осталась
+  открытой.
 
 ## 13. Booking
 
@@ -804,6 +997,19 @@ TDD не является отдельной фазой перед разраб�
 - [x] Для MVP переводить истёкший `PENDING` в `CANCELLED` с reason
   `PENDING_TIMEOUT`; отдельный `EXPIRED` не добавлять без ADR и синхронного
   обновления Prisma/API/mobile/docs.
+- [x] Перевести заявку на подтверждённое продуктовое окно 12 часов: `PENDING`
+  допускает ограниченное число конкурирующих запросов и не резервирует период
+  эксклюзивно на полдня; confirm владельца атомарно выбирает одну заявку,
+  резервирует период и отменяет пересекающиеся. Мигрировать текущий 15-минутный
+  эксклюзивный TTL, contract/docs/mobile copy и abuse limits одним срезом.
+  **DONE 09.08.2026:** request TTL равен 12 часам; `PENDING` не участвует в
+  публичной доступности и hard-conflict календаря. Под borrower/item locks
+  действуют caps 5 активных заявок пользователя и 20 пересекающихся заявок на
+  период вещи. Confirm повторно проверяет calendar и
+  `CONFIRMED/ACTIVE/RETURNED`, выбирает одну заявку и атомарно отменяет живые
+  пересечения. Mobile объясняет неэксклюзивность и deadline. Проверено:
+  `make backend-lint`, `make backend-build`, 217 unit, 61 PostgreSQL/Redis e2e,
+  `make mobile-analyze` и 192 mobile tests.
 - [x] Проверять доступность и резервировать период атомарно с DB-гарантией;
   простой check-then-insert без блокировки/constraint не использовать.
 - [x] Выпускать доменное событие/outbox-запись в той же DB-транзакции, что и
@@ -832,6 +1038,88 @@ TDD не является отдельной фазой перед разраб�
   borrower/lender/периоду/сумме строки Booking. Новый Booking создаётся только
   с двумя настроенными approved версиями и immutable actor/server-time/method
   acceptance evidence; их production-утверждение остаётся внешним gate 7.2/7.3.
+
+### Booking-scoped чат
+
+> **Решение от 09.08.2026:** чат нужен уже после создания заявки в `PENDING`, в
+> том числе до подтверждения и оплаты. Это не свободные сообщения из профиля или
+> карточки вещи: диалог всегда принадлежит одной Booking и доступен только её
+> участникам. Системные телефон/точный адрес по-прежнему раскрываются только в
+> разрешённом private access window.
+
+**TDD-критерии среза:**
+
+- unit: lifecycle диалога, text bounds, rate limit, idempotency и unread;
+- integration: participant-only access, cursor pagination, block/report,
+  retention и отсутствие user-authored сообщения после block/закрытия write
+  window при сохранении system/evidence/support access;
+- mobile: offline/retry без дубля, inbox refresh/resume и push только с `eventId`;
+- не дублировать store UGC/report/block контракт раздела 16.1.
+
+- [x] Зафиксировать lifecycle: создавать один диалог вместе с заявкой, разрешать
+  текст в утверждённых `PENDING/CONFIRMED/ACTIVE/RETURNED` окнах, после
+  отмены/закрытия оставлять read-only на срок retention/dispute и не добавлять
+  свободные DM между пользователями. Block в `PENDING` немедленно закрывает write
+  и идемпотентно отменяет заявку с отдельной причиной; в `CONFIRMED/ACTIVE/
+  RETURNED` он запрещает user-authored сообщения между сторонами, но не разрушает
+  аренду и сохраняет системные события, evidence и доступ поддержки.
+  **DONE 09.08.2026:** `docs/booking-chat-contract.md` делает Booking границей
+  единственного диалога без отдельной пустой Conversation/свободных DM, задаёт
+  write/read-only матрицу и fail-closed expired/account states. Block в
+  `PENDING` отменяет живые заявки пары с `PARTICIPANT_BLOCKED`; в
+  `CONFIRMED/ACTIVE/RETURNED` закрывает только user text и сохраняет
+  booking/system/evidence/support. Документ явно не выдаёт последующие
+  Message/API/moderation пункты за реализованные.
+- [x] Добавить минимальную Message-модель и REST endpoints списка/отправки с
+  cursor pagination, stable client message ID, object-level authorization и
+  безопасным export/account-deletion contract.
+  **DONE 09.08.2026:** migration `20260809000100_add_booking_messages` хранит
+  text и безопасную роль автора на Booking без отдельной Conversation;
+  user FK использует `SET NULL`, а Booking — `RESTRICT` до retention cleanup.
+  Participant-only GET применяет keyset `(createdAt,id)`, POST сериализует
+  Booking/client UUID, точный retry не дублирует Message/outbox, изменённый
+  payload получает `IDEMPOTENCY_KEY_REUSED`; terminal/expired/block закрывают
+  write. API и self-export возвращают только `SELF/COUNTERPARTY/SYSTEM`, без
+  чужого user ID. Проверено: Prisma generate/migrate, backend lint/build,
+  217 unit и 62 PostgreSQL/Redis e2e.
+- [x] Ограничить MVP текстом: длина, rate limit и abuse protection; без фото,
+  файлов, голоса, звонков, реакций, typing/online-status и обязательного
+  WebSocket. Не помещать текст сообщения в URL, логи или push payload.
+  **DONE 09.08.2026:** DTO whitelist и DB `VARCHAR(2000)` принимают только
+  trimmed text 1–2000, запрещают unsafe C0/DEL controls и отклоняют media-поля.
+  Под actor/Booking advisory locks действуют sliding caps 20 сообщений на
+  Booking/минуту и 60 на actor/минуту; exact idempotent retry проверяется до
+  quota. Message body существует только в приватной таблице/participant API и
+  self-export; outbox/inbox/push хранит opaque event без текста. WebSocket,
+  attachments, voice/calls/reactions/presence отсутствуют. Проверено:
+  backend lint/build, 220 unit и 62 PostgreSQL/Redis e2e.
+- [x] Добавить mobile экран диалога, unread badge и системные booking-сообщения;
+  refresh/resume/poll и in-app inbox остаются источником актуальности, push —
+  только best-effort сигнал с непрозрачным `eventId`.
+  **DONE 09.08.2026:** participant chat доступен из Booking details, показывает
+  `SELF/COUNTERPARTY/SYSTEM`, newest page и старую cursor-историю, сохраняет
+  draft и повторяет failed send с тем же UUID. Foreground poll 15 секунд,
+  pull-to-refresh и app resume обновляют messages/inbox; открытие идемпотентно
+  снимает unread `BOOKING_MESSAGE_CREATED`, а список Booking показывает badge из
+  inbox. Backend атомарно пишет системные события заявки, confirm/конкурентной и
+  ручной отмены, timeout, передачи и возврата; push/outbox не содержит текста.
+  Проверено: mobile analyzer и 196 Flutter tests; backend lint/build, 220 unit и
+  62 PostgreSQL/Redis e2e.
+- [x] Подключить существующие report/block и минимальную operator moderation к
+  сообщениям, утвердить retention и audited support access; блокировка не должна
+  разрушать активную аренду или скрывать evidence от спора.
+  **DONE 09.08.2026:** `MESSAGE` report разрешён participant только на текст
+  второй стороны; own/system/чужая Booking скрыты. Mobile даёт отдельные report
+  и подтверждаемую pair-block команды без передачи counterparty ID. Pair lock
+  атомарно отменяет только живые `PENDING` с `PARTICIPANT_BLOCKED` и единичными
+  system/history/outbox; `CONFIRMED/ACTIVE/RETURNED` и acts/evidence не меняются,
+  а user text закрывается в обе стороны. MODERATION читает body только из
+  конкретной жалобы, SUPPORT — только из привязанного к Booking обращения; оба
+  доступа пишут redacted audit без текста, capabilities разделены. Применён
+  baseline retention ADR-0002: 3 года после сделки/связанной претензии с legal
+  review до public release. Проверено: backend lint/build, 220 unit и 63
+  PostgreSQL/Redis e2e; mobile analyzer и 197 Flutter tests.
+
 - [x] Публично показывать только приблизительную локацию; точный адрес и
   согласованный контакт раскрывать только участникам подтверждённой брони.
 - [ ] Зафиксировать access window точного адреса/контакта: участникам только в
@@ -844,7 +1132,7 @@ TDD не является отдельной фазой перед разраб�
   `RETURNED`, `CANCELLED` и `COMPLETED` возвращает `null`. Mobile инвалидирует
   private booking details/acts и in-memory export при background/logout.
   Ограниченное окно после `RETURNED` остаётся BLOCKED до dispute/legal gate.
-- [x] Зафиксировать минимальный способ координации передачи без обязательного чата:
+- [x] Зафиксировать базовый fallback координации, не зависящий от доступности чата:
   защищённое раскрытие контакта и системные уведомления.
 - [x] Реализовать приватные акты/evidence передачи и возврата с автором, этапом,
   временем, storage key/hash и подтверждением второй стороны.
@@ -882,6 +1170,36 @@ TDD не является отдельной фазой перед разраб�
   offer/rental-rules versions, требует два checkbox и свободный server calendar;
   create использует стабильный UUID для retry того же payload и открывает
   participant detail. Default build остаётся закрыт.
+- [x] Перестроить participant Booking Details вокруг одного server-derived блока
+  «Следующее действие» и короткой timeline: полная цена/условия видны до submit и
+  confirm, главный CTA остаётся в первом экране, технические версии/request IDs
+  свёрнуты, чат и «Есть проблема» доступны без поиска. Проблемный flow принимает
+  структурированную причину/evidence и после submit показывает серверные номер,
+  время, статус и ожидаемый SLA; до Dispute/Payment gate он не обещает refund и
+  не меняет Booking/сумму автоматически.
+  **TDD/DoD:** действие выводится из actor/state backend-контракта без второй FSM
+  в widget; small-screen, safe-area, text-scale, offline/retry и duplicate submit
+  покрыты targeted widget/integration smoke.
+  **DONE 10.08.2026:** backend возвращает actor-specific `nextAction`,
+  mobile держит главный CTA/чат/проблему в верхней карточке, а
+  технические версии свёрнуты. Support receipt показывает server ID/time/status
+  и SLA без автоматического refund/FSM effect; widget-тесты покрывают 200%
+  text, safe-area, retry и concurrent duplicate guard.
+- [x] Встроить в существующий pre-handover act короткий checkpoint готовности:
+  lender перед передачей подтверждает исправность, актуальную комплектность,
+  видимые дефекты и, где применимо, заряд; borrower видит timestamp и ответы до
+  принятия акта и может сразу открыть «Есть проблема» с приватным evidence.
+  Интерфейс прямо называет это заявлением владельца, а не проверкой Sosedi;
+  checkpoint не создаёт новую Booking FSM и не решает финансовый спор.
+  **TDD/DoD:** participant-only/idempotency и immutable связь с pre-handover act,
+  snapshot/evidence/retention проверены integration-тестом; нерелевантные вопросы
+  не показываются без утверждённого category rule.
+  **DONE 10.08.2026:** `HANDOVER` создаёт только lender с обязательными
+  исправностью, комплектностью, дефектами и server timestamp; `RETURN`
+  создаёт borrower. DB constraint/trigger сохраняют снимок и не дают его
+  переписать; borrower видит декларацию до confirm и может открыть
+  «Есть проблема». Заряд не спрашивается без category rule; e2e покрывает
+  participant-only, replay, evidence, response snapshot и DB immutability.
 
 ## 13.1 Минимальный Dispute gate — до production Payments
 
@@ -968,14 +1286,23 @@ Fake provider и доменные TDD-тесты не блокируются.
 
 - [x] Создать payments module.
 - [x] Добавить простой fake provider и покрыть доменные правила тестами.
+  **LOCAL DEMO 21.08.2026:** у подтверждённой брони арендатора local/debug mobile
+  может показать явно помеченные success/decline состояния тестовой оплаты.
+  Деньги, Payment и Booking server state не меняются; production/release всегда
+  скрывает заглушку. Это не разрешает и не закрывает production payment flow.
 - [ ] Зафиксировать формулу цены: кто платит platform fee, процент/фиксированная
   часть, база, min/max, округление до копеек, НДС/комиссия provider, owner payout
-  и правило сохранения равенства всех сумм.
-  **DOING 06.08.2026:** для fake-provider чистая bigint-формула использует
-  рабочий 1% из выплаты владельцу, без наценки арендатору, и округляет половину
-  копейки вверх; unit-тест проверяет breakdown и точное равенство. Итоговые
-  процент/min/max, provider cost, НДС и refund остаются BLOCKED до provider и
-  legal/accounting gate; Booking/API продолжают `PAY_ON_HANDOVER` с fee 0.
+  и правило сохранения равенства всех сумм. Версионировать минимальным контрактом
+  `commissionBps + pricingPolicyVersion + effectiveAt`, сохранять версию и суммы
+  в Booking snapshot и никогда не пересчитывать старые брони новым тарифом.
+  **DOING 09.08.2026:** для fake-provider чистая bigint-формула технически
+  удерживает 1% из выплаты владельцу без наценки арендатору и округляет половину
+  копейки вверх; unit-тест проверяет breakdown и точное равенство. Это placeholder,
+  а не выбранный fee payer. Продуктовая цель пилота — 1%, после пилота — 5%
+  маржи Sosedi; payer, gross/displayed fee, margin base, процент/min/max, способ
+  покрытия provider cost, НДС и refund остаются BLOCKED до provider/legal/
+  accounting gate. Booking/API продолжают `PAY_ON_HANDOVER` с fee 0 до принятого
+  ADR.
 - [ ] Хранить и передавать деньги как точные minor units/`Decimal` с валютой `RUB`,
   не использовать JavaScript/Dart binary float; добавить DB/API constraints на
   scale, неотрицательность и допустимые min/max.
@@ -1003,6 +1330,11 @@ Fake provider и доменные TDD-тесты не блокируются.
 - [ ] После gate подключить через env только выбранный production-сценарий.
 - [ ] Для `SAFE_DEAL` создавать сделку/платёж по подтверждённому API ЮKassa.
 - [ ] Для `SAFE_DEAL` возвращать confirmation/checkout URL.
+- [ ] Для `SAFE_DEAL` хранить server-derived `payBy = confirmedAt + 30 минут`,
+  показывать countdown обеим сторонам и при timeout идемпотентно закрывать
+  локальную/provider-сделку, отменять Booking с `PAYMENT_TIMEOUT` и освобождать
+  календарь. Поздний redirect/webhook не должен оживлять бронь или повторно
+  резервировать период; `PAY_ON_HANDOVER` не получает ложный payment timer.
 - [ ] Получать payout-реквизиты только через утверждённый provider widget/token;
   никогда не принимать и не хранить PAN/CVC на backend Sosedi.
 - [ ] Для `SAFE_DEAL` создать webhook endpoint и проверять событие актуальным
@@ -1176,6 +1508,74 @@ Fake provider и доменные TDD-тесты не блокируются.
   допускают правила расследования.
 - [x] Проверить требования App Store, Google Play и RuStore к UGC/report/block до
   отправки production-сборки.
+
+## 16.2 Подтверждённые отзывы и рейтинги
+
+> **Решение от 09.08.2026:** отзывы входят в store-ready MVP, но создаются только
+> сторонами реально завершённой аренды. До первых отзывов показывать «Новый
+> владелец», не использовать редакторские, импортированные или тестовые оценки.
+
+**TDD-критерии этапа:**
+
+- unit: eligibility, одна запись от стороны, rating `1..5`, publish deadline и
+  aggregate только опубликованных отзывов;
+- integration: participant/`COMPLETED` authorization, idempotency, double-blind
+  публикация и report/moderation audit;
+- mobile: create/read/empty/error и отсутствие возможности оценить чужую или
+  незавершённую аренду.
+
+- [x] Согласовать review policy: один отзыв от каждой стороны после `COMPLETED`,
+  оценка `1..5` и короткий текст; публиковать после обоих отзывов либо через 14
+  дней, определить retention, moderation, appeal и допустимое скрытие.
+  **DONE 09.08.2026:** `docs/review-policy.md` фиксирует 14-дневное окно от
+  append-only `COMPLETED`, server-derived author/target, rating 1–5 и optional
+  text 10–1000. Double-blind снимается атомарно после обоих submit либо по
+  deadline; user edit/delete отсутствуют. Public provenance не раскрывает
+  Booking/private IDs, hidden review выпадает из aggregate без изменения
+  Booking/финансов/evidence, appeal идёт через GENERAL support. Retention следует
+  ACCEPTED ADR-0002: 3 года после публикации/связанной жалобы с обязательным RF
+  legal/privacy review до public release.
+- [x] Добавить минимальные Review-модель и REST endpoints create/list с
+  booking-derived author/target, unique constraint на сторону Booking,
+  idempotency и запретом UPDATE оценки после публикации.
+  **DONE 09.08.2026:** migration `20260809000300_add_verified_reviews` хранит
+  immutable rating/text, безопасную роль, `publishAt` и moderation tombstone;
+  DB checks/unique ограничивают rating, одну сторону Booking и actor client UUID.
+  Participant POST требует `COMPLETED` transition и 14-дневное окно, выводит
+  target на backend, exact retry идемпотентен; второй submit атомарно публикует
+  оба. Participant GET до этого раскрывает только собственный review. UPDATE/
+  DELETE endpoints отсутствуют, self-export не раскрывает чужой double-blind
+  submit. Проверено: backend lint/build, 223 unit и 64 PostgreSQL/Redis e2e.
+- [x] Рассчитывать rating/count только по опубликованным отзывам, защищать
+  aggregate от double count и показывать provenance без раскрытия private
+  booking data.
+  **DONE 09.08.2026:** public user review page и aggregate используют один
+  predicate `publishAt <= now AND hiddenAt IS NULL`; unique Booking-side не даёт
+  двойного вклада. Ответ содержит только verified-rental role/rating/text/time,
+  без Booking/user IDs, периода, суммы, контакта и evidence; до первого review
+  summary возвращает `average: null, count: 0`. E2e доказывает empty до второго
+  submit и ровно один вклад в rating target после double-blind публикации.
+- [x] Добавить mobile CTA после завершения, форму отзыва и вывод rating/reviews в
+  карточке вещи и публичном профиле владельца с корректным empty state.
+  **DONE 09.08.2026:** CTA существует только у `COMPLETED`, открывает форму с
+  rating 1–5 и optional text 10–1000; один draft повторяет тот же UUID после
+  сетевой ошибки, а уже отправленный immutable review показывается без edit.
+  Карточка вещи выводит только public aggregate, отдельный профиль — только
+  published verified-rental reviews; `count=0` отображается как «Новый
+  владелец». Проверено: mobile analyze и 205 unit/widget tests.
+- [x] Переиспользовать report/block и operator moderation для текста отзыва:
+  reason, решение, уведомление и append-only audit; скрытие UGC не должно менять
+  факт завершения Booking или финансовые записи.
+  **DONE 09.08.2026:** migration `20260809000400_add_review_report_target`
+  добавляет `REVIEW` в общую rate/dedup/reason матрицу только для чужого
+  published/visible review; mobile умеет report и user-level block без раскрытия
+  автора отзыва. MODERATION читает rating/text только через отдельный
+  `review-context` с audit, затем может `DISMISS` либо `HIDE_REVIEW` с причиной.
+  Hide заполняет tombstone, исключает review из public aggregate и создаёт
+  neutral booking-linked event автору без reporter/reason; Booking/финансы/
+  evidence неизменны. Проверено: backend lint/build, operator build, 223 unit,
+  65 PostgreSQL/Redis e2e, mobile analyze и 205 unit/widget tests; полный
+  `make ci` прошёл с 81.68% mobile line coverage.
 
 ## 17. Notifications
 
@@ -1404,8 +1804,11 @@ Fake provider и доменные TDD-тесты не блокируются.
 - [ ] Проверить release-сборку на реальном Android с GMS в сети российского ISP.
 - [ ] Проверить RuStore-сборку на реальном Android без GMS в сети российского ISP.
 - [ ] Проверить APNs на реальном iPhone в сети российского ISP.
-- [ ] Проверить актуальную release-сборку во внутренних треках Google Play,
-  TestFlight и RuStore.
+- [ ] Проверить один release manifest/product version и три checksum-bound
+  подписанных platform artifacts во внутренних треках Google Play, TestFlight и
+  RuStore: platform/push config может различаться, а API и approved legal/public
+  contract обязаны совпадать. Получить готовность coordinated public window во
+  всех трёх либо записанное owner exception.
 - [ ] Пройти регистрацию по SMS и принятие актуальной версии обязательных
   marketplace/privacy документов.
 - [ ] Обновить профиль, отозвать сессию, запросить экспорт и пройти разрешённый/
@@ -1415,13 +1818,21 @@ Fake provider и доменные TDD-тесты не блокируются.
 - [ ] Найти объявление в каталоге.
 - [ ] Найти объявление на карте.
 - [ ] Открыть карточку вещи.
-- [ ] Создать бронирование.
+- [ ] Создать бронирование и в `PENDING` начать booking-scoped чат до оплаты:
+  проверить доступ только участников, отсутствие раскрытия телефона/точного
+  адреса и доставку text-only сообщения через REST/inbox.
 - [ ] Подтвердить бронирование владельцем.
+- [ ] Для `SAFE_DEAL` создать сделку, завершить оплату в пределах `payBy` и
+  идемпотентно принять webhook; для `PAY_ON_HANDOVER` подтвердить, что платформа
+  не принимает деньги онлайн и не показывает ложный payment countdown.
+- [ ] Продолжить booking-scoped чат после успешной Safe Deal-оплаты либо явного
+  выбора `PAY_ON_HANDOVER`: проверить offline retry без дубля, report/block,
+  закрытие write window и eventId-only push без текста сообщения.
 - [ ] Пройти передачу/возврат с evidence, а также cancellation/no-show вариант с
   ожидаемым календарным и финансовым результатом.
-- [ ] Для `SAFE_DEAL` создать сделку и идемпотентно принять webhook; для
-  `PAY_ON_HANDOVER` подтвердить, что платформа не принимает деньги онлайн.
 - [ ] Завершить бронирование.
+- [ ] После `COMPLETED` оставить отзывы обеими сторонами, проверить double-blind/
+  14-day публикацию, aggregate rating и operator moderation.
 - [ ] Проверить in-app inbox и включённые push-провайдеры.
 - [ ] Если delivery включена ADR, открыть consented deep link/fallback только как
   участник подтверждённой брони и без лишних private-полей.
@@ -1444,12 +1855,13 @@ Fake provider и доменные TDD-тесты не блокируются.
   confirm, orphan cleanup и запрет KYC presign до legal gate.
 - [x] Одновременно подтвердить несколько пересекающихся заявок на одну вещь:
   только одна становится активной, остальные получают стабильный конфликт.
-- [x] Проверить expiry `PENDING`/ожидания оплаты, освобождение календаря и
+- [ ] Проверить expiry 12-часового request `PENDING` и 30-минутного ожидания
+  `SAFE_DEAL` оплаты, освобождение календаря и
   идемпотентный повтор cleanup job.
-  **DONE 29.07.2026:** отдельного payment-waiting состояния в утверждённой
-  Booking FSM нет; первый cleanup переводит просроченный `PENDING` в
-  `CANCELLED/PENDING_TIMEOUT`, повтор не дублирует history/outbox, тот же период
-  снова бронируется.
+  **PARTIAL 09.08.2026:** HTTP/DB e2e подтверждает 12-часовой неэксклюзивный
+  request window, параллельные заявки, атомарный выбор одной и идемпотентный
+  `PENDING_TIMEOUT`. Остаются post-confirm payment timeout и поздний webhook;
+  они зависят от ещё не утверждённого production Safe Deal flow.
 - [x] Проверить self-booking, прошлые/перевёрнутые/граничные даты, смену цены/адреса
   после snapshot и удаление аккаунта с активной бронью.
 - [x] Проверить отмену каждой стороной, no-show, неисправную вещь, ранний/
@@ -1486,3 +1898,42 @@ Fake provider и доменные TDD-тесты не блокируются.
   job в isolated `sosedi_restore_*`; проверены snapshot/relations/0 Payment,
   current→previous immutable image readiness/categories/catalog/privacy smoke и
   6/6 automatic rollback tests. Реальный RF PostgreSQL+S3 drill остаётся gate 17.3.
+
+## 19. Закрытый пилот и критерии выхода
+
+> Пилот начинается только после release gates разделов 7.1–7.3, выбранного
+> payment/KYC scenario, финального smoke раздела 18 и готовности поддержки. Районы
+> и количественные цели ниже — предложенная рабочая гипотеза, а не уже принятое
+> решение или обещание публичного масштаба. Перед набором supply владелец продукта
+> утверждает либо меняет числа без хардкода в API/mobile.
+
+- [ ] Утвердить точное число и список смежных районов Москвы до набора
+  предложения; рабочая гипотеза — 3–5. Зафиксировать границы, размер аудитории,
+  ручной fallback-выбор и owner по наполнению каждого района. До решения не
+  хардкодить районы в API/mobile.
+- [ ] Утвердить и выполнить supply gate перед приглашением арендаторов; рабочая
+  гипотеза — 150 активных одобренных объявлений, 25 в каждом открытом районе, 30
+  внешних владельцев, own/partner supply не более 50%, минимум 5 живых вещей в
+  каждой открытой категории, 90% объявлений с 3+ качественными фото и 100%
+  публичных владельцев с требуемым verification status.
+- [ ] Подготовить пилотную операцию: moderation/support owner и SLA первой реакции
+  до 12 часов, payment/dispute/reconciliation owner, incident channel, тестовые
+  устройства/номера, launch-day runbook и ежедневная проверка safety/privacy,
+  supply density и stuck bookings/payments.
+- [ ] Перед приглашением пилота провести moderated usability smoke минимум с пятью
+  новыми пользователями на двух golden paths: `открыть без SMS → найти вещь →
+  начать бронь` и `Сдать → опубликовать объявление`. Рабочая гипотеза: каждый
+  участник завершает оба сценария без подсказки, медиана до подходящей карточки не
+  более 60 секунд, до submit объявления — не более 5 минут. Зафиксировать причины
+  отказа и менять пороги только явным product decision; privacy-safe aggregate
+  ratios `catalog_opened→booking_started` и `listing_started→listing_created`
+  считать существующими allowlisted events, без user-level export.
+- [ ] За первые 8 недель измерить privacy-safe funnel агрегатами канонических
+  User/Booking/Payment/Review состояний и consented client events только там, где
+  серверного факта нет; не строить user-level marketing export. Провести go/no-go
+  review: 500 OTP-verified пользователей, 200 заявок, 110 подтверждений, 90 Safe Deal
+  оплат, 75 завершённых аренд, 15 повторных арендаторов и 50 опубликованных
+  отзывов; `request→confirm ≥55%`, 80% решений владельца <12 ч,
+  `confirm→payment ≥85%`, `payment→completed ≥85%`, post-payment cancellation
+  <10%, dispute ≤5%, reconciliation 100%, 0 тяжёлых safety/privacy-инцидентов и
+  80% поисковых сессий с минимум 20 доступными вещами в пилотной зоне.

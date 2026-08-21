@@ -12,6 +12,23 @@ export class BookingEvidenceResponseDto {
   createdAt: Date;
 }
 
+export class BookingReadinessResponseDto {
+  @ApiProperty({ example: true })
+  isWorking: boolean;
+
+  @ApiProperty({ example: true })
+  isComplete: boolean;
+
+  @ApiProperty()
+  visibleDefects: string;
+
+  @ApiProperty({ format: 'date-time' })
+  declaredAt: Date;
+
+  @ApiProperty({ enum: ['LENDER_SELF_DECLARATION'] })
+  declaration: 'LENDER_SELF_DECLARATION';
+}
+
 export class BookingActResponseDto {
   @ApiProperty({ format: 'uuid' })
   id: string;
@@ -36,4 +53,11 @@ export class BookingActResponseDto {
 
   @ApiProperty({ type: [BookingEvidenceResponseDto] })
   evidence: BookingEvidenceResponseDto[];
+
+  @ApiProperty({
+    type: BookingReadinessResponseDto,
+    nullable: true,
+    required: false,
+  })
+  readiness: BookingReadinessResponseDto | null;
 }

@@ -4,6 +4,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/auth_intent.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/sosedi_logo.dart';
 import '../domain/auth_controller.dart';
@@ -11,7 +12,9 @@ import '../domain/auth_state.dart';
 import '../domain/auth_validators.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
-  const OtpScreen({super.key});
+  const OtpScreen({this.returnTo, super.key});
+
+  final String? returnTo;
 
   @override
   ConsumerState<OtpScreen> createState() => _OtpScreenState();
@@ -31,7 +34,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () => context.go('/auth/phone'),
+          onPressed: () {
+            final returnTo = widget.returnTo;
+            context.go(
+              returnTo == null
+                  ? '/auth/phone'
+                  : routeWithReturnTo('/auth/phone', returnTo),
+            );
+          },
           icon: const Icon(Icons.arrow_back),
           tooltip: 'Назад',
         ),
@@ -116,7 +126,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         .verifyOtp(code);
 
     if (mounted && success) {
-      context.go('/home');
+      context.go(widget.returnTo ?? '/catalog');
     }
   }
 }

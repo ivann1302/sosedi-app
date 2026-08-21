@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../notifications/data/inbox_event.dart';
+import '../../notifications/data/inbox_service.dart';
 import '../data/booking_models.dart';
 import '../data/booking_service.dart';
 
@@ -12,6 +14,16 @@ class BookingListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(myBookingsProvider);
+    final unreadByBooking = <String, int>{};
+    for (final event
+        in ref.watch(inboxEventsProvider).value ?? const <InboxEvent>[]) {
+      final bookingId = event.bookingId;
+      if (bookingId != null &&
+          event.eventType == 'BOOKING_MESSAGE_CREATED' &&
+          event.readAt == null) {
+        unreadByBooking.update(bookingId, (value) => value + 1, ifAbsent: () => 1);
+      }
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Мои бронирования')),
       body: SafeArea(
@@ -44,7 +56,10 @@ class BookingListScreen extends ConsumerWidget {
                     itemCount: values.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) =>
-                        _BookingCard(booking: values[index]),
+                        _BookingCard(
+                          booking: values[index],
+                          unreadCount: unreadByBooking[values[index].id] ?? 0,
+                        ),
                   ),
                 ),
         ),
@@ -54,9 +69,10 @@ class BookingListScreen extends ConsumerWidget {
 }
 
 class _BookingCard extends StatelessWidget {
-  const _BookingCard({required this.booking});
+  const _BookingCard({required this.booking, required this.unreadCount});
 
   final ParticipantBooking booking;
+  final int unreadCount;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +91,18 @@ class _BookingCard extends StatelessWidget {
           '${booking.actorRole == 'LENDER' ? 'Вы сдаёте' : 'Вы арендуете'}',
         ),
         isThreeLine: true,
-        trailing: const Icon(Icons.chevron_right),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (unreadCount > 0)
+              Badge.count(
+                count: unreadCount,
+                child: const Icon(Icons.chat_bubble_outline),
+              ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
       ),
     );
   }

@@ -69,4 +69,31 @@ void main() {
       );
     }
   });
+
+  test('demo stubs are available only outside production release', () {
+    expect(
+      resolveDemoStubsEnabled(
+        appEnvironment: 'local',
+        releaseMode: false,
+        enabled: true,
+      ),
+      isTrue,
+    );
+    expect(
+      resolveDemoStubsEnabled(
+        appEnvironment: 'production',
+        releaseMode: false,
+        enabled: true,
+      ),
+      isFalse,
+    );
+    expect(
+      resolveDemoStubsEnabled(
+        appEnvironment: 'local',
+        releaseMode: true,
+        enabled: true,
+      ),
+      isFalse,
+    );
+  });
 }

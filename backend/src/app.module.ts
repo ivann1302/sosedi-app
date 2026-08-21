@@ -14,6 +14,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { ReportsModule } from './reports/reports.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { SupportModule } from './support/support.module';
 import { UsersModule } from './users/users.module';
 
@@ -32,6 +33,7 @@ import { UsersModule } from './users/users.module';
     BookingModule,
     PaymentsModule,
     ReportsModule,
+    ReviewsModule,
     SupportModule,
     AdminModule,
   ],

@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { readBookingTermsSnapshot } from '../booking/booking-terms';
 import { PrismaService } from '../prisma/prisma.service';
 
-export const USER_DATA_EXPORT_SCHEMA_VERSION = '2026-07-30.1';
+export const USER_DATA_EXPORT_SCHEMA_VERSION = '2026-08-09.2';
 export const USER_DATA_RETENTION_POLICY_VERSION = 'ADR-0002/2026-07-27';
 
 export type UserDataExport = {
@@ -140,6 +140,28 @@ export class UserDataExportService {
                         createdAt: true,
                       },
                     },
+                  },
+                },
+                messages: {
+                  orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+                  select: {
+                    id: true,
+                    authorId: true,
+                    authorRole: true,
+                    body: true,
+                    createdAt: true,
+                  },
+                },
+                reviews: {
+                  orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+                  select: {
+                    id: true,
+                    authorId: true,
+                    rating: true,
+                    text: true,
+                    publishAt: true,
+                    hiddenAt: true,
+                    createdAt: true,
                   },
                 },
               },
@@ -366,6 +388,32 @@ export class UserDataExportService {
               confirmedAt: act.confirmedAt?.toISOString() ?? null,
               evidenceCount: act.evidence.length,
             })),
+            messages: booking.messages.map((message) => ({
+              id: message.id,
+              author:
+                message.authorRole === 'SYSTEM'
+                  ? 'SYSTEM'
+                  : message.authorId === userId
+                    ? 'SELF'
+                    : 'COUNTERPARTY',
+              body: message.body,
+              createdAt: message.createdAt.toISOString(),
+            })),
+            reviews: booking.reviews
+              .filter(
+                (review) =>
+                  review.authorId === userId || review.publishAt <= now,
+              )
+              .map((review) => ({
+                id: review.id,
+                author: review.authorId === userId ? 'SELF' : 'COUNTERPARTY',
+                rating: review.rating,
+                text: review.text,
+                published: review.publishAt <= now,
+                hidden: review.hiddenAt !== null,
+                publishAt: review.publishAt.toISOString(),
+                createdAt: review.createdAt.toISOString(),
+              })),
             createdAt: booking.createdAt.toISOString(),
             updatedAt: booking.updatedAt.toISOString(),
           };

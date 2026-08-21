@@ -115,7 +115,7 @@ type PresignedUpload = {
 
 export type Report = {
   id: string;
-  targetType: 'ITEM' | 'USER' | 'BOOKING';
+  targetType: 'ITEM' | 'USER' | 'BOOKING' | 'MESSAGE' | 'REVIEW';
   targetId: string;
   reason: string;
   description: string;
@@ -125,6 +125,15 @@ export type Report = {
   target: Record<string, string | boolean | null>;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ReportedReviewContext = {
+  id: string;
+  authorRole: 'BORROWER' | 'LENDER';
+  rating: number;
+  text: string | null;
+  publishedAt: string;
+  createdAt: string;
 };
 
 async function call<T>(
@@ -268,9 +277,11 @@ export const api = {
       body: JSON.stringify({ reason }),
     }),
   reports: () => call<Report[]>('/admin/reports'),
+  reportedReviewContext: (id: string) =>
+    call<ReportedReviewContext>(`/admin/reports/${id}/review-context`),
   decideReport: (
     id: string,
-    decision: 'DISMISS' | 'HIDE_LISTING' | 'BLOCK_USER',
+    decision: 'DISMISS' | 'HIDE_LISTING' | 'HIDE_REVIEW' | 'BLOCK_USER',
     reason: string,
   ) =>
     call<Report>(`/admin/reports/${id}/decision`, {

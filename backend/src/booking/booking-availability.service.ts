@@ -27,28 +27,19 @@ export class BookingAvailabilityService {
       throw new NotFoundException('Объявление не найдено');
     }
 
-    const now = new Date();
     const [bookingConflict, calendarConflict] = await Promise.all([
       this.prisma.booking.findFirst({
         where: {
           itemId,
           startDate: { lte: period.endDate },
           endDate: { gte: period.startDate },
-          OR: [
-            {
-              status: {
-                in: [
-                  BookingStatus.CONFIRMED,
-                  BookingStatus.ACTIVE,
-                  BookingStatus.RETURNED,
-                ],
-              },
-            },
-            {
-              status: BookingStatus.PENDING,
-              expiresAt: { gt: now },
-            },
-          ],
+          status: {
+            in: [
+              BookingStatus.CONFIRMED,
+              BookingStatus.ACTIVE,
+              BookingStatus.RETURNED,
+            ],
+          },
         },
         select: { id: true },
       }),
@@ -82,8 +73,6 @@ export class BookingAvailabilityService {
     dto: CreateUnavailablePeriodDto,
   ): Promise<UnavailablePeriodResponseDto> {
     const period = parseBookingPeriod(dto.startDate, dto.endDate);
-    const now = new Date();
-
     return this.prisma.$transaction(
       async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${itemId}))`;
@@ -94,21 +83,13 @@ export class BookingAvailabilityService {
             itemId,
             startDate: { lte: period.endDate },
             endDate: { gte: period.startDate },
-            OR: [
-              {
-                status: {
-                  in: [
-                    BookingStatus.CONFIRMED,
-                    BookingStatus.ACTIVE,
-                    BookingStatus.RETURNED,
-                  ],
-                },
-              },
-              {
-                status: BookingStatus.PENDING,
-                expiresAt: { gt: now },
-              },
-            ],
+            status: {
+              in: [
+                BookingStatus.CONFIRMED,
+                BookingStatus.ACTIVE,
+                BookingStatus.RETURNED,
+              ],
+            },
           },
           select: { id: true },
         });

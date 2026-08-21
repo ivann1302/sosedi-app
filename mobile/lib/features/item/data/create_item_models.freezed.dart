@@ -13,6 +13,293 @@ part of 'create_item_models.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
+mixin _$LocalCreateItemDraft {
+
+ int get step; String? get categoryId; String? get title; String? get description; String? get condition; String? get completeness; String? get handoverTerms; String? get pricePerDay; String? get publicArea;
+/// Create a copy of LocalCreateItemDraft
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LocalCreateItemDraftCopyWith<LocalCreateItemDraft> get copyWith => _$LocalCreateItemDraftCopyWithImpl<LocalCreateItemDraft>(this as LocalCreateItemDraft, _$identity);
+
+  /// Serializes this LocalCreateItemDraft to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LocalCreateItemDraft&&(identical(other.step, step) || other.step == step)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,step,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea);
+
+@override
+String toString() {
+  return 'LocalCreateItemDraft(step: $step, categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LocalCreateItemDraftCopyWith<$Res>  {
+  factory $LocalCreateItemDraftCopyWith(LocalCreateItemDraft value, $Res Function(LocalCreateItemDraft) _then) = _$LocalCreateItemDraftCopyWithImpl;
+@useResult
+$Res call({
+ int step, String? categoryId, String? title, String? description, String? condition, String? completeness, String? handoverTerms, String? pricePerDay, String? publicArea
+});
+
+
+
+
+}
+/// @nodoc
+class _$LocalCreateItemDraftCopyWithImpl<$Res>
+    implements $LocalCreateItemDraftCopyWith<$Res> {
+  _$LocalCreateItemDraftCopyWithImpl(this._self, this._then);
+
+  final LocalCreateItemDraft _self;
+  final $Res Function(LocalCreateItemDraft) _then;
+
+/// Create a copy of LocalCreateItemDraft
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? step = null,Object? categoryId = freezed,Object? title = freezed,Object? description = freezed,Object? condition = freezed,Object? completeness = freezed,Object? handoverTerms = freezed,Object? pricePerDay = freezed,Object? publicArea = freezed,}) {
+  return _then(_self.copyWith(
+step: null == step ? _self.step : step // ignore: cast_nullable_to_non_nullable
+as int,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
+as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,condition: freezed == condition ? _self.condition : condition // ignore: cast_nullable_to_non_nullable
+as String?,completeness: freezed == completeness ? _self.completeness : completeness // ignore: cast_nullable_to_non_nullable
+as String?,handoverTerms: freezed == handoverTerms ? _self.handoverTerms : handoverTerms // ignore: cast_nullable_to_non_nullable
+as String?,pricePerDay: freezed == pricePerDay ? _self.pricePerDay : pricePerDay // ignore: cast_nullable_to_non_nullable
+as String?,publicArea: freezed == publicArea ? _self.publicArea : publicArea // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [LocalCreateItemDraft].
+extension LocalCreateItemDraftPatterns on LocalCreateItemDraft {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LocalCreateItemDraft value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _LocalCreateItemDraft() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LocalCreateItemDraft value)  $default,){
+final _that = this;
+switch (_that) {
+case _LocalCreateItemDraft():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LocalCreateItemDraft value)?  $default,){
+final _that = this;
+switch (_that) {
+case _LocalCreateItemDraft() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _LocalCreateItemDraft() when $default != null:
+return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea)  $default,) {final _that = this;
+switch (_that) {
+case _LocalCreateItemDraft():
+return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea)?  $default,) {final _that = this;
+switch (_that) {
+case _LocalCreateItemDraft() when $default != null:
+return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _LocalCreateItemDraft implements LocalCreateItemDraft {
+  const _LocalCreateItemDraft({this.step = 0, this.categoryId, this.title, this.description, this.condition, this.completeness, this.handoverTerms, this.pricePerDay, this.publicArea});
+  factory _LocalCreateItemDraft.fromJson(Map<String, dynamic> json) => _$LocalCreateItemDraftFromJson(json);
+
+@override@JsonKey() final  int step;
+@override final  String? categoryId;
+@override final  String? title;
+@override final  String? description;
+@override final  String? condition;
+@override final  String? completeness;
+@override final  String? handoverTerms;
+@override final  String? pricePerDay;
+@override final  String? publicArea;
+
+/// Create a copy of LocalCreateItemDraft
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LocalCreateItemDraftCopyWith<_LocalCreateItemDraft> get copyWith => __$LocalCreateItemDraftCopyWithImpl<_LocalCreateItemDraft>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LocalCreateItemDraftToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LocalCreateItemDraft&&(identical(other.step, step) || other.step == step)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,step,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea);
+
+@override
+String toString() {
+  return 'LocalCreateItemDraft(step: $step, categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LocalCreateItemDraftCopyWith<$Res> implements $LocalCreateItemDraftCopyWith<$Res> {
+  factory _$LocalCreateItemDraftCopyWith(_LocalCreateItemDraft value, $Res Function(_LocalCreateItemDraft) _then) = __$LocalCreateItemDraftCopyWithImpl;
+@override @useResult
+$Res call({
+ int step, String? categoryId, String? title, String? description, String? condition, String? completeness, String? handoverTerms, String? pricePerDay, String? publicArea
+});
+
+
+
+
+}
+/// @nodoc
+class __$LocalCreateItemDraftCopyWithImpl<$Res>
+    implements _$LocalCreateItemDraftCopyWith<$Res> {
+  __$LocalCreateItemDraftCopyWithImpl(this._self, this._then);
+
+  final _LocalCreateItemDraft _self;
+  final $Res Function(_LocalCreateItemDraft) _then;
+
+/// Create a copy of LocalCreateItemDraft
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? step = null,Object? categoryId = freezed,Object? title = freezed,Object? description = freezed,Object? condition = freezed,Object? completeness = freezed,Object? handoverTerms = freezed,Object? pricePerDay = freezed,Object? publicArea = freezed,}) {
+  return _then(_LocalCreateItemDraft(
+step: null == step ? _self.step : step // ignore: cast_nullable_to_non_nullable
+as int,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
+as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,condition: freezed == condition ? _self.condition : condition // ignore: cast_nullable_to_non_nullable
+as String?,completeness: freezed == completeness ? _self.completeness : completeness // ignore: cast_nullable_to_non_nullable
+as String?,handoverTerms: freezed == handoverTerms ? _self.handoverTerms : handoverTerms // ignore: cast_nullable_to_non_nullable
+as String?,pricePerDay: freezed == pricePerDay ? _self.pricePerDay : pricePerDay // ignore: cast_nullable_to_non_nullable
+as String?,publicArea: freezed == publicArea ? _self.publicArea : publicArea // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$CreateItemDraft {
 
  String get categoryId; String get title; String get description; String get condition; String get completeness; String get handoverTerms; double get pricePerDay; String get publicArea; String get address; double get latitude; double get longitude; bool get ownershipConfirmed; bool get conditionConfirmed; bool get completenessConfirmed; bool get safetyAndMarketplaceRulesAccepted; String get listingRulesVersion;

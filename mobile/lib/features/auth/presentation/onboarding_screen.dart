@@ -7,7 +7,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/sosedi_logo.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
-  const OnboardingScreen({super.key});
+  const OnboardingScreen({this.returnTo, super.key});
+
+  final String? returnTo;
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -54,7 +56,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SosediLogo(markSize: 28),
+              Row(
+                children: [
+                  const SosediLogo(markSize: 28),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _finish,
+                    child: const Text('Пропустить'),
+                  ),
+                ],
+              ),
               Expanded(
                 child: PageView.builder(
                   controller: _controller,
@@ -124,10 +135,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: () => _continue(isLastPage),
-                icon: Icon(
-                  isLastPage ? Icons.phone_android : Icons.arrow_forward,
-                ),
-                label: Text(isLastPage ? 'Войти по SMS' : 'Далее'),
+                icon: Icon(isLastPage ? Icons.search : Icons.arrow_forward),
+                label: Text(isLastPage ? 'Смотреть вещи' : 'Далее'),
               ),
             ],
           ),
@@ -145,10 +154,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
 
-    await ref.read(onboardingCompletedProvider.notifier).markCompleted();
+    await _finish();
+  }
 
+  Future<void> _finish() async {
+    await ref.read(onboardingCompletedProvider.notifier).markCompleted();
     if (mounted) {
-      context.go('/auth/phone');
+      context.go(widget.returnTo ?? '/catalog');
     }
   }
 }

@@ -5,6 +5,7 @@ import 'package:mobile/core/auth/private_state_cleanup.dart';
 import 'package:mobile/features/auth/data/auth_models.dart';
 import 'package:mobile/features/auth/domain/auth_controller.dart';
 import 'package:mobile/features/auth/domain/auth_state.dart';
+import 'package:mobile/features/item/data/create_item_draft_storage.dart';
 import 'package:mobile/features/notifications/data/inbox_event.dart';
 import 'package:mobile/features/notifications/data/inbox_service.dart';
 import 'package:mobile/features/profile/data/profile_models.dart';
@@ -23,10 +24,12 @@ void main() {
       var inboxBuilds = 0;
       var supportBuilds = 0;
       final profileService = _TestProfileService();
+      final draftStorage = _TestDraftStorage();
       final container = ProviderContainer(
         overrides: [
           authControllerProvider.overrideWith(() => auth),
           profileServiceProvider.overrideWithValue(profileService),
+          createItemDraftStorageProvider.overrideWithValue(draftStorage),
           sessionsProvider.overrideWith((ref) async {
             sessionBuilds += 1;
             return const [];
@@ -93,8 +96,18 @@ void main() {
       expect(sessionBuilds, 2);
       expect(inboxBuilds, 2);
       expect(supportBuilds, 2);
+      expect(draftStorage.clearCalls, 1);
     },
   );
+}
+
+class _TestDraftStorage extends CreateItemDraftStorage {
+  var clearCalls = 0;
+
+  @override
+  Future<void> clear() async {
+    clearCalls += 1;
+  }
 }
 
 class _TestAuthController extends AuthController {

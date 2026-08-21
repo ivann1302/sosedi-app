@@ -31,6 +31,28 @@ void main() {
     );
   });
 
+  test('opens a booking message directly in its participant chat', () async {
+    final adapter = CallbackAdapter(
+      (_) => jsonResponse({
+        'success': true,
+        'data': {
+          'eventId': eventId,
+          'eventType': 'BOOKING_MESSAGE_CREATED',
+          'bookingId': 'booking-1',
+          'supportTicketId': null,
+          'itemId': null,
+        },
+        'error': null,
+      }),
+    );
+    final service = InboxService(Dio()..httpClientAdapter = adapter);
+
+    await expectLater(
+      service.resolveNavigationPath(eventId),
+      completion('/bookings/booking-1/chat'),
+    );
+  });
+
   test('resolves a moderation event to the owner edit route', () async {
     final adapter = CallbackAdapter(
       (_) => jsonResponse({

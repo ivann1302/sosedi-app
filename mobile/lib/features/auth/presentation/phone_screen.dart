@@ -4,6 +4,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/auth_intent.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/sosedi_logo.dart';
 import '../domain/auth_controller.dart';
@@ -11,7 +12,9 @@ import '../domain/auth_state.dart';
 import '../domain/auth_validators.dart';
 
 class PhoneScreen extends ConsumerStatefulWidget {
-  const PhoneScreen({super.key});
+  const PhoneScreen({this.returnTo, super.key});
+
+  final String? returnTo;
 
   @override
   ConsumerState<PhoneScreen> createState() => _PhoneScreenState();
@@ -28,6 +31,13 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
         : authState.errorMessage;
 
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => context.go(publicAuthCancelTarget(widget.returnTo)),
+          icon: const Icon(Icons.close),
+          tooltip: 'Продолжить без входа',
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -103,6 +113,12 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                       : const Icon(Icons.sms),
                   label: const Text('Получить код'),
                 ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () =>
+                      context.go(publicAuthCancelTarget(widget.returnTo)),
+                  child: const Text('Продолжить без входа'),
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Продолжая, вы подтверждаете согласие с правилами сервиса.',
@@ -128,7 +144,12 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
         .requestOtp(phone);
 
     if (mounted && success) {
-      context.go('/auth/otp');
+      final returnTo = widget.returnTo;
+      context.go(
+        returnTo == null
+            ? '/auth/otp'
+            : routeWithReturnTo('/auth/otp', returnTo),
+      );
     }
   }
 }

@@ -144,6 +144,42 @@ function createService() {
               ],
             },
           ],
+          messages: [
+            {
+              id: 'booking-message-self',
+              authorId: 'user-1',
+              authorRole: 'BORROWER',
+              body: 'Когда удобно встретиться?',
+              createdAt,
+            },
+            {
+              id: 'booking-message-other',
+              authorId: 'owner-secret-id',
+              authorRole: 'LENDER',
+              body: 'После 18:00',
+              createdAt: updatedAt,
+            },
+          ],
+          reviews: [
+            {
+              id: 'review-self',
+              authorId: 'user-1',
+              rating: 5,
+              text: 'Отличная аренда.',
+              publishAt: updatedAt,
+              hiddenAt: null,
+              createdAt,
+            },
+            {
+              id: 'review-unpublished-counterparty',
+              authorId: 'owner-secret-id',
+              rating: 1,
+              text: 'Скрыто double-blind до deadline.',
+              publishAt: new Date('2030-08-01T00:00:00.000Z'),
+              hiddenAt: null,
+              createdAt,
+            },
+          ],
         },
       ]),
     },
@@ -250,6 +286,17 @@ describe('UserDataExportService', () => {
     expect(result.bookings[0]).toMatchObject({
       actorRole: 'BORROWER',
       terms: { handoverArea: 'Хамовники' },
+      messages: [
+        { author: 'SELF', body: 'Когда удобно встретиться?' },
+        { author: 'COUNTERPARTY', body: 'После 18:00' },
+      ],
+      reviews: [
+        expect.objectContaining({
+          author: 'SELF',
+          rating: 5,
+          published: true,
+        }),
+      ],
     });
     expect(result.fileManifest).toEqual(
       expect.arrayContaining([
@@ -267,6 +314,7 @@ describe('UserDataExportService', () => {
     expect(serialized).not.toContain('provider-secret');
     expect(serialized).not.toContain('evidence-other');
     expect(serialized).not.toContain('support-admin');
+    expect(serialized).not.toContain('Скрыто double-blind');
     expect(transaction).toHaveBeenCalledWith(
       expect.any(Function),
       expect.objectContaining({

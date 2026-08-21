@@ -12,7 +12,7 @@ import 'package:mobile/main.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('completes onboarding and the OTP navigation flow', (
+  testWidgets('browses as a guest and resumes a private tab after OTP', (
     tester,
   ) async {
     final auth = _SmokeAuthController();
@@ -30,15 +30,24 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Аренда нужных вещей рядом с домом.'), findsOneWidget);
+    expect(find.text('Всё нужное уже рядом'), findsOneWidget);
     await tester.tap(find.text('Далее'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Далее'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Войти по SMS'));
+    await tester.tap(find.text('Смотреть вещи'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Вход по SMS'), findsOneWidget);
+    expect(find.text('Найти'), findsOneWidget);
+    expect(find.text('Брони'), findsOneWidget);
+    expect(find.text('Сдать'), findsOneWidget);
+    expect(find.text('Входящие'), findsOneWidget);
+    expect(find.text('Профиль'), findsOneWidget);
+
+    await tester.tap(find.text('Профиль'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Рады видеть вас'), findsOneWidget);
     await tester.enterText(find.byType(EditableText), '+7 999 123 45 67');
     await tester.tap(find.text('Получить код'));
     await tester.pumpAndSettle();
@@ -48,9 +57,11 @@ void main() {
     await tester.tap(find.text('Продолжить'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Один аккаунт — оба сценария'), findsOneWidget);
-    expect(find.text('Беру в аренду'), findsOneWidget);
-    expect(find.text('Сдаю'), findsOneWidget);
+    expect(find.text('Найти'), findsOneWidget);
+    expect(find.text('Брони'), findsOneWidget);
+    expect(find.text('Сдать'), findsOneWidget);
+    expect(find.text('Входящие'), findsOneWidget);
+    expect(find.text('Профиль'), findsOneWidget);
     expect(auth.requestOtpCalls, 1);
     expect(auth.verifyOtpCalls, 1);
   });

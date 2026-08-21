@@ -1,6 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BookingStatus } from '@prisma/client';
 
+export class BookingNextActionResponseDto {
+  @ApiProperty()
+  code: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  description: string;
+}
+
 export class BookingTermsResponseDto {
   @ApiProperty()
   itemTitle: string;
@@ -77,6 +88,9 @@ export class ParticipantBookingResponseDto {
 
   @ApiProperty({ enum: BookingStatus })
   status: BookingStatus;
+
+  @ApiProperty({ type: BookingNextActionResponseDto })
+  nextAction: BookingNextActionResponseDto;
 
   @ApiProperty({ format: 'date-time', nullable: true, type: String })
   expiresAt: Date | null;

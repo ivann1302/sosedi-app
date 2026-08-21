@@ -197,6 +197,26 @@ price breakdown и его арифметические инварианты хр
 `PaymentStatus`. Канонические переходы, actors и preconditions находятся в
 `backend/src/common/domain/workflow-contract.ts`.
 
+### `booking_acts`
+
+Неизменяемые снимки передачи и возврата, доступные только участникам
+бронирования.
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| `bookingId` | `String` | FK на Booking; уникален вместе с `stage` |
+| `authorId` | `String` | Lender для `HANDOVER`, borrower для `RETURN` |
+| `stage` | `BookingActStage` | `HANDOVER` или `RETURN` |
+| `readinessIsWorking` | `Boolean?` | Для нового `HANDOVER` только `true` |
+| `readinessIsComplete` | `Boolean?` | Для нового `HANDOVER` только `true` |
+| `readinessVisibleDefects` | `String?` | Дефекты или явное «нет», 2–500 символов |
+| `readinessDeclaredAt` | `DateTime?` | Server timestamp самодекларации владельца |
+| `confirmedById` / `confirmedAt` | nullable | Подтверждение второй стороной |
+
+Четыре readiness-поля либо заполнены вместе для `HANDOVER`, либо все `NULL`
+для legacy act; у `RETURN` они всегда `NULL`. Trigger запрещает их UPDATE,
+но не мешает второй стороне записать confirmation.
+
 ### `payments`
 
 Платежная модель ниже пока является провайдер-независимой заготовкой.
@@ -264,6 +284,52 @@ KYC-документы сдающих пользователей. Файлы х�
 | `updatedAt` | `DateTime` | Дата обновления |
 
 Индексы: `userId`, `status`, `reviewedById`.
+
+### `booking_messages`
+
+Текстовый participant-only диалог, где один Booking является единственной
+conversation boundary.
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| `id` | `String uuid` | Primary key и cursor |
+| `bookingId` | `String` | FK на `bookings.id`; удаление Booking запрещено до retention cleanup |
+| `authorId` | `String?` | FK на автора; обнуляется при физическом удалении account |
+| `authorRole` | `BookingMessageAuthorRole` | `BORROWER`, `LENDER` или `SYSTEM`; сохраняет безопасную атрибуцию после anonymization |
+| `clientMessageId` | `String?` | UUID v4 для идемпотентности user-authored send |
+| `body` | `VarChar(2000)` | Только текст; не попадает в URL/log/push |
+| `createdAt` | `DateTime` | Server timestamp и стабильный порядок вместе с `id` |
+
+Ограничения/индексы: unique `(authorId, clientMessageId)`,
+`(bookingId, createdAt, id)`, `authorId`. API никогда не возвращает `authorId`
+второй стороны и представляет автора как `SELF/COUNTERPARTY/SYSTEM`.
+
+### `reviews`
+
+Immutable verified-rental rating между сторонами завершённой Booking. Поля
+author/target выводятся только на backend; double-blind задаётся `publishAt`.
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| `id` | `String uuid` | Primary key и public cursor |
+| `bookingId` | `String` | FK на `bookings.id`, private provenance |
+| `authorId` | `String?` | FK автора, `SET NULL` при физическом удалении |
+| `targetId` | `String` | FK получателя; не возвращается самим public Review DTO |
+| `authorRole` | `ReviewAuthorRole` | `BORROWER` или `LENDER`, безопасная provenance |
+| `clientReviewId` | `String?` | UUID v4 идемпотентного submit |
+| `rating` | `Int` | DB check `1..5` |
+| `text` | `VarChar(1000)?` | После trim отсутствует либо 10–1000 символов |
+| `publishAt` | `DateTime` | `COMPLETED + 14d` либо server time второго submit |
+| `hiddenAt/hiddenById/hiddenReason` | nullable | Moderation tombstone без изменения Booking/финансов |
+| `createdAt` | `DateTime` | Server timestamp |
+
+Ограничения: unique `(bookingId, authorRole)` и `(authorId, clientReviewId)`;
+public list/aggregate всегда требует `publishAt <= now AND hiddenAt IS NULL` и
+не возвращает `bookingId`, actor IDs, даты/цену аренды, контакт или evidence.
+`ReportTargetType.REVIEW` ссылается на `reviews.id` через общий polymorphic
+`targetId`: создать жалобу можно только на чужой опубликованный и не скрытый
+review. Решение `HIDE_REVIEW` атомарно заполняет moderation tombstone и
+append-only audit; исходные rating/text, Booking и финансовые записи не меняются.
 
 ### `support_tickets`
 

@@ -22,6 +22,8 @@ export async function resetTestState(app: INestApplication): Promise<void> {
     prisma.userReport.deleteMany(),
     prisma.userBlock.deleteMany(),
     prisma.devicePushToken.deleteMany(),
+    prisma.review.deleteMany(),
+    prisma.bookingMessage.deleteMany(),
     prisma.bookingEvidence.deleteMany(),
     prisma.bookingAct.deleteMany(),
     prisma.uploadIntent.deleteMany(),

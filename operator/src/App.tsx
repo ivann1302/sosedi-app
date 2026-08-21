@@ -5,6 +5,7 @@ import {
   Item,
   OperatorSession,
   Report,
+  ReportedReviewContext,
   SupportMessage,
   SupportTicket,
   User,
@@ -29,6 +30,9 @@ export function App() {
   >({});
   const [supportFiles, setSupportFiles] = useState<Record<string, File[]>>({});
   const [reports, setReports] = useState<Report[]>([]);
+  const [reviewContexts, setReviewContexts] = useState<
+    Record<string, ReportedReviewContext>
+  >({});
   const [error, setError] = useState('');
   const [session, setSession] = useState<OperatorSession>();
 
@@ -78,6 +82,7 @@ export function App() {
         setUsers(await api.users());
       } else if (target === 'reports') {
         setReports(await api.reports());
+        setReviewContexts({});
       } else {
         setItems(await api.items());
       }
@@ -136,6 +141,7 @@ export function App() {
     setSupportMessages({});
     setSupportFiles({});
     setReports([]);
+    setReviewContexts({});
     setPhone('');
     setCode('');
     setError('');
@@ -409,6 +415,24 @@ export function App() {
                     {reportTargetLabel(report)} · {formatAge(report.createdAt)}
                   </span>
                   <p>{report.description}</p>
+                  {report.targetType === 'REVIEW' &&
+                    (reviewContexts[report.id] ? (
+                      <div className="moderation-details">
+                        <strong>Оценка</strong>
+                        <span>{'★'.repeat(reviewContexts[report.id].rating)}</span>
+                        <strong>Текст отзыва</strong>
+                        <span>
+                          {reviewContexts[report.id].text ?? 'Текст не добавлен'}
+                        </span>
+                      </div>
+                    ) : (
+                      <button
+                        className="secondary"
+                        onClick={() => void loadReviewContext(report.id)}
+                      >
+                        Показать текст отзыва
+                      </button>
+                    ))}
                   <div className="actions">
                     <button
                       className="secondary"
@@ -426,7 +450,16 @@ export function App() {
                         Скрыть объявление
                       </button>
                     )}
-                    {report.targetType === 'USER' && (
+                    {report.targetType === 'REVIEW' && (
+                      <button
+                        className="danger"
+                        onClick={() => void decideReport(report, 'HIDE_REVIEW')}
+                      >
+                        Скрыть отзыв
+                      </button>
+                    )}
+                    {(report.targetType === 'USER' ||
+                      report.targetType === 'MESSAGE') && (
                       <button
                         className="danger"
                         onClick={() => void decideReport(report, 'BLOCK_USER')}
@@ -458,7 +491,7 @@ export function App() {
 
   async function decideReport(
     report: Report,
-    decision: 'DISMISS' | 'HIDE_LISTING' | 'BLOCK_USER',
+    decision: 'DISMISS' | 'HIDE_LISTING' | 'HIDE_REVIEW' | 'BLOCK_USER',
   ) {
     const reason = window.prompt('Основание решения (не менее 10 символов)');
     if (!reason) return;
@@ -466,6 +499,20 @@ export function App() {
       () => api.decideReport(report.id, decision, reason),
       'reports',
     );
+  }
+
+  async function loadReviewContext(reportId: string) {
+    try {
+      setError('');
+      const context = await api.reportedReviewContext(reportId);
+      setReviewContexts((current) => ({ ...current, [reportId]: context }));
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 401) {
+        resetToLogin();
+      } else {
+        setError(message(caught));
+      }
+    }
   }
 
   async function blockUser(user: User) {

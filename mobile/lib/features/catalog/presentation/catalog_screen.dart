@@ -5,22 +5,43 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/permissions/app_permissions.dart';
 import '../../../core/permissions/permission_prompt.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/catalog_models.dart';
 import '../domain/catalog_controller.dart';
+import '../../map/presentation/catalog_map_stub.dart';
 
-class CatalogScreen extends ConsumerWidget {
+class CatalogScreen extends ConsumerStatefulWidget {
   const CatalogScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CatalogScreen> createState() => _CatalogScreenState();
+}
+
+class _CatalogScreenState extends ConsumerState<CatalogScreen> {
+  bool _showDemoMap = false;
+
+  @override
+  Widget build(BuildContext context) {
     final catalog = ref.watch(catalogProvider);
     final categories = ref.watch(catalogCategoriesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Вещи рядом')),
+      appBar: AppBar(
+        title: const Text('Найти'),
+        actions: [
+          if (AppConfig.demoStubsEnabled)
+            TextButton.icon(
+              onPressed: () => setState(() => _showDemoMap = !_showDemoMap),
+              icon: Icon(
+                _showDemoMap ? Icons.view_list_outlined : Icons.map_outlined,
+              ),
+              label: Text(_showDemoMap ? 'Список' : 'Карта (демо)'),
+            ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -39,57 +60,7 @@ class CatalogScreen extends ConsumerWidget {
                     ref.read(catalogProvider.notifier).search(value),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: categories.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (error, _) => Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        userFacingError(
-                          error,
-                          fallback: 'Категории недоступны',
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          ref.invalidate(catalogCategoriesProvider),
-                      child: const Text('Повторить'),
-                    ),
-                  ],
-                ),
-                data: (value) => DropdownButtonFormField<String>(
-                  initialValue: '',
-                  decoration: const InputDecoration(labelText: 'Категория'),
-                  items: [
-                    const DropdownMenuItem(
-                      value: '',
-                      child: Text('Все категории'),
-                    ),
-                    ...value.map(
-                      (category) => DropdownMenuItem(
-                        value: category.id,
-                        child: Text(category.name),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) =>
-                      ref.read(catalogProvider.notifier).selectCategory(value),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _PriceFilter(),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _RadiusFilter(),
-            ),
+            _QuickFilters(categories: categories),
             const SizedBox(height: 8),
             Expanded(
               child: catalog.when(
@@ -124,40 +95,253 @@ class CatalogScreen extends ConsumerWidget {
                               ],
                             ),
                           Expanded(
-                            child: RefreshIndicator(
-                              onRefresh: () => ref
-                                  .read(catalogProvider.notifier)
-                                  .refreshCatalog(),
-                              child: ListView.separated(
-                                padding: const EdgeInsets.all(16),
-                                itemCount:
-                                    value.items.length +
-                                    (value.hasMore ? 1 : 0),
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  if (index == value.items.length) {
-                                    return Center(
-                                      child: value.isLoadingMore
-                                          ? const CircularProgressIndicator()
-                                          : OutlinedButton(
-                                              onPressed: () => ref
-                                                  .read(
-                                                    catalogProvider.notifier,
-                                                  )
-                                                  .loadMore(),
-                                              child: const Text('Показать ещё'),
-                                            ),
-                                    );
-                                  }
-                                  return _CatalogCard(item: value.items[index]);
-                                },
-                              ),
-                            ),
+                            child: _showDemoMap
+                                ? CatalogMapStub(items: value.items)
+                                : RefreshIndicator(
+                                    onRefresh: () => ref
+                                        .read(catalogProvider.notifier)
+                                        .refreshCatalog(),
+                                    child: ListView.separated(
+                                      padding: const EdgeInsets.all(16),
+                                      itemCount:
+                                          value.items.length +
+                                          (value.hasMore ? 1 : 0),
+                                      separatorBuilder: (_, _) =>
+                                          const SizedBox(height: 12),
+                                      itemBuilder: (context, index) {
+                                        if (index == value.items.length) {
+                                          return Center(
+                                            child: value.isLoadingMore
+                                                ? const CircularProgressIndicator()
+                                                : OutlinedButton(
+                                                    onPressed: () => ref
+                                                        .read(
+                                                          catalogProvider
+                                                              .notifier,
+                                                        )
+                                                        .loadMore(),
+                                                    child: const Text(
+                                                      'Показать ещё',
+                                                    ),
+                                                  ),
+                                          );
+                                        }
+                                        return _CatalogCard(
+                                          item: value.items[index],
+                                        );
+                                      },
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickFilters extends StatelessWidget {
+  const _QuickFilters({required this.categories});
+
+  final AsyncValue<List<CatalogCategory>> categories;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          const _AvailabilityChip(),
+          const SizedBox(width: 8),
+          categories.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              child: SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            error: (_, _) => const _CategoryErrorChip(),
+            data: (value) => _CategoryChips(categories: value),
+          ),
+          const SizedBox(width: 8),
+          ActionChip(
+            avatar: const Icon(Icons.tune, size: 18),
+            label: const Text('Фильтры'),
+            onPressed: () => _showFilters(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFilters(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const _FilterSheet(),
+    );
+  }
+}
+
+class _CategoryChips extends ConsumerStatefulWidget {
+  const _CategoryChips({required this.categories});
+
+  final List<CatalogCategory> categories;
+
+  @override
+  ConsumerState<_CategoryChips> createState() => _CategoryChipsState();
+}
+
+class _CategoryChipsState extends ConsumerState<_CategoryChips> {
+  String? _selectedId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        ChoiceChip(
+          label: const Text('Все категории'),
+          selected: _selectedId == null,
+          onSelected: (_) => _select(null),
+        ),
+        for (final category in widget.categories) ...[
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: Text(category.name),
+            selected: _selectedId == category.id,
+            onSelected: (_) => _select(category.id),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _select(String? categoryId) {
+    if (_selectedId == categoryId) {
+      return;
+    }
+    setState(() => _selectedId = categoryId);
+    ref.read(catalogProvider.notifier).selectCategory(categoryId);
+  }
+}
+
+class _CategoryErrorChip extends ConsumerWidget {
+  const _CategoryErrorChip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ActionChip(
+      avatar: const Icon(Icons.refresh, size: 18),
+      label: const Text('Категории'),
+      onPressed: () => ref.invalidate(catalogCategoriesProvider),
+    );
+  }
+}
+
+class _AvailabilityChip extends ConsumerStatefulWidget {
+  const _AvailabilityChip();
+
+  @override
+  ConsumerState<_AvailabilityChip> createState() => _AvailabilityChipState();
+}
+
+class _AvailabilityChipState extends ConsumerState<_AvailabilityChip> {
+  DateTimeRange? _range;
+
+  @override
+  Widget build(BuildContext context) {
+    final range = _range;
+    return InputChip(
+      avatar: const Icon(Icons.date_range_outlined, size: 18),
+      label: Text(range == null ? 'Даты' : _label(context, range)),
+      onPressed: _pick,
+      onDeleted: range == null ? null : _clear,
+    );
+  }
+
+  Future<void> _pick() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 90)),
+      initialDateRange: _range,
+      helpText: 'Выберите период аренды',
+      saveText: 'Применить',
+    );
+    if (range == null || !mounted) {
+      return;
+    }
+    setState(() => _range = range);
+    await ref
+        .read(catalogProvider.notifier)
+        .setAvailability(_dateOnly(range.start), _dateOnly(range.end));
+  }
+
+  Future<void> _clear() async {
+    setState(() => _range = null);
+    await ref.read(catalogProvider.notifier).setAvailability(null, null);
+  }
+
+  String _label(BuildContext context, DateTimeRange range) {
+    final localizations = MaterialLocalizations.of(context);
+    return '${localizations.formatCompactDate(range.start)}–'
+        '${localizations.formatCompactDate(range.end)}';
+  }
+
+  String _dateOnly(DateTime date) {
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+  }
+}
+
+class _FilterSheet extends StatelessWidget {
+  const _FilterSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          20 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Фильтры',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Закрыть',
+                ),
+              ],
+            ),
+            const _PriceFilter(),
+            const SizedBox(height: 12),
+            const _RadiusFilter(),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Показать результаты'),
             ),
           ],
         ),
@@ -259,6 +443,7 @@ class _PriceFilterState extends ConsumerState<_PriceFilter> {
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
       childrenPadding: const EdgeInsets.only(bottom: 8),
+      initiallyExpanded: true,
       title: const Text('Цена за день'),
       children: [
         FormBuilder(
@@ -319,11 +504,10 @@ class _CatalogCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final coverUrl = item.photos
-        .where((photo) => photo.isCover)
-        .map((photo) => photo.thumbnailUrl ?? photo.previewUrl)
-        .whereType<String>()
-        .firstOrNull;
+    final coverPhoto =
+        item.photos.where((photo) => photo.isCover).firstOrNull ??
+        item.photos.firstOrNull;
+    final coverUrl = coverPhoto?.thumbnailUrl ?? coverPhoto?.previewUrl;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -332,70 +516,95 @@ class _CatalogCard extends StatelessWidget {
         label: 'Открыть объявление ${item.title}',
         child: InkWell(
           onTap: () => context.push('/items/${item.id}'),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(
-                width: 120,
-                height: 144,
-                child: coverUrl == null
-                    ? Semantics(
-                        image: true,
-                        label: 'Фото отсутствует',
-                        child: ColoredBox(
-                          color: AppColors.warmSand,
-                          child: Icon(
-                            Icons.inventory_2_outlined,
-                            size: 36,
-                            color: AppColors.slate800,
+              AspectRatio(
+                aspectRatio: 16 / 10,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    coverUrl == null
+                        ? const _CatalogPhotoPlaceholder()
+                        : Image.network(
+                            coverUrl,
+                            semanticLabel: 'Фото ${item.title}',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const ColoredBox(
+                              color: AppColors.warmSand,
+                              child: Center(
+                                child: Icon(
+                                  Icons.broken_image_outlined,
+                                  size: 44,
+                                  color: AppColors.slate800,
+                                ),
+                              ),
+                            ),
                           ),
+                    Positioned(
+                      left: 12,
+                      top: 12,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(AppRadii.small),
                         ),
-                      )
-                    : Image.network(
-                        coverUrl,
-                        semanticLabel: 'Фото ${item.title}',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const ColoredBox(
-                          color: AppColors.warmSand,
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            color: AppColors.slate800,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          child: Text(
+                            _condition(item.condition),
+                            style: Theme.of(context).textTheme.labelSmall,
                           ),
                         ),
                       ),
+                    ),
+                  ],
+                ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${_price(item.pricePerDay)} ₽ / день',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: AppColors.ink900,
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${_price(item.pricePerDay)} ₽ / день',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 18,
+                          color: AppColors.slate700,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        [
-                          item.category.name,
-                          item.area,
-                          if (item.distanceBucket != null) item.distanceBucket!,
-                        ].join(' · '),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            [
+                              item.category.name,
+                              item.area,
+                              if (item.distanceBucket != null)
+                                item.distanceBucket!,
+                            ].join(' · '),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -410,6 +619,36 @@ class _CatalogCard extends StatelessWidget {
         ? value.toInt().toString()
         : value.toStringAsFixed(2);
   }
+
+  String _condition(String value) => switch (value) {
+    'NEW' => 'Новое',
+    'LIKE_NEW' => 'Как новое',
+    'GOOD' => 'Хорошее состояние',
+    'FAIR' => 'Есть следы использования',
+    _ => 'Состояние указано',
+  };
+}
+
+class _CatalogPhotoPlaceholder extends StatelessWidget {
+  const _CatalogPhotoPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      image: true,
+      label: 'Фото отсутствует',
+      child: const ColoredBox(
+        color: AppColors.warmSand,
+        child: Center(
+          child: Icon(
+            Icons.inventory_2_outlined,
+            size: 52,
+            color: AppColors.slate800,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _EmptyCatalog extends StatelessWidget {
@@ -417,10 +656,31 @@ class _EmptyCatalog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('Пока нет доступных вещей', textAlign: TextAlign.center),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: AppColors.slate700,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Пока нет доступных вещей',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Попробуйте изменить запрос, категорию или радиус поиска.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -440,8 +700,14 @@ class _CatalogError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(message),
-            const SizedBox(height: 16),
+            const Icon(
+              Icons.cloud_off_outlined,
+              size: 40,
+              color: AppColors.slate700,
+            ),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
             FilledButton(onPressed: onRetry, child: const Text('Повторить')),
           ],
         ),

@@ -16,6 +16,7 @@ const outputFor = (route) =>
   route === '/' ? 'dist/index.html' : join('dist', route, 'index.html');
 
 const routeOutputs = new Set(routes.map(outputFor));
+const publicSupportHref = 'mailto:sosedi.rs@yandex.ru';
 for (const route of routes) {
   const output = outputFor(route);
   const html = await readFile(output, 'utf8');
@@ -27,6 +28,13 @@ for (const route of routes) {
     /google-analytics|appmetrica|metrika/i.test(html)
   ) {
     throw new Error(`${route} contains a form, script or analytics integration`);
+  }
+
+  if (
+    ['/support/', '/account-deletion/'].includes(route) &&
+    !html.includes(`href="${publicSupportHref}"`)
+  ) {
+    throw new Error(`${route} has no approved public support contact`);
   }
 
   for (const [, href] of html.matchAll(/href="(\/[^"#?]*)"/g)) {

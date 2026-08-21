@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile/core/network/api_exception.dart';
+import 'package:mobile/features/booking/data/booking_models.dart';
 import 'package:mobile/features/booking/data/booking_service.dart';
 
 import '../../support/network_fakes.dart';
@@ -141,15 +142,26 @@ void main() {
         'subject': 'Вещь неисправна при передаче',
         'message': 'Вещь не включается при проверке.',
       });
-      return jsonResponse({'success': true, 'data': {}, 'error': null});
+      return jsonResponse({
+        'success': true,
+        'data': {
+          'id': 'ticket-1',
+          'status': 'OPEN',
+          'createdAt': '2026-08-10T10:00:00.000Z',
+        },
+        'error': null,
+      });
     });
     final service = BookingService(Dio()..httpClientAdapter = adapter);
 
-    await service.reportIssue(
+    final receipt = await service.reportIssue(
       bookingId: 'booking-1',
       reason: 'ITEM_FAULTY',
       details: '  Вещь не включается при проверке.  ',
     );
+
+    expect(receipt.id, 'ticket-1');
+    expect(receipt.status, 'OPEN');
   });
 
   test('lists, creates and confirms a private handover act', () async {
@@ -195,6 +207,11 @@ void main() {
       bookingId: 'booking-1',
       stage: 'HANDOVER',
       photo: photo,
+      readiness: const HandoverReadinessInput(
+        isWorking: true,
+        isComplete: true,
+        visibleDefects: 'Нет',
+      ),
     );
     final confirmed = await service.confirmAct(
       bookingId: 'booking-1',
@@ -203,6 +220,7 @@ void main() {
     );
 
     expect(listed.single.stage, 'HANDOVER');
+    expect(listed.single.readiness?.visibleDefects, 'Нет');
     expect(listed.single.evidence.single.sha256, 'abc123');
     expect(confirmed.id, 'act-1');
     expect(adapter.requests, hasLength(5));
@@ -220,6 +238,11 @@ void main() {
     expect(adapter.requests[3].data, {
       'stage': 'HANDOVER',
       'intentId': 'intent-1',
+      'readiness': {
+        'isWorking': true,
+        'isComplete': true,
+        'visibleDefects': 'Нет',
+      },
     });
     expect(adapter.requests[4].path, '/bookings/booking-1/acts/act-1/confirm');
     expect(
@@ -245,6 +268,80 @@ void main() {
     expect(booking.id, 'booking-1');
     expect(booking.actorRole, 'BORROWER');
   });
+
+  test(
+    'lists, sends, marks and blocks through booking chat endpoints',
+    () async {
+      var requestIndex = 0;
+      final adapter = CallbackAdapter((options) {
+        requestIndex += 1;
+        if (requestIndex == 1) {
+          expect(options.method, 'GET');
+          expect(options.path, '/bookings/booking-1/messages');
+          expect(options.queryParameters, {'limit': 20, 'cursor': 'cursor-1'});
+          return jsonResponse({
+            'success': true,
+            'data': {
+              'items': [bookingMessageJson()],
+              'nextCursor': null,
+            },
+            'error': null,
+          });
+        }
+        if (requestIndex == 2) {
+          expect(options.method, 'POST');
+          expect(options.path, '/bookings/booking-1/messages');
+          expect(options.data, {
+            'body': 'Добрый день',
+            'clientMessageId': '11111111-1111-4111-8111-111111111141',
+          });
+          return jsonResponse({
+            'success': true,
+            'data': bookingMessageJson(),
+            'error': null,
+          });
+        }
+        if (requestIndex == 3) {
+          expect(options.method, 'PATCH');
+          expect(options.path, '/bookings/booking-1/messages/read');
+          return jsonResponse({
+            'success': true,
+            'data': {'readAt': '2026-08-09T12:00:00.000Z', 'updatedCount': 1},
+            'error': null,
+          });
+        }
+        expect(options.method, 'POST');
+        expect(options.path, '/bookings/booking-1/messages/block-counterparty');
+        return jsonResponse({
+          'success': true,
+          'data': {
+            'id': 'block-1',
+            'blocked': {'id': 'user-2', 'name': 'Анна'},
+            'createdAt': '2026-08-09T12:00:00.000Z',
+          },
+          'error': null,
+        });
+      });
+      final service = BookingService(Dio()..httpClientAdapter = adapter);
+
+      final page = await service.listMessages(
+        'booking-1',
+        cursor: 'cursor-1',
+        limit: 20,
+      );
+      final sent = await service.sendMessage(
+        bookingId: 'booking-1',
+        body: '  Добрый день  ',
+        clientMessageId: '11111111-1111-4111-8111-111111111141',
+      );
+      await service.markMessagesRead('booking-1');
+      await service.blockCounterparty('booking-1');
+
+      expect(page.items.single.body, 'Добрый день');
+      expect(sent.author, 'SELF');
+      expect(adapter.requests, hasLength(4));
+    },
+  );
 
   test('preserves a booking command conflict from the API envelope', () async {
     final adapter = CallbackAdapter(
@@ -306,7 +403,12 @@ Map<String, Object?> bookingJson() => {
   'startDate': '2026-08-01T00:00:00.000Z',
   'endDate': '2026-08-02T00:00:00.000Z',
   'status': 'PENDING',
-  'expiresAt': '2026-07-29T12:15:00.000Z',
+  'nextAction': {
+    'code': 'WAIT_LENDER',
+    'title': 'Ожидайте ответ владельца',
+    'description': 'Владелец должен подтвердить или отклонить заявку.',
+  },
+  'expiresAt': '2026-07-30T00:00:00.000Z',
   'cancellationReason': null,
   'terms': {
     'itemTitle': 'Перфоратор',
@@ -328,6 +430,15 @@ Map<String, Object?> bookingJson() => {
   'createdAt': '2026-07-29T12:00:00.000Z',
 };
 
+Map<String, Object?> bookingMessageJson() => {
+  'id': 'message-1',
+  'bookingId': 'booking-1',
+  'author': 'SELF',
+  'clientMessageId': '11111111-1111-4111-8111-111111111141',
+  'body': 'Добрый день',
+  'createdAt': '2026-08-09T12:00:00.000Z',
+};
+
 Map<String, Object?> bookingActJson() => {
   'id': 'act-1',
   'bookingId': 'booking-1',
@@ -336,6 +447,13 @@ Map<String, Object?> bookingActJson() => {
   'createdAt': '2026-08-01T10:00:00.000Z',
   'confirmedById': null,
   'confirmedAt': null,
+  'readiness': {
+    'isWorking': true,
+    'isComplete': true,
+    'visibleDefects': 'Нет',
+    'declaredAt': '2026-08-01T09:59:00.000Z',
+    'declaration': 'LENDER_SELF_DECLARATION',
+  },
   'evidence': [
     {
       'id': 'evidence-1',

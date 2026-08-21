@@ -38,20 +38,36 @@ void main() {
     expect(service.markReadCalls, 1);
     expect(find.text('Обращение открыто'), findsOneWidget);
   });
+
+  testWidgets('shows a neutral title for a moderated review', (tester) async {
+    final service = _FakeInboxService(reviewEvent);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [inboxServiceProvider.overrideWithValue(service)],
+        child: const MaterialApp(home: InboxScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Отзыв скрыт после проверки'), findsOneWidget);
+    expect(find.textContaining('жалоб'), findsNothing);
+  });
 }
 
 class _FakeInboxService extends InboxService {
-  _FakeInboxService() : super(Dio());
+  _FakeInboxService([this.value]) : super(Dio());
+
+  final InboxEvent? value;
 
   var markReadCalls = 0;
 
   @override
-  Future<List<InboxEvent>> list() async => [event];
+  Future<List<InboxEvent>> list() async => [value ?? event];
 
   @override
   Future<InboxEvent> markRead(String eventId) async {
     markReadCalls += 1;
-    return event.copyWith(readAt: DateTime.utc(2026, 7, 29, 12, 5));
+    return (value ?? event).copyWith(readAt: DateTime.utc(2026, 7, 29, 12, 5));
   }
 
   @override
@@ -67,4 +83,14 @@ final event = InboxEvent(
   eventType: 'SUPPORT_REPLIED',
   readAt: null,
   createdAt: DateTime.utc(2026, 7, 29, 12),
+);
+
+final reviewEvent = InboxEvent(
+  eventId: '89db0bf1-f6ce-4d89-909f-f76d42e45940',
+  bookingId: 'booking-1',
+  supportTicketId: null,
+  itemId: null,
+  eventType: 'REVIEW_HIDDEN_BY_REPORT_REVIEW',
+  readAt: null,
+  createdAt: DateTime.utc(2026, 8, 9, 12),
 );

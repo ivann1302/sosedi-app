@@ -2,12 +2,16 @@
 
 ## Persistent storage allowlist
 
-- `flutter_secure_storage`: access/refresh tokens only.
+- `flutter_secure_storage`: access/refresh tokens and one authenticated user's
+  unfinished listing draft containing only non-location fields. The draft is
+  removed after submit or logout.
 - `shared_preferences`: installation UUID, onboarding completion и локальный
   analytics consent (`unknown/granted/denied`) без user ID.
 
 Exact addresses, booking handover/contact, evidence, KYC and payment payloads
 must not be written to local files, preferences, databases, logs or analytics.
+Listing photos, file paths, exact address, latitude/longitude and legal
+acceptance checkboxes are never included in the persisted listing draft.
 
 ## In-memory lifetime
 

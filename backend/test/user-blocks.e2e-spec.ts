@@ -93,6 +93,18 @@ describe('User blocks (e2e)', () => {
         status: BookingStatus.CONFIRMED,
       },
     });
+    const pendingBooking = await prisma.booking.create({
+      data: {
+        itemId: existingItem.id,
+        borrowerId: borrower.id,
+        lenderId: owner.id,
+        startDate: new Date('2026-08-03T00:00:00.000Z'),
+        endDate: new Date('2026-08-04T00:00:00.000Z'),
+        totalAmount: 1000,
+        status: BookingStatus.PENDING,
+        expiresAt: new Date('2030-08-03T12:00:00.000Z'),
+      },
+    });
     const ownerAuthorization = await bearerToken(owner);
     const borrowerAuthorization = await bearerToken(borrower);
 
@@ -107,6 +119,34 @@ describe('User blocks (e2e)', () => {
     expect(asRecord(asRecord(repeatBlock.body as unknown).data).id).toBe(
       asRecord(asRecord(firstBlock.body as unknown).data).id,
     );
+    await expect(
+      prisma.booking.findUniqueOrThrow({ where: { id: pendingBooking.id } }),
+    ).resolves.toMatchObject({
+      status: BookingStatus.CANCELLED,
+      cancellationReason: 'PARTICIPANT_BLOCKED',
+      expiresAt: null,
+    });
+    await expect(
+      prisma.bookingMessage.count({
+        where: {
+          bookingId: pendingBooking.id,
+          authorRole: 'SYSTEM',
+          body: 'Один из участников заблокировал другого. Заявка отменена.',
+        },
+      }),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.bookingTransitionHistory.count({
+        where: {
+          bookingId: pendingBooking.id,
+          command: 'BLOCK_COUNTERPARTY',
+          reason: 'PARTICIPANT_BLOCKED',
+        },
+      }),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.booking.findUniqueOrThrow({ where: { id: existingBooking.id } }),
+    ).resolves.toMatchObject({ status: BookingStatus.CONFIRMED });
     const ownerBlocksResponse = await request(httpServer())
       .get('/api/v1/users/blocks')
       .set('Authorization', ownerAuthorization)

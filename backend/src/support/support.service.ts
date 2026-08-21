@@ -33,6 +33,14 @@ export type AdminSupportTicketResponse = SupportTicketResponseDto & {
   } | null;
 };
 
+export type AdminBookingChatMessageResponse = {
+  id: string;
+  bookingId: string;
+  authorRole: string;
+  body: string;
+  createdAt: Date;
+};
+
 @Injectable()
 export class SupportService {
   constructor(
@@ -156,6 +164,55 @@ export class SupportService {
       where: { ticketId },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       select: SUPPORT_MESSAGE_SELECT,
+    });
+  }
+
+  async listBookingChatForAdmin(
+    adminId: string,
+    ticketId: string,
+    context: AdminAuditContext,
+  ): Promise<AdminBookingChatMessageResponse[]> {
+    return this.prisma.$transaction(async (tx) => {
+      const ticket = await tx.supportTicket.findFirst({
+        where: {
+          id: ticketId,
+          type: SupportTicketType.GENERAL,
+          bookingId: { not: null },
+        },
+        select: { id: true, bookingId: true },
+      });
+      if (!ticket?.bookingId) {
+        throw new NotFoundException('Обращение по бронированию не найдено');
+      }
+      const newest = await tx.bookingMessage.findMany({
+        where: { bookingId: ticket.bookingId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 100,
+        select: {
+          id: true,
+          bookingId: true,
+          authorRole: true,
+          body: true,
+          createdAt: true,
+        },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          adminId,
+          action: 'SUPPORT_BOOKING_CHAT_ACCESSED',
+          entityType: 'SupportTicket',
+          entityId: ticket.id,
+          capability: AdminCapability.SUPPORT,
+          requestId: context.requestId,
+          ipAddress: context.ipAddress,
+          deviceId: context.deviceId,
+          metadata: {
+            bookingId: ticket.bookingId,
+            messageCount: newest.length,
+          },
+        },
+      });
+      return newest.reverse();
     });
   }
 

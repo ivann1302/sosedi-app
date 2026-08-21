@@ -8,6 +8,7 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import {
+  BookingMessageAuthorRole,
   BookingStatus,
   KycStatus,
   Prisma,
@@ -16,6 +17,8 @@ import {
   User,
   UserRole,
 } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import { BookingEventType, bookingEventKey } from '../booking/booking-events';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserBlockResponseDto } from './dto/user-block-response.dto';
@@ -58,6 +61,8 @@ export type UserUnblockResponse = {
   blockedUserId: string;
   blocked: false;
 };
+
+export const BOOKING_PARTICIPANT_BLOCKED_REASON = 'PARTICIPANT_BLOCKED';
 
 @Injectable()
 export class UsersService implements OnApplicationBootstrap, OnModuleDestroy {
@@ -125,25 +130,101 @@ export class UsersService implements OnApplicationBootstrap, OnModuleDestroy {
     if (blockerId === blockedId) {
       throw new BadRequestException('Нельзя заблокировать себя');
     }
-    const target = await this.prisma.user.findFirst({
-      where: {
-        id: blockedId,
-        deletedAt: null,
-        isBlocked: false,
-      },
-      select: { id: true },
-    });
-    if (!target) {
-      throw new NotFoundException('Пользователь не найден');
-    }
+    const pairKey = [blockerId, blockedId].sort().join(':');
+    const requestId = randomUUID();
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(${`user-block-pair:${pairKey}`}, 0)
+        )
+      `;
+      const target = await tx.user.findFirst({
+        where: {
+          id: blockedId,
+          deletedAt: null,
+          isBlocked: false,
+        },
+        select: { id: true },
+      });
+      if (!target) {
+        throw new NotFoundException('Пользователь не найден');
+      }
 
-    return this.prisma.userBlock.upsert({
-      where: {
-        blockerId_blockedId: { blockerId, blockedId },
-      },
-      create: { blockerId, blockedId },
-      update: {},
-      select: USER_BLOCK_SELECT,
+      const block = await tx.userBlock.upsert({
+        where: {
+          blockerId_blockedId: { blockerId, blockedId },
+        },
+        create: { blockerId, blockedId },
+        update: {},
+        select: USER_BLOCK_SELECT,
+      });
+      const now = new Date();
+      const candidates = await tx.booking.findMany({
+        where: {
+          status: BookingStatus.PENDING,
+          expiresAt: { gt: now },
+          OR: [
+            { borrowerId: blockerId, lenderId: blockedId },
+            { borrowerId: blockedId, lenderId: blockerId },
+          ],
+        },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      });
+      for (const candidate of candidates) {
+        await tx.$executeRaw`
+          SELECT pg_advisory_xact_lock(hashtext(${candidate.id}))
+        `;
+      }
+      const cancellable = await tx.booking.findMany({
+        where: {
+          id: { in: candidates.map((candidate) => candidate.id) },
+          status: BookingStatus.PENDING,
+          expiresAt: { gt: now },
+        },
+        select: { id: true },
+      });
+      if (cancellable.length > 0) {
+        const bookingIds = cancellable.map((booking) => booking.id);
+        await tx.booking.updateMany({
+          where: { id: { in: bookingIds }, status: BookingStatus.PENDING },
+          data: {
+            status: BookingStatus.CANCELLED,
+            cancellationReason: BOOKING_PARTICIPANT_BLOCKED_REASON,
+            expiresAt: null,
+          },
+        });
+        await tx.bookingMessage.createMany({
+          data: bookingIds.map((bookingId) => ({
+            bookingId,
+            authorRole: BookingMessageAuthorRole.SYSTEM,
+            body: 'Один из участников заблокировал другого. Заявка отменена.',
+          })),
+        });
+        await tx.bookingTransitionHistory.createMany({
+          data: bookingIds.map((bookingId) => ({
+            bookingId,
+            actorId: blockerId,
+            actorType: 'PARTICIPANT',
+            command: 'BLOCK_COUNTERPARTY',
+            oldStatus: BookingStatus.PENDING,
+            newStatus: BookingStatus.CANCELLED,
+            reason: BOOKING_PARTICIPANT_BLOCKED_REASON,
+            requestId,
+          })),
+        });
+        await tx.notificationOutboxEvent.createMany({
+          data: bookingIds.map((bookingId) => ({
+            bookingId,
+            eventType: BookingEventType.CANCELLED,
+            deduplicationKey: bookingEventKey(
+              bookingId,
+              BookingEventType.CANCELLED,
+            ),
+          })),
+        });
+      }
+      return block;
     });
   }
 

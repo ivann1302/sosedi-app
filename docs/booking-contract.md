@@ -7,6 +7,9 @@ server timestamp и метод `BOOKING_SUBMIT_CHECKBOX` всегда назна
 Client versions обязаны точно совпасть с approved runtime versions; отсутствие
 или stale acceptance даёт `409 BOOKING_TERMS_ACCEPTANCE_REQUIRED` до DB.
 
+Единственный диалог заявки использует Booking как границу и следует отдельному
+[booking chat contract](booking-chat-contract.md); свободных DM в MVP нет.
+
 Mobile flow выводится из четырёх compile-time значений:
 `MARKETPLACE_OFFER_VERSION`, `MARKETPLACE_OFFER_URL`,
 `MARKETPLACE_CANCELLATION_POLICY_VERSION` и
@@ -40,8 +43,8 @@ production URL/evidence. Пустая или содержащая `draft` вер
 
 | Command | From | To | Actor | Required preconditions |
 |---|---|---|---|---|
-| create | — | `PENDING` | borrower | active borrower/lender, `APPROVED` Item, not self, free inclusive period |
-| confirm | `PENDING` | `CONFIRMED` | lender | not expired, period still reserved, version matches |
+| create | — | `PENDING` | borrower | active borrower/lender, `APPROVED` Item, not self, no hard calendar/reservation conflict, request caps not exceeded |
+| confirm | `PENDING` | `CONFIRMED` | lender | not expired, period still free under Item lock, version matches |
 | cancel | `PENDING` | `CANCELLED` | borrower/lender | participant, live TTL |
 | expire | `PENDING` | `CANCELLED` | system | `expiresAt <= now`, reason `PENDING_TIMEOUT` |
 | activate | `CONFIRMED` | `ACTIVE` | both participants | handover confirmed by both |
@@ -49,9 +52,10 @@ production URL/evidence. Пустая или содержащая `draft` вер
 | complete | `RETURNED` | `COMPLETED` | system | dispute window closed, no open dispute |
 
 Любой другой переход запрещён. Запрещённая команда не меняет Booking/history.
-Подтверждение выполняется под locks Booking и Item. Ровно одна заявка становится
+Подтверждение выполняется под locks Booking и Item с повторной проверкой
+календаря и подтверждённых бронирований. Ровно одна заявка становится
 `CONFIRMED`; другие живые пересекающиеся `PENDING` атомарно переходят в
-`CANCELLED` с `cancellationReason=COMPETING_REQUEST_CONFIRMED`.
+`CANCELLED` с `cancellationReason=COMPETING_REQUEST_CONFIRMED` и очищенным TTL.
 
 `POST /bookings/:id/cancel` сейчас исполняет только безопасную до-legal часть
 матрицы: borrower переводит живой `PENDING` в `CANCELLED` с
@@ -62,19 +66,25 @@ policy; backend не выдумывает refund, fee или штраф.
 
 ## Reservation
 
-`PENDING` резервирует пересекающийся период на 15 минут. Создание выполняется в
-транзакции PostgreSQL с advisory transaction lock сначала по
-`borrowerId`, затем по `itemId`; под lock проверяются лимит, Item/owner/price и
-пересечения, затем создаётся Booking. Один borrower может одновременно иметь не
-более 5 неистёкших `PENDING`. Истёкший `PENDING` не блокирует новую заявку и
-идемпотентный cleanup не реже раза в минуту переводит его в `CANCELLED` с
+`PENDING` действует 12 часов и не резервирует период: несколько пользователей
+могут отправить пересекающиеся заявки, а публичная доступность продолжает
+показывать даты свободными до подтверждения одной из них. Создание выполняется в
+транзакции PostgreSQL с advisory transaction lock сначала по `borrowerId`, затем
+по `itemId`; под lock проверяются Item/owner/price, hard conflicts и лимиты,
+затем создаётся Booking. Один borrower может одновременно иметь не более 5
+неистёкших `PENDING`; один пересекающийся период Item — не более 20 живых
+`PENDING`. Это технические anti-abuse caps пилота, а не обещание пользователю.
+
+Истёкший `PENDING` не участвует в лимитах и идемпотентный cleanup не реже раза в
+минуту переводит его в `CANCELLED` с
 `cancellationReason=PENDING_TIMEOUT`. Отдельного статуса `EXPIRED` нет.
 
 Владелец может добавить интервал недоступности длиной 1–30 дней в пределах
-90-дневного горизонта. Создание/удаление интервала и создание Booking используют
-один advisory lock по `itemId`: новый интервал отклоняется при пересечении с
-живой бронью, а новая бронь — при пересечении с интервалом. Существующая бронь
-при изменении календаря никогда не отменяется.
+90-дневного горизонта. Создание/удаление интервала и подтверждение Booking
+используют один advisory lock по `itemId`. `PENDING` не мешает закрыть даты в
+календаре; confirm затем отклоняется. `CONFIRMED`/`ACTIVE`/`RETURNED` считаются
+hard reservation и запрещают пересекающийся календарный интервал или новую
+заявку. Существующая hard reservation при изменении календаря не отменяется.
 
 Цена: число календарных дней × server `pricePerDay`, валюта RUB. Payment status
 не входит в Booking FSM; production payment flow остаётся закрыт provider/legal
@@ -115,8 +125,14 @@ Mobile инвалидирует уже загруженные private booking de
 
 ## Handover acts
 
-Участник `CONFIRMED` создаёт единственный `HANDOVER` act, а участник `ACTIVE` —
-единственный `RETURN` act. Act включает server author/time и private evidence,
+Владелец в `CONFIRMED` создаёт единственный `HANDOVER` act, а арендатор в
+`ACTIVE` — единственный `RETURN` act. `HANDOVER` обязательно сохраняет
+неизменяемую самодекларацию владельца: исправность, полную
+комплектацию, текст о видимых дефектах и server timestamp. Это не
+проверка Sosedi и не решение финансового спора. Вопрос о заряде
+не показывается без утверждённого category rule.
+
+Act включает server author/time и private evidence,
 привязанное к одноразовому upload intent; backend повторно проверяет bucket/key,
 MIME/magic bytes, безопасно перекодирует изображение без metadata/вредоносного
 хвоста и сохраняет SHA-256 очищенных байтов. Только второй участник может

@@ -14,6 +14,8 @@ void main() {
         'offset': 0,
         'sort': 'newest',
         'search': 'дрель',
+        'availableFrom': '2026-08-12',
+        'availableTo': '2026-08-14',
         'minPrice': 100.0,
         'maxPrice': 500.0,
         'latitude': 55.75,
@@ -30,6 +32,8 @@ void main() {
 
     final page = await service.fetchItems(
       search: 'дрель',
+      availableFrom: '2026-08-12',
+      availableTo: '2026-08-14',
       minPrice: 100,
       maxPrice: 500,
       latitude: 55.75,

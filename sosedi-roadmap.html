@@ -574,18 +574,18 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       <div class="kpi-strip">
         <div class="kpi-card">
           <div class="kpi-label"><span class="kpi-dot" style="background:var(--color-success)"></span>Фаза</div>
-          <div class="kpi-value">Checklist 5</div>
-          <div class="kpi-sub">Booking-aware listings — next</div>
+          <div class="kpi-value">Release gates</div>
+          <div class="kpi-sub">RF OCI mirror — next</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label"><span class="kpi-dot" style="background:var(--color-primary)"></span>Всего фаз</div>
-          <div class="kpi-value">8 + gate</div>
-          <div class="kpi-sub">MVP 0.1 → 0.7 → 1.0</div>
+          <div class="kpi-value">9 + gates</div>
+          <div class="kpi-sub">MVP 0.1 → 0.7 → pilot → 1.0</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label"><span class="kpi-dot" style="background:var(--color-gold)"></span>Общий срок MVP</div>
-          <div class="kpi-value">~20+ нед</div>
-          <div class="kpi-sub">плюс scope/payment/legal gates</div>
+          <div class="kpi-value">6–8 нед RC</div>
+          <div class="kpi-sub">8–12+ нед monetized, если gates стартуют сейчас</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label"><span class="kpi-dot" style="background:var(--color-blue)"></span>Стек</div>
@@ -607,9 +607,9 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       <div class="progress-wrap">
         <div class="progress-header">
           <span>Прогресс всего MVP</span>
-          <span>319 / 456 — 70,0%</span>
+          <span>334 / 483 — 69,2%</span>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:70.0%"></div></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:69.2%"></div></div>
         <div class="kpi-sub" style="margin-top:var(--space-2)">Рассчитано только из выполненных пунктов <code>MVP_CHECKLIST.md</code>; HTML не ведёт второй независимый процент.</div>
       </div>
 
@@ -617,11 +617,19 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
         <div class="tl-card">
           <div class="tl-card-title" style="color:var(--color-primary)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 16l9 5 9-5M3 12l9 5 9-5"/></svg>
-            Product scope · 27.07.2026
+            Product scope · 10.08.2026
           </div>
           <div class="tl-item"><div><strong>Платный MVP:</strong> одна разрешённая личная вещь в объявлении, дневная цена в RUB и личная передача между соседями.</div></div>
           <div class="tl-item"><div><strong>Не в MVP:</strong> продажа, дарение, обмен, услуги, корзина, почасовой тариф, собственная доставка и сложный залог.</div></div>
           <div class="tl-item"><div>Публичный каталог использует launch whitelist категорий; опасные, регулируемые, расходуемые и гигиенически рискованные вещи требуют отдельного accepted ADR.</div></div>
+          <div class="tl-item"><div><strong>Wave 2:</strong> audio/караоке, event/presentation, безопасная office/cleaning/climate техника, hobby/decor/luggage — только после safety/legal ADR и минимум пяти живых объявлений на категорию.</div></div>
+          <div class="tl-item"><div><strong>Пилот:</strong> несколько смежных районов Москвы, точный список пока <code>TBD</code>; карта входит сразу, каталог и карта живут в одном <code>Найти</code> с общими датами/фильтрами.</div></div>
+          <div class="tl-item"><div><strong>Простота после аудита RuStore:</strong> публичные каталог/карточка работают без SMS, auth появляется по intent и возвращает к действию; два golden path — «найти вещь» и «сдать вещь максимум за три шага».</div></div>
+          <div class="tl-item"><div><strong>Не сейчас:</strong> AI-описания, social feed, бартер, почасовая аренда, QR-lock и собственная доставка ждут данных пилота.</div></div>
+          <div class="tl-item"><div><strong>Supply:</strong> целевая модель смешанная, но first-party имущество ИП/ООО не публикуется как P2P до отдельного legal/accounting/payment gate и принятого ADR-0006.</div></div>
+          <div class="tl-item"><div><strong>Trust:</strong> booking-scoped текстовый чат открывается с заявки до оплаты; подтверждённые отзывы/рейтинги входят в MVP; свободные DM, медиа и обязательный realtime исключены.</div></div>
+          <div class="tl-item"><div><strong>Экономика:</strong> Safe Deal-пилот целится в 1% platform fee; payer, gross price и покрытие provider cost пока <code>TBD</code>. После пилота цель — 5% маржи, а будущий displayed fee выбирается по расчёту.</div></div>
+          <div class="tl-item"><div><strong>Релиз:</strong> один release manifest/version связывает отдельные signed iOS/Play/RuStore artifacts; platform config различается, общий API/legal contract совпадает, public window координируется.</div></div>
           <div class="tl-item"><div>Технический prototype прежней ниши мигрирован в единый <code>Item</code>/<code>ItemPhoto</code> контракт по <code>/items</code>, <code>USER</code> поддерживает borrower/lender-сценарии с object ownership checks, launch whitelist enforced server-side, общие состояние, комплектация и условия передачи входят в Item-контракт, а новые объявления принимают только нулевой залог до отдельного утверждения. Решение: <code>docs/adr/0001-paid-neighbor-item-rental.md</code>.</div></div>
         </div>
         <div class="tl-card">
@@ -651,11 +659,17 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
         <div class="tl-card">
           <div class="tl-card-title" style="color:var(--color-success)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-            Следующий рекомендуемый пункт
+            Owner lane · от простого к сложному
           </div>
-          <div class="tl-item"><div><strong>Checklist 5 · listing declarations:</strong> требовать подтверждение права распоряжаться вещью, её исправности, комплектации и применимых safety/marketplace rules с версией принятого документа.</div></div>
-          <div class="tl-item"><div>Booking-aware guard уже запрещает изменение и скрытие объявления при <code>PENDING/CONFIRMED/ACTIVE/RETURNED</code>; терминальные брони не блокируют повторную модерацию.</div></div>
-          <div class="tl-item"><div>После закрытия пункта Codex должен заменить эту подсказку на следующий TODO.</div></div>
+          <div class="tl-item"><div><strong>0 · inventory получен:</strong> store accounts ждут юрлицо заказчика; наличие real devices и проектных OTP numbers пока unknown.</div></div>
+          <div class="tl-item"><div><strong>1 · DONE:</strong> публичный support-контакт — <code>sosedi.rs@yandex.ru</code>; local support/account-deletion routes проверены.</div></div>
+          <div class="tl-item"><div><strong>2–4 · до 90 мин каждый:</strong> доступ/recovery домена → независимый Git backup → российский OCI registry.</div></div>
+          <div class="tl-item"><div><strong>5–7 · несколько часов:</strong> store accounts/signing → MapKit и device smoke → SMS/push/S3 accounts.</div></div>
+          <div class="tl-item"><div><strong>8–10 · дни/недели:</strong> production РФ → marketplace legal/privacy → Safe Deal, экономика 1% и одна KYC-ветка.</div></div>
+          <div class="tl-item"><div><strong>11 · операционная ступень:</strong> районы, плотное предложение, поддержка и usability smoke с пятью новыми пользователями.</div></div>
+          <div class="tl-item"><div><strong>Public hosting decision:</strong> переносим <code>sosedi-app.ru</code> из SprintHost в Timeweb только через technical preview; SprintHost и старые DNS сохраняются как rollback минимум на 7 дней. Live Next.js source пока отсутствует в workspace.</div></div>
+          <div class="tl-item"><div>Codex сначала готовит инструкцию, после действия владельца сам проверяет evidence и закрывает техническую часть. Подробный шаблон текущей ступени — <code>OWNER_ACTIONS.md</code>.</div></div>
+          <div class="tl-item"><div><strong>Сейчас:</strong> получить repository/local path Next.js-промолендинга либо полный SprintHost export; без source DNS не переключать. Product blocker после закрытого guest flow: photo-first refresh из checklist 8.2 ждёт Store readiness → MapKit и visual smoke на iPhone/Android.</div></div>
         </div>
       </div>
 
@@ -667,7 +681,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             Checklist 0.3 · scope pivot
           </div>
           <div class="tl-item"><div>ADR-0001, domain migration, единый Item API, borrower/lender-модель, launch whitelist, общие поля вещи, contract-тесты и очистка текстов — <strong>10/10 DONE</strong>.</div></div>
-          <div class="tl-item"><div>Scope pivot закрыт; следующий последовательный TODO — retention/export в account lifecycle.</div></div>
+          <div class="tl-item"><div>Scope pivot закрыт; новый store-ready scope добавляет shell, MapKit, чат, отзывы и pilot gate без возврата к legacy API.</div></div>
         </div>
         <div class="tl-card">
           <div class="tl-card-title" style="color:var(--color-success)">
@@ -682,24 +696,24 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             MVP 0.2 · 3-4 нед
           </div>
-          <div class="tl-item"><div>Booking FSM отдельно от payment/payout/dispute, атомарный календарь, handover и in-app inbox</div></div>
-          <div class="tl-item"><div>Критерий: первая аренда без дублей и двойного бронирования, с понятной отменой/возвратом</div></div>
+          <div class="tl-item"><div>Booking FSM отдельно от payment/payout/dispute, 12 часов на ответ без полудневной блокировки вещи, handover, inbox и booking-scoped text chat</div></div>
+          <div class="tl-item"><div>Критерий: заявка не блокирует вещь на полдня, confirm резервирует атомарно, ранний чат не раскрывает системный адрес/контакт до подтверждения владельцем</div></div>
         </div>
         <div class="tl-card">
           <div class="tl-card-title" style="color:var(--color-orange)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             MVP 0.3 · 2-3 нед
           </div>
-          <div class="tl-item"><div>После payment-provider decision: одна identity/KYC ветка и доказательства состояния передачи/возврата</div></div>
-          <div class="tl-item"><div>Критерий: лишние документы не собираются, а выбранная identity-ветка проверена end-to-end</div></div>
+          <div class="tl-item"><div>После payment-provider decision: одна identity/KYC ветка, доказательства передачи/возврата и отзывы только после завершённой аренды</div></div>
+          <div class="tl-item"><div>Критерий: лишние документы не собираются, identity проверена end-to-end, рейтинг состоит только из подтверждённых опубликованных отзывов</div></div>
         </div>
         <div class="tl-card">
           <div class="tl-card-title" style="color:var(--color-blue)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             MVP 0.4 · 3-5 нед
           </div>
-          <div class="tl-item"><div>Monetized MVP — только согласованная ЮKassa Safe Deal; offline pilot — оплата при передаче и 0% комиссии</div></div>
-          <div class="tl-item"><div>Критерий: fee/refund/payout/receipt/reconciliation проверены end-to-end либо монетизация выключена</div></div>
+          <div class="tl-item"><div>Monetized pilot — только согласованная ЮKassa Safe Deal: целевой fee 1%, а payer/provider-cost coverage ещё TBD; offline fallback — оплата при передаче и 0%</div></div>
+          <div class="tl-item"><div>Критерий: fee/refund/payout/receipt/reconciliation проверены end-to-end; после пилота экономика подтверждает целевую 5% маржу либо тариф пересматривается</div></div>
         </div>
         <div class="tl-card">
           <div class="tl-card-title" style="color:#a86fdf">
@@ -926,7 +940,10 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
                 Mobile (Flutter)
               </div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Онбординг (3 слайда) + SMS-логин</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile Map: Yandex MapKit + геолокация + маркеры + радиус</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Product shell: Stateful indexed stack объединяет Найти / Брони / Сдать / Входящие / Профиль; Найти стартует первым, ветки сохраняют допустимое состояние, auth/logout остаются fail-closed</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Гостевой read-only путь: onboarding → Найти → публичная Item Details без SMS; auth только по intent, безопасный route/action восстанавливается после OTP</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Photo-first refresh: Найти сначала показывает предложения и компактные search/date/area/category chips, вторичные фильтры живут в bottom sheet; закрытие ждёт ручной iPhone/Android smoke</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile Map в общем Найти: Yandex MapKit, coarse markers/clusters, общие даты/фильтры со списком, phone bottom sheet, wide split, ручной район и «Искать в этой области». Local/debug уже имеет явно помеченную code-native демо-карту из публичных coarse-точек; production скрывает её, статус gate не меняется.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile Catalog: список объявлений + поиск + фильтры</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Item Details: фото, дневная цена, примерная локация, владелец, состояние, комплектация, safety notice и проверка доступности по датам готовы; точная rental-rules версия показывается только из полного approved public набора</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Profile: собственный профиль загружается через authenticated API и показывает имя, город, аватар и статусы с loading/error/retry</div></div>
@@ -936,13 +953,15 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Profile documents/support/export: legal URLs открываются только полным approved HTTPS-набором; GENERAL support и self-service UTF-8 JSON export готовы, export требует свежий SMS OTP и одноразовый purpose-bound step-up без хранения archive</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>My Listings: мои объявления</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Create Item + photo upload: форма объявления, presigned URL и owner calendar недоступности</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Публикация: 3 шага, safe encrypted draft, upload/retry и главное фото готовы; закрытие ждёт общий MapKit location picker без ручных latitude/longitude</div></div>
             </div>
             <div class="tl-card">
               <div class="tl-card-title" style="color:var(--color-warning)">Обязательные внешние gates · стартуют параллельно</div>
-              <div class="tl-item"><div><strong>Store readiness:</strong> завершить Apple Developer, Google Play, RuStore, package/bundle ID, signing keys и smoke-сборки до интеграции MapKit/store SDK.</div></div>
+              <div class="tl-item"><div><strong>Store readiness:</strong> завершить Apple Developer, Google Play, RuStore, IDs, signing keys и smoke-сборки до MapKit; затем один manifest/version вести параллельно с отдельными platform artifacts/config и общим API/legal contract.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Mobile IDs:</strong> Android applicationId/namespace и iOS bundle ID зафиксированы как <code>ru.sosedi.app</code>; release APK и iOS no-sign smoke собираются.</div></div>
               <div class="tl-item"><div><strong>Privacy:</strong> до интеграции MapKit и до активации AppMetrica/FCM в release составить карту данных, минимизацию, согласия и правила очистки.</div></div>
               <div class="tl-item"><div><strong>Marketplace legal/safety:</strong> launch whitelist принят; backend требует exact approved versions и хранит borrower/server-time/method acceptance. Mobile booking требует exact URLs/versions и два checkbox, а профиль показывает offer/rules/privacy только полным published set; default fail-closed. Публичный запуск ждёт legal texts, роль посредника, cancellation/damage, eligibility и production URLs.</div></div>
+              <div class="tl-item"><div><strong>Mixed supply:</strong> PROPOSED ADR-0006 фиксирует направление, но имущество ИП/ООО Sosedi остаётся выключено до отдельного договора, disclosure, кассы/чеков, payment flow и immutable lender snapshot.</div></div>
               <div class="tl-item"><div><strong>Payment/identity decision:</strong> до фазы 0.3 подтвердить provider onboarding и выбрать ADR-ветку provider-managed либо local KYC; production payment integration остаётся в 0.4.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Supply chain:</strong> PostGIS 15.13/3.5.2 и Redis 7.4.9 зафиксированы в Compose по читаемой версии и immutable digest; совместимость подтверждена backend e2e.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Build cache:</strong> npm/pub/Prisma/CocoaPods кеши привязаны к lock/schema; отдельный macOS job собирает locked iOS release без подписи.</div></div>
@@ -977,14 +996,22 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking FSM отдельно от денег и спора: PENDING → CONFIRMED → ACTIVE → RETURNED → COMPLETED; terminal CANCELLED, включая reason PENDING_TIMEOUT вместо отдельного EXPIRED</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Канонические отдельные Payment, Payout и Dispute FSM не используют <code>PAID</code>/<code>DISPUTED</code> как Booking status; production-команды gated provider/ADR</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Календарь: date-only semantics, включительные границы, timezone вещи, blackout-периоды владельца и запрет прошлых дат</div></div>
-              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PENDING TTL + атомарная проверка пересечения дат в PostgreSQL; конкурентные и повторные запросы не создают двойную бронь</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Hard conflicts и advisory lock PostgreSQL не допускают две подтверждённые брони; идемпотентный request ID не создаёт повтор</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PENDING живёт 12 часов без блокировки дат, ограничен anti-abuse caps; confirm заново проверяет календарь, выбирает одну заявку и атомарно отменяет пересечения</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Provisional PAY_ON_HANDOVER snapshot хранит цену/день, дни, subtotal, 0% fee, payout, total, RUB, handover, versions и borrower acceptance evidence; чтение fail-closed сверяет borrower/lender/период/сумму с Booking</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Lender confirm/reject, borrower/lender cancel, no-show и actor-specific переходы; причина и audit для каждого terminal action</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Ручной процесс no-show/fault/early-late return/damage/loss: семь actor/state/date-bound GENERAL причин, private support thread и нулевой автоматический эффект на Booking/Payment</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Contact/handover: до утверждения dispute window точный адрес fail-closed виден только участникам CONFIRMED/ACTIVE; RETURNED/CANCELLED/COMPLETED скрыты, mobile private cache очищается при background/logout; bounded RETURNED window ждёт legal/dispute gate</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>История заказов в режимах «Арендую» и «Сдаю» с актуальным следующим действием</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking Details: один server-derived блок «Следующее действие», короткая timeline, полный price/terms, заметные чат/«Есть проблема» и server timestamp/status/SLA без ложного обещания refund</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Pre-handover readiness: lender self-attests исправность/комплект/дефекты внутри immutable акта; borrower видит server timestamp и может сразу открыть evidence-backed проблему; заряд скрыт без category rule</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>In-app inbox создаётся вместе с доменным событием; mobile обновляет его при resume/pull-to-refresh, push — best-effort сигнал без обязательного WebSocket</div></div>
-              <div class="tl-kv"><strong>Критерий:</strong><span>Первая аренда проходит без двойной брони: обе стороны видят условия, действия, контакт, отмену и handover</span></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Chat lifecycle: один диалог на Booking, write в PENDING/CONFIRMED/ACTIVE/RETURNED, terminal read-only; block отменяет PENDING либо закрывает только user text активной аренды</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking Message + REST: participant-only list/send, keyset cursor, stable client UUID, idempotent outbox и redacted self-export/account deletion contract</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Text-only abuse boundary: 1–2000 символов, unsafe controls/media запрещены, caps 20/Booking/min и 60/actor/min; body отсутствует в URL/log/outbox/push</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking chat mobile/unread/system: participant screen, safe UUID retry, cursor history, pull/resume/15s foreground poll, inbox badge/read и lifecycle system messages; push только eventId</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking chat moderation: participant-only Message report, derived pair-block с отменой только PENDING, report/ticket-bound audited MODERATION/SUPPORT access и ADR-0002 retention без разрушения активной аренды/evidence</div></div>
+              <div class="tl-kv"><strong>Критерий:</strong><span>Первая аренда проходит без двойной брони: обе стороны видят условия, чат, действия, защищённый контакт, отмену и handover</span></div>
             </div>
           </div>
         </div>
@@ -1005,7 +1032,11 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Приватный акт с фото вещи до передачи создаёт lender, borrower проверяет и подтверждает его</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Приватный акт с фото после возврата создаёт borrower, lender проверяет и подтверждает его</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Только для выбранной local KYC ветки: private S3 + защищённый admin UI с MFA/step-up, reviewer capability, retention и audit каждого просмотра/решения; иначе пункт N/A</div></div>
-              <div class="tl-kv"><strong>Критерий:</strong><span>Выбранная identity-ветка работает end-to-end, лишние документы не собираются, evidence остаётся приватным</span></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Review policy: только участники COMPLETED Booking, один от стороны за 14 дней, rating 1–5 + optional text, double-blind после обоих/deadline, immutable UGC с moderation/appeal/ADR-0002 retention</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Verified Review schema/API: booking-derived author/target, stable idempotency, immutable double-blind participant/public list и published-visible-only rating aggregate без private Booking provenance</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile review CTA только после COMPLETED, immutable form с safe retry, published verified-rental rating в карточке вещи и профиле владельца, empty state «Новый владелец»</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Review report/block/moderation: published-visible target, аудируемый text context, reasoned hide, neutral author event и append-only audit без изменения Booking/финансов</div></div>
+              <div class="tl-kv"><strong>Критерий:</strong><span>Identity работает end-to-end, лишние документы не собираются, evidence приватно, а рейтинг состоит только из опубликованных verified-rental отзывов</span></div>
             </div>
           </div>
         </div>
@@ -1022,18 +1053,19 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="tl-card">
               <div class="tl-card-title">Добавить</div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Provider/legal gate: письменные условия ЮKassa Safe Deal, выплаты физлицам, hold/release/refund, комиссия и чеки</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Monetized MVP запускается только с Safe Deal; без одобрения доступен лишь offline pilot с оплатой при передаче и 0% комиссии Sosedi</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Monetized pilot запускается только с Safe Deal: целевой platform fee 1%; fee payer, gross display и owner/renter/subsidy способ покрытия provider cost утверждаются gate. Без одобрения доступен offline pilot с 0%</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>До первого production payout: минимальный dispute window, атомарный payout freeze, audited resolution и integration race-test open-dispute против create-payout; полный support thread остаётся в 0.5</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Safe Deal: создать сделку/платёж и вернуть confirmation URL; app resume сверяет серверное состояние, а не доверяет redirect</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Safe Deal: создать сделку/платёж, вернуть confirmation URL и хранить server-derived payBy +30 минут; app resume/late webhook сверяют каноническое серверное состояние</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Webhook: authenticity, idempotency key, replay/out-of-order/concurrency и запрос актуального состояния у провайдера при сомнении</div></div>
-              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PAY_ON_HANDOVER breakdown до подтверждения: ставка×дни, залог отсутствует, fee 0, owner payout, способ оплаты, total и RUB; сервер хранит immutable snapshot, SAFE_DEAL обновит формулу только после ADR</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PAY_ON_HANDOVER breakdown до подтверждения: ставка×дни, залог отсутствует, fee 0, owner payout, способ оплаты, total и RUB; сервер хранит immutable snapshot, SAFE_DEAL обновит формулу только после ADR. Local/debug mobile может показать success/decline UX-заглушку без денег и изменения server state; production её скрывает.</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Versioned pricing: commissionBps + pricingPolicyVersion + effectiveAt и immutable snapshot; старые сделки не пересчитываются. После пилота проверить целевые 5% маржи по утверждённой формуле и только затем выбрать новый displayed fee</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PostgreSQL Decimal(10,2) и DB min/max constraints для Item/Booking/provisional Payment покрыты e2e; REST/mobile переход с JSON number на minor units и финансовый ledger ждут payment ADR</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Отдельные переходы hold/release/refund/payout/failed с retry без двойного финансового эффекта</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Receipt/fiscalization: определить ответственного, события выдачи чека и отображение документа пользователю</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Повторяемая reconciliation job: локальные суммы/статусы против ЮKassa, отчёт расхождений и alert</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>История платежей/refund/payout/receipts в профиле и operator queue failed/stuck/mismatch с capability + step-up, без provider raw payload/PII</div></div>
               <div class="tl-item" style="color:var(--color-error)"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg><div>НЕ сейчас: самописные выплаты, несогласованные split payments и ручной перевод владельцу из денег платформы</div></div>
-              <div class="tl-kv"><strong>Критерий:</strong><span>Safe Deal проходит fee → hold → release/refund → payout → receipt → reconciliation; иначе монетизация выключена и комиссия равна 0%</span></div>
+              <div class="tl-kv"><strong>Критерий:</strong><span>Safe Deal проходит утверждённые 1% fee payer/provider-cost rules → hold → timeout/release/refund → payout → receipt → reconciliation; иначе монетизация выключена и комиссия равна 0%</span></div>
             </div>
           </div>
         </div>
@@ -1100,12 +1132,33 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Privacy-safe product funnel: AppMetrica только после consent/opt-out, без телефона, точного адреса, KYC и содержимого брони; payload проверен тестом</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Migration/deploy/rollback runbook: backup до migration, pinned image digest, предыдущий image и проверенный откат</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Security gate: startup env validation, Helmet, production Swagger/CORS policy, rate limits, secrets rotation и dependency/image scan</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Marketplace legal/safety: category policy закрыта ADR-0003; остаются оферта и роль посредника, комиссия/cancellation/refund, age/eligibility и хранение версии принятия условий</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Marketplace legal/safety: category policy закрыта ADR-0003; остаются оферта и роль посредника, mixed P2P/first-party contract, комиссия/cancellation/refund, age/eligibility и snapshot принятия условий</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Повторно проверить заранее опубликованный Astro site: актуальные versioned privacy/оферта/rental rules, support/account-deletion URLs без auth/ПД и рабочие production links во всех stores</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Store compliance: privacy/data safety, permissions, UGC report/block, account deletion, support contacts и актуальные Google Play/TestFlight/RuStore builds</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Store compliance: privacy/data safety, chat/reviews UGC, deletion/support и один release manifest с отдельными signed Play/TestFlight/RuStore artifacts для coordinated public window</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Negative e2e на реальных устройствах: no GMS, denied permissions, offline/slow network, duplicate submit, provider outage и out-of-order webhook</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Accessibility release smoke: TalkBack/VoiceOver, text scale, contrast, touch targets, semantics и ошибки не только цветом</div></div>
               <div class="tl-kv"><strong>Критерий:</strong><span>Релиз восстанавливается, откатывается, наблюдается и проходит security/store/negative/accessibility gates</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- pilot -->
+        <div class="tl-phase phase-yellow">
+          <div class="tl-dot">P</div>
+          <div class="tl-header">
+            <span class="tl-phase-title">Закрытый пилот — плотность и метрики</span>
+            <span class="tl-meta">Первые 8 недель</span>
+            <span class="tag tag-yellow">Go / no-go</span>
+          </div>
+          <div class="tl-body">
+            <div class="tl-card">
+              <div class="tl-card-title">Gate и результат</div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Утвердить точную географию до набора supply; рабочая гипотеза — 3–5 смежных районов, но до решения ничего не хардкодить в API/mobile</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Утвердить supply gate; рабочая гипотеза: 150 listings, ≥25/район, ≥30 external owners, own/partner ≤50%, ≥5/категорию, 90% с 3+ фото, 100% required verification</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Пилотная операция: moderation/support SLA &lt;12 ч, payment/dispute/reconciliation owner, incident channel и ежедневный контроль stuck flows/safety</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Usability gate: ≥5 новых пользователей завершают без подсказки оба golden path; рабочие медианы ≤60 сек до подходящей карточки и ≤5 мин до submit объявления, плюс privacy-safe aggregate funnel</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Privacy-safe aggregate цель 8 недель: 500 OTP users, 200 requests, 110 confirms, 90 payments, 75 completions, 15 repeats, 50 reviews; thresholds и 0 тяжёлых incidents — в checklist 19</div></div>
+              <div class="tl-kv"><strong>Критерий:</strong><span>Плотный локальный supply даёт повторяемые завершённые аренды с контролируемыми спорами и подтверждённой экономикой</span></div>
             </div>
           </div>
         </div>
@@ -1123,7 +1176,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-card-title">Разблокировать</div>
               <div class="tl-item"><div>Сложные сценарии залога и split payments по согласованному договору ЮKassa</div></div>
               <div class="tl-item"><div>Расширенные payout schedules/retries сверх базового согласованного Safe Deal</div></div>
-              <div class="tl-item"><div>Рейтинги и отзывы (двусторонние)</div></div>
+              <div class="tl-item"><div>Расширенная reputation-система, ответы/медиа в отзывах и антифрод сверх базовых verified-rental ratings</div></div>
               <div class="tl-item"><div>Антифрод и автоматическое KYC</div></div>
               <div class="tl-item"><div>Интеграция API доставки</div></div>
               <div class="tl-item"><div>Промокоды + реферальная система</div></div>
@@ -1229,7 +1282,8 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="stack-item-row"><span class="stack-item-label">Провайдер</span><span class="tag tag-green">ЮKassa</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Методы</span><span class="tag tag-gray">Карта, СБП, ЮMoney</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Монетизация</span><span class="tag tag-yellow">Safe Deal required</span></div>
-            <div class="stack-item-row"><span class="stack-item-label">Pilot</span><span class="tag tag-gray">Offline · 0% fee</span></div>
+            <div class="stack-item-row"><span class="stack-item-label">Pilot target</span><span class="tag tag-yellow">Safe Deal · 1% TBD payer</span></div>
+            <div class="stack-item-row"><span class="stack-item-label">Fallback</span><span class="tag tag-gray">Offline · 0% fee</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Контроль</span><span class="tag tag-teal">Reconciliation</span></div>
           </div>
         </div>
@@ -1382,7 +1436,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">🔥</div>
             <div class="issue-body">
               <h4>Monetized payment требует Safe Deal</h4>
-              <p>Checkout-only не решает выплату владельцу. До MVP 0.4 получить договорное подтверждение Safe Deal и закрыть fee/refund/payout/receipt/reconciliation; иначе разрешён только offline pilot без приёма денег и с 0% комиссии.</p>
+              <p>Checkout-only не решает выплату владельцу. До MVP 0.4 получить договорное подтверждение Safe Deal и закрыть 1% pilot fee payer/gross display/provider-cost coverage, 30-minute payment timeout, refund/payout/receipt/reconciliation; иначе разрешён только offline pilot без приёма денег и с 0% комиссии. Цель 5% маржи после пилота не равна автоматически комиссии 5%.</p>
             </div>
             <span class="priority-badge p-critical">Критично</span>
           </div>
@@ -1467,7 +1521,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="forbidden-item">🚫 Динамическое ценообразование</div>
           <div class="forbidden-item">🚫 Сложный антифрод</div>
           <div class="forbidden-item">🚫 Самописные или несогласованные автоматические выплаты</div>
-          <div class="forbidden-item">🚫 Рейтинги и отзывы</div>
+          <div class="forbidden-item">🚫 Свободные DM, media/calls и realtime-фичи чата</div>
           <div class="forbidden-item">🚫 Продвинутая аналитика</div>
           <div class="forbidden-item">🚫 Elasticsearch / поиск</div>
           <div class="forbidden-item">🚫 GraphQL</div>
@@ -1500,9 +1554,11 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="allowed-item">✅ PushProvider: FCM + RuStore Push + APNs/FCM</div>
           <div class="allowed-item">✅ In-app inbox как источник истины</div>
           <div class="allowed-item">✅ Inbox refresh/resume без обязательного WebSocket</div>
+          <div class="allowed-item">✅ Booking-scoped text chat с заявки, report/block и retention</div>
+          <div class="allowed-item">✅ Отзывы только после COMPLETED аренды, double-blind/14 дней</div>
           <div class="allowed-item">✅ В push только eventId без ПД</div>
           <div class="allowed-item">✅ sentry_flutter → GlitchTip self-hosted РФ</div>
-          <div class="allowed-item">✅ Monetized: Safe Deal; offline pilot: 0% комиссии</div>
+          <div class="allowed-item">✅ Safe Deal pilot: целевой fee 1%, payer/provider-cost coverage TBD; offline fallback: 0%</div>
           <div class="allowed-item">✅ Versioned оферта + marketplace legal/safety gate</div>
           <div class="allowed-item">✅ Backup/restore + readiness + rollback до release</div>
           <div class="allowed-item">✅ Deep Link вместо API доставки</div>

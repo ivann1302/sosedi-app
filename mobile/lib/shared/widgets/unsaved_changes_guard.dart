@@ -1,14 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 class UnsavedChangesGuard extends StatefulWidget {
   const UnsavedChangesGuard({
     required this.hasUnsavedChanges,
     required this.child,
+    this.onDiscard,
     super.key,
   });
 
   final bool hasUnsavedChanges;
   final Widget child;
+  final FutureOr<void> Function()? onDiscard;
 
   @override
   State<UnsavedChangesGuard> createState() => _UnsavedChangesGuardState();
@@ -64,6 +68,10 @@ class _UnsavedChangesGuardState extends State<UnsavedChangesGuard> {
       return;
     }
 
+    await widget.onDiscard?.call();
+    if (!mounted) {
+      return;
+    }
     setState(() => _discardApproved = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {

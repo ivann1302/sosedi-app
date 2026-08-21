@@ -4,7 +4,7 @@ import {
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { BookingStatus } from '@prisma/client';
+import { BookingMessageAuthorRole, BookingStatus } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingEventType, bookingEventKey } from './booking-events';
@@ -63,11 +63,19 @@ export class BookingExpiryService
           data: {
             status: BookingStatus.CANCELLED,
             cancellationReason: BOOKING_PENDING_TIMEOUT_REASON,
+            expiresAt: null,
           },
         });
         if (result.count === 0) {
           return 0;
         }
+        await tx.bookingMessage.create({
+          data: {
+            bookingId: candidate.id,
+            authorRole: BookingMessageAuthorRole.SYSTEM,
+            body: 'Время ответа владельца истекло. Заявка отменена.',
+          },
+        });
         await tx.bookingTransitionHistory.create({
           data: {
             bookingId: candidate.id,

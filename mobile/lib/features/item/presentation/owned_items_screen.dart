@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_theme.dart';
 import '../data/owned_item_models.dart';
 import '../data/owned_items_service.dart';
 import '../domain/edit_item_controller.dart';
@@ -32,7 +33,7 @@ class OwnedItemsScreen extends ConsumerWidget {
             onRetry: () => ref.invalidate(ownedItemsProvider),
           ),
           data: (value) => value.isEmpty
-              ? const Center(child: Text('У вас пока нет объявлений'))
+              ? const _EmptyOwnedItems()
               : RefreshIndicator(
                   onRefresh: () => ref.refresh(ownedItemsProvider.future),
                   child: ListView.separated(
@@ -58,35 +59,106 @@ class _OwnedItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hide = ref.watch(hideOwnedItemProvider);
     return Card(
-      child: ListTile(
-        onTap: item.status == 'APPROVED'
-            ? () => context.push('/items/${item.id}')
-            : null,
-        leading: const Icon(Icons.inventory_2_outlined),
-        title: Text(item.title),
-        subtitle: Text(
-          '${_status(item.status)} · ${_price(item.pricePerDay)} ₽ / день'
-          '${item.rejectReason == null ? '' : '\n${item.rejectReason}'}',
-        ),
-        isThreeLine: item.rejectReason != null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (item.status != 'HIDDEN')
-              IconButton(
-                onPressed: hide.isLoading ? null : () => _hide(context, ref),
-                tooltip: 'Скрыть объявление',
-                icon: const Icon(Icons.visibility_off_outlined),
-              ),
-            IconButton(
-              onPressed: () => context.push('/items/${item.id}/edit'),
-              tooltip: 'Редактировать',
-              icon: const Icon(Icons.edit_outlined),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: item.status == 'APPROVED'
+                ? () => context.push('/items/${item.id}')
+                : null,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 112,
+                  height: 128,
+                  child: _OwnedItemPhoto(item: item),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_price(item.pricePerDay)} ₽ / день',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: _statusColor(item.status),
+                            borderRadius: BorderRadius.circular(AppRadii.small),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 5,
+                            ),
+                            child: Text(
+                              _status(item.status),
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ),
+                        ),
+                        if (item.rejectReason != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            item.rejectReason!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.error),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (item.status != 'HIDDEN')
+                  IconButton(
+                    onPressed: hide.isLoading
+                        ? null
+                        : () => _hide(context, ref),
+                    tooltip: 'Скрыть объявление',
+                    icon: const Icon(Icons.visibility_off_outlined),
+                  ),
+                IconButton(
+                  onPressed: () => context.push('/items/${item.id}/edit'),
+                  tooltip: 'Редактировать',
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Color _statusColor(String status) {
+    return switch (status) {
+      'APPROVED' => AppColors.success.withValues(alpha: 0.12),
+      'REJECTED' => AppColors.error.withValues(alpha: 0.10),
+      'PENDING' => AppColors.warmSand,
+      _ => AppColors.cloud,
+    };
   }
 
   Future<void> _hide(BuildContext context, WidgetRef ref) async {
@@ -144,6 +216,80 @@ class _OwnedItemCard extends ConsumerWidget {
   String _price(double value) => value == value.roundToDouble()
       ? value.toInt().toString()
       : value.toStringAsFixed(2);
+}
+
+class _OwnedItemPhoto extends StatelessWidget {
+  const _OwnedItemPhoto({required this.item});
+
+  final OwnedItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final coverPhoto =
+        item.photos.where((photo) => photo.isCover).firstOrNull ??
+        item.photos.firstOrNull;
+    final url = coverPhoto?.thumbnailUrl ?? coverPhoto?.previewUrl;
+
+    if (url == null) {
+      return const ColoredBox(
+        color: AppColors.warmSand,
+        child: Center(
+          child: Icon(
+            Icons.inventory_2_outlined,
+            size: 40,
+            color: AppColors.slate800,
+          ),
+        ),
+      );
+    }
+
+    return Image.network(
+      url,
+      semanticLabel: 'Фото ${item.title}',
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => const ColoredBox(
+        color: AppColors.warmSand,
+        child: Center(
+          child: Icon(Icons.broken_image_outlined, color: AppColors.slate800),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyOwnedItems extends StatelessWidget {
+  const _EmptyOwnedItems();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.add_photo_alternate_outlined,
+              size: 48,
+              color: AppColors.slate700,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'У вас пока нет объявлений',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Добавьте первую вещь — она появится в каталоге после проверки.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Error extends StatelessWidget {

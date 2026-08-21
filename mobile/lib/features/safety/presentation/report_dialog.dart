@@ -100,6 +100,18 @@ List<({String code, String label})> _reasons(String targetType) {
       (code: 'HARASSMENT', label: 'Преследование или угрозы'),
       (code: 'OTHER', label: 'Другое'),
     ],
+    'MESSAGE' => const [
+      (code: 'HARASSMENT', label: 'Преследование или угрозы'),
+      (code: 'PRIVACY_VIOLATION', label: 'Нарушение приватности'),
+      (code: 'SUSPECTED_FRAUD', label: 'Подозрение на мошенничество'),
+      (code: 'OTHER', label: 'Другое'),
+    ],
+    'REVIEW' => const [
+      (code: 'HARASSMENT', label: 'Оскорбление или преследование'),
+      (code: 'PRIVACY_VIOLATION', label: 'Нарушение приватности'),
+      (code: 'SUSPECTED_FRAUD', label: 'Подозрение на поддельный отзыв'),
+      (code: 'OTHER', label: 'Другое'),
+    ],
     _ => const [
       (code: 'SUSPECTED_FRAUD', label: 'Подозрение на мошенничество'),
       (code: 'HARASSMENT', label: 'Преследование или угрозы'),

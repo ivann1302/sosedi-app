@@ -1,6 +1,7 @@
 # Store UGC requirements
 
-Проверено: 29.07.2026. Использованы только официальные страницы магазинов.
+Официальные требования проверены: 29.07.2026. Product scope обновлён:
+09.08.2026. Использованы только официальные страницы магазинов.
 Перед отправкой production-сборки требования нужно проверить повторно.
 
 ## Apple App Store
@@ -44,10 +45,20 @@ Backend уже имеет target-specific report, user block, rate/dedup, operat
 `dismiss / hide listing / block user`, capability/CSRF и audit. Item проходит
 премодерацию, изменение фото возвращает его на модерацию.
 
+Mobile уже даёт пожаловаться на listing/owner/booking, конкретное booking-chat
+сообщение и опубликованный отзыв, явно заблокировать пользователя и управлять
+blocked list. Backend
+принимает `MESSAGE` только от participant на текст второй стороны; moderator
+видит body только через аудируемый report context, а SUPPORT — только через
+аудируемое обращение, привязанное к Booking. Pair-block отменяет только живые
+`PENDING` и сохраняет активную аренду/evidence. `REVIEW` доступен для report
+только после публикации; operator читает его текст через аудируемый context и
+может скрыть без изменения Booking/финансов. Автор получает нейтральный event,
+а lifecycle, appeal и retention зафиксированы в
+[`review-policy.md`](review-policy.md).
+
 До store submission остаются обязательными:
 
-- mobile UI с отдельными и явно подписанными действиями «Пожаловаться» и
-  «Заблокировать»;
 - versioned Terms/UGC rules и неотключаемое принятие до публикации;
 - публичный контакт поддержки;
 - подтверждённый operational SLA и runbook обработки жалоб;

@@ -21,6 +21,8 @@ class CatalogController extends AsyncNotifier<CatalogState> {
   String? _categoryId;
   double? _minPrice;
   double? _maxPrice;
+  String? _availableFrom;
+  String? _availableTo;
   double? _latitude;
   double? _longitude;
   double? _radiusKm;
@@ -35,6 +37,8 @@ class CatalogController extends AsyncNotifier<CatalogState> {
           categoryId: _categoryId,
           minPrice: _minPrice,
           maxPrice: _maxPrice,
+          availableFrom: _availableFrom,
+          availableTo: _availableTo,
           latitude: _latitude,
           longitude: _longitude,
           radiusKm: _radiusKm,
@@ -56,6 +60,8 @@ class CatalogController extends AsyncNotifier<CatalogState> {
             categoryId: _categoryId,
             minPrice: _minPrice,
             maxPrice: _maxPrice,
+            availableFrom: _availableFrom,
+            availableTo: _availableTo,
             latitude: _latitude,
             longitude: _longitude,
             radiusKm: _radiusKm,
@@ -95,6 +101,8 @@ class CatalogController extends AsyncNotifier<CatalogState> {
             categoryId: _categoryId,
             minPrice: _minPrice,
             maxPrice: _maxPrice,
+            availableFrom: _availableFrom,
+            availableTo: _availableTo,
             latitude: _latitude,
             longitude: _longitude,
             radiusKm: _radiusKm,
@@ -145,6 +153,18 @@ class CatalogController extends AsyncNotifier<CatalogState> {
     }
     _minPrice = minPrice;
     _maxPrice = maxPrice;
+    await refreshCatalog(preserveCurrent: false);
+  }
+
+  Future<void> setAvailability(
+    String? availableFrom,
+    String? availableTo,
+  ) async {
+    if (availableFrom == _availableFrom && availableTo == _availableTo) {
+      return;
+    }
+    _availableFrom = availableFrom;
+    _availableTo = availableTo;
     await refreshCatalog(preserveCurrent: false);
   }
 

@@ -98,8 +98,10 @@ class InboxScreen extends ConsumerWidget {
     'BOOKING_CONFIRMED' => 'Бронирование подтверждено',
     'HANDOVER_CONFIRMED' => 'Передача подтверждена',
     'RETURN_CONFIRMED' => 'Возврат подтверждён',
+    'BOOKING_MESSAGE_CREATED' => 'Новое сообщение',
     'ITEM_APPROVED' => 'Объявление одобрено',
     'ITEM_REJECTED' => 'Объявление требует изменений',
+    'REVIEW_HIDDEN_BY_REPORT_REVIEW' => 'Отзыв скрыт после проверки',
     'SUPPORT_REPLIED' || 'SUPPORT_MESSAGE_CREATED' => 'Ответ поддержки',
     'SUPPORT_TICKET_CLOSED' => 'Обращение закрыто',
     _ => 'Обновление в Соседях',
@@ -111,6 +113,12 @@ class InboxScreen extends ConsumerWidget {
     }
     if (eventType.startsWith('SUPPORT_')) {
       return Icons.support_agent_outlined;
+    }
+    if (eventType == 'BOOKING_MESSAGE_CREATED') {
+      return Icons.chat_bubble_outline;
+    }
+    if (eventType.startsWith('REVIEW_')) {
+      return Icons.rate_review_outlined;
     }
     return Icons.event_available_outlined;
   }

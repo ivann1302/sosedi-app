@@ -5,6 +5,10 @@ import 'production_url.dart';
 class AppConfig {
   static const _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
   static const _appEnvironment = String.fromEnvironment('APP_ENVIRONMENT');
+  static const _demoStubsEnabled = bool.fromEnvironment(
+    'ENABLE_DEMO_STUBS',
+    defaultValue: true,
+  );
 
   static String get apiBaseUrl => resolveApiBaseUrl(
     apiBaseUrlOverride: _apiBaseUrlOverride,
@@ -12,6 +16,20 @@ class AppConfig {
     releaseMode: kReleaseMode,
     targetPlatform: defaultTargetPlatform,
   );
+
+  static bool get demoStubsEnabled => resolveDemoStubsEnabled(
+    appEnvironment: _appEnvironment,
+    releaseMode: kReleaseMode,
+    enabled: _demoStubsEnabled,
+  );
+}
+
+bool resolveDemoStubsEnabled({
+  required String appEnvironment,
+  required bool releaseMode,
+  required bool enabled,
+}) {
+  return enabled && !releaseMode && appEnvironment != 'production';
 }
 
 String resolveApiBaseUrl({

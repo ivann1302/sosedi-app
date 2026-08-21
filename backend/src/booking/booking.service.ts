@@ -6,13 +6,19 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BookingStatus, ItemStatus, Prisma } from '@prisma/client';
+import {
+  BookingMessageAuthorRole,
+  BookingStatus,
+  ItemStatus,
+  Prisma,
+} from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { TooManyRequestsException } from '../common/http/too-many-requests.exception';
 import { hashIdempotentPayload } from '../common/http/idempotency';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseBookingPeriod } from './booking-period';
 import { BookingEventType, bookingEventKey } from './booking-events';
+import { bookingNextAction } from './booking-next-action';
 import {
   readBoundBookingTermsSnapshot,
   type BookingTermsSnapshot,
@@ -23,8 +29,9 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { ExtendBookingDto } from './dto/extend-booking.dto';
 import { ParticipantBookingResponseDto } from './dto/participant-booking-response.dto';
 
-const PENDING_TTL_MS = 15 * 60 * 1000;
+export const BOOKING_PENDING_TTL_MS = 12 * 60 * 60 * 1000;
 export const BOOKING_MAX_ACTIVE_PENDING = 5;
+export const BOOKING_MAX_COMPETING_PENDING = 20;
 export const BOOKING_COMPETING_CANCELLATION_REASON =
   'COMPETING_REQUEST_CONFIRMED';
 export const BOOKING_BORROWER_CANCELLATION_REASON = 'BORROWER_CANCELLED';
@@ -158,17 +165,13 @@ export class BookingService {
             itemId: item.id,
             startDate: { lte: period.endDate },
             endDate: { gte: period.startDate },
-            OR: [
-              {
-                status: {
-                  in: [BookingStatus.CONFIRMED, BookingStatus.ACTIVE],
-                },
-              },
-              {
-                status: BookingStatus.PENDING,
-                expiresAt: { gt: now },
-              },
-            ],
+            status: {
+              in: [
+                BookingStatus.CONFIRMED,
+                BookingStatus.ACTIVE,
+                BookingStatus.RETURNED,
+              ],
+            },
           },
           select: { id: true },
         });
@@ -177,6 +180,21 @@ export class BookingService {
             code: 'BOOKING_CONFLICT',
             message: 'Выбранный период уже занят',
           });
+        }
+
+        const competingPendingCount = await tx.booking.count({
+          where: {
+            itemId: item.id,
+            status: BookingStatus.PENDING,
+            expiresAt: { gt: now },
+            startDate: { lte: period.endDate },
+            endDate: { gte: period.startDate },
+          },
+        });
+        if (competingPendingCount >= BOOKING_MAX_COMPETING_PENDING) {
+          throw new TooManyRequestsException(
+            'На эти даты уже отправлено слишком много заявок. Выберите другой период',
+          );
         }
 
         const totalAmount = item.pricePerDay.mul(period.days);
@@ -226,8 +244,15 @@ export class BookingService {
             endDate: period.endDate,
             totalAmount,
             status: BookingStatus.PENDING,
-            expiresAt: new Date(now.getTime() + PENDING_TTL_MS),
+            expiresAt: new Date(now.getTime() + BOOKING_PENDING_TTL_MS),
             termsSnapshot: toSnapshotJson(snapshot),
+          },
+        });
+        await tx.bookingMessage.create({
+          data: {
+            bookingId: createdBooking.id,
+            authorRole: BookingMessageAuthorRole.SYSTEM,
+            body: 'Заявка отправлена. Владелец ответит в течение 12 часов.',
           },
         });
         await tx.bookingTransitionHistory.create({
@@ -306,6 +331,44 @@ export class BookingService {
           });
         }
 
+        const calendarConflict = await tx.itemUnavailablePeriod.findFirst({
+          where: {
+            itemId: booking.itemId,
+            startDate: { lte: booking.endDate },
+            endDate: { gte: booking.startDate },
+          },
+          select: { id: true },
+        });
+        if (calendarConflict) {
+          throw new ConflictException({
+            code: 'CALENDAR_CONFLICT',
+            message: 'Вещь недоступна в выбранный период',
+          });
+        }
+
+        const reservedConflict = await tx.booking.findFirst({
+          where: {
+            id: { not: booking.id },
+            itemId: booking.itemId,
+            startDate: { lte: booking.endDate },
+            endDate: { gte: booking.startDate },
+            status: {
+              in: [
+                BookingStatus.CONFIRMED,
+                BookingStatus.ACTIVE,
+                BookingStatus.RETURNED,
+              ],
+            },
+          },
+          select: { id: true },
+        });
+        if (reservedConflict) {
+          throw new ConflictException({
+            code: 'BOOKING_CONFLICT',
+            message: 'Выбранный период уже занят',
+          });
+        }
+
         const competitors = await tx.booking.findMany({
           where: {
             id: { not: booking.id },
@@ -335,9 +398,24 @@ export class BookingService {
             data: {
               status: BookingStatus.CANCELLED,
               cancellationReason: BOOKING_COMPETING_CANCELLATION_REASON,
+              expiresAt: null,
             },
           });
         }
+        await tx.bookingMessage.createMany({
+          data: [
+            {
+              bookingId: selected.id,
+              authorRole: BookingMessageAuthorRole.SYSTEM,
+              body: 'Владелец подтвердил заявку.',
+            },
+            ...competitors.map((candidate) => ({
+              bookingId: candidate.id,
+              authorRole: BookingMessageAuthorRole.SYSTEM,
+              body: 'Владелец подтвердил другую заявку на эти даты.',
+            })),
+          ],
+        });
         await tx.bookingTransitionHistory.createMany({
           data: [
             {
@@ -473,6 +551,15 @@ export class BookingService {
           expiresAt: null,
         },
       });
+      await tx.bookingMessage.create({
+        data: {
+          bookingId: booking.id,
+          authorRole: BookingMessageAuthorRole.SYSTEM,
+          body: isBorrower
+            ? 'Арендатор отменил заявку.'
+            : 'Владелец отклонил заявку.',
+        },
+      });
       await tx.bookingTransitionHistory.create({
         data: {
           bookingId: booking.id,
@@ -582,14 +669,16 @@ export class BookingService {
     });
     const canSeeHandover = HANDOVER_VISIBLE_STATUSES.has(booking.status);
     const isBorrower = booking.borrowerId === actorId;
+    const actorRole = isBorrower ? 'BORROWER' : 'LENDER';
 
     return {
       id: booking.id,
       itemId: booking.itemId,
-      actorRole: isBorrower ? 'BORROWER' : 'LENDER',
+      actorRole,
       startDate: booking.startDate,
       endDate: booking.endDate,
       status: booking.status,
+      nextAction: bookingNextAction(booking.status, actorRole),
       expiresAt: booking.expiresAt,
       cancellationReason: booking.cancellationReason,
       terms: snapshot

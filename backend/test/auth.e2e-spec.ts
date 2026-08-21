@@ -211,7 +211,7 @@ describe('Auth API (e2e)', () => {
     expect(exported.body).toMatchObject({
       success: true,
       data: {
-        schemaVersion: '2026-07-30.1',
+        schemaVersion: '2026-08-09.2',
         profile: { id: session.userId, phone: TEST_PHONE },
         listings: [],
         bookings: [],

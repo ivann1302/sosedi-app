@@ -1,15 +1,49 @@
-# Скриншоты основных экранов
+# Скриншоты клиентских маршрутов
 
-Снимки созданы 06.08.2026 из Flutter UI на безопасных тестовых данных. Это
-демонстрация текущего MVP, а не подключённого production-приложения.
+Снимки созданы 21.08.2026 из реального Flutter UI на безопасных локальных
+фикстурах. Все PNG имеют размер 430×932. Демо-карта использует только
+приблизительные координаты каталога, а демо-оплата не списывает деньги и не
+меняет серверное состояние бронирования. Эти две заглушки отключены в
+production/release-конфигурации.
 
-- `01-onboarding.png` — знакомство с сервисом.
-- `02-phone-login.png` — вход по номеру телефона.
-- `03-catalog.png` — каталог вещей и фильтры.
-- `04-item-details.png` — публичная карточка вещи без точного адреса.
-- `05-booking-create.png` — выбор дат и условия создания бронирования.
-- `06-profile.png` — профиль пользователя.
+| Файл | Клиентский путь или состояние |
+| --- | --- |
+| `01-onboarding.png` | `/onboarding` |
+| `02-phone-login.png` | `/auth/phone` |
+| `03-otp.png` | `/auth/otp` |
+| `04-catalog.png` | `/catalog`, список |
+| `05-map-demo.png` | `/catalog`, локальная демо-карта |
+| `06-item-details.png` | `/items/item-1` |
+| `07-booking-create.png` | `/items/item-1/booking` |
+| `08-bookings.png` | `/bookings` |
+| `09-payment-demo.png` | `/bookings/booking-confirmed`, успешная демо-оплата |
+| `10-booking-chat.png` | `/bookings/booking-confirmed/chat` |
+| `11-create-item.png` | `/items/new` |
+| `12-owned-items.png` | `/items/mine` |
+| `13-inbox.png` | `/inbox` |
+| `14-profile.png` | `/profile` |
+| `15-support.png` | `/support` |
+| `16-review.png` | `/bookings/booking-completed/review` |
+| `17-item-edit.png` | `/items/item-1/edit` |
+| `18-owner-profile.png` | `/items/item-1/owner` |
+| `19-profile-edit.png` | `/profile/edit` |
+| `20-sessions.png` | `/profile/sessions` |
+| `21-analytics.png` | `/profile/analytics` |
+| `22-documents.png` | `/profile/documents` |
+| `23-data-export.png` | `/profile/data-export` |
+| `24-close-account.png` | `/profile/close-account` |
+| `25-blocked-users.png` | `/profile/blocked-users` |
+| `26-support-export.png` | `/support/export` |
+| `27-support-ticket.png` | `/support/ticket-1` |
+| `28-update-required.png` | `/update-required` |
 
-Карточка вещи и создание бронирования сняты на высокой поверхности, чтобы сохранить весь
-важный контент без обрезания. Реальные фотографии вещей пока заменены штатными
-placeholder-блоками.
+`/home` — redirect на `/catalog`; `/` — краткий служебный splash, поэтому для
+них отдельные продуктовые снимки не создаются.
+
+Перегенерация из корня проекта:
+
+```sh
+make mobile-screenshots
+```
+
+Генератор: `mobile/tool/capture_client_screenshots_test.dart`.

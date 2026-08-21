@@ -4,6 +4,24 @@ part 'create_item_models.freezed.dart';
 part 'create_item_models.g.dart';
 
 @freezed
+abstract class LocalCreateItemDraft with _$LocalCreateItemDraft {
+  const factory LocalCreateItemDraft({
+    @Default(0) int step,
+    String? categoryId,
+    String? title,
+    String? description,
+    String? condition,
+    String? completeness,
+    String? handoverTerms,
+    String? pricePerDay,
+    String? publicArea,
+  }) = _LocalCreateItemDraft;
+
+  factory LocalCreateItemDraft.fromJson(Map<String, dynamic> json) =>
+      _$LocalCreateItemDraftFromJson(json);
+}
+
+@freezed
 abstract class CreateItemDraft with _$CreateItemDraft {
   const factory CreateItemDraft({
     required String categoryId,

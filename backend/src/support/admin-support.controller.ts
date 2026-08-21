@@ -35,6 +35,7 @@ import { RequestSupportAttachmentUploadDto } from './dto/request-support-attachm
 import { SupportMessageResponseDto } from './dto/support-message-response.dto';
 import { SupportTicketResponseDto } from './dto/support-ticket-response.dto';
 import {
+  type AdminBookingChatMessageResponse,
   SupportService,
   type AdminSupportTicketResponse,
 } from './support.service';
@@ -54,6 +55,22 @@ export class AdminSupportController {
   @Get()
   async list(): Promise<ApiResponse<AdminSupportTicketResponse[]>> {
     return ok(await this.support.listForAdmin());
+  }
+
+  @ApiOkResponse({ description: 'Аудируемый booking-chat обращения' })
+  @Get(':id/booking-chat')
+  async listBookingChat(
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiResponse<AdminBookingChatMessageResponse[]>> {
+    return ok(
+      await this.support.listBookingChatForAdmin(
+        user.id,
+        id,
+        getAdminAuditContext(request),
+      ),
+    );
   }
 
   @ApiOkResponse({ type: [SupportMessageResponseDto] })

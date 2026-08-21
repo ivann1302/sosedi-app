@@ -57,6 +57,18 @@ const REASONS_BY_TARGET: Record<ReportTargetType, ReadonlySet<ReportReason>> = {
     ReportReason.SUSPECTED_FRAUD,
     ReportReason.OTHER,
   ]),
+  MESSAGE: new Set([
+    ReportReason.HARASSMENT,
+    ReportReason.PRIVACY_VIOLATION,
+    ReportReason.SUSPECTED_FRAUD,
+    ReportReason.OTHER,
+  ]),
+  REVIEW: new Set([
+    ReportReason.HARASSMENT,
+    ReportReason.PRIVACY_VIOLATION,
+    ReportReason.SUSPECTED_FRAUD,
+    ReportReason.OTHER,
+  ]),
 };
 
 export type AdminReportResponse = {
@@ -71,6 +83,23 @@ export type AdminReportResponse = {
   target: Record<string, string | boolean | null>;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type AdminReportedMessageContext = {
+  id: string;
+  bookingId: string;
+  authorRole: string;
+  body: string;
+  createdAt: Date;
+};
+
+export type AdminReportedReviewContext = {
+  id: string;
+  authorRole: string;
+  rating: number;
+  text: string | null;
+  publishedAt: Date;
+  createdAt: Date;
 };
 
 @Injectable()
@@ -163,7 +192,7 @@ export class ReportsService {
           throw new ConflictException('Жалоба уже рассмотрена');
         }
 
-        await this.applyDecision(tx, current, dto);
+        await this.applyDecision(tx, current, dto, adminId);
         const nextStatus =
           dto.decision === ReportDecision.DISMISS
             ? ReportStatus.DISMISSED
@@ -211,11 +240,121 @@ export class ReportsService {
             },
           });
         }
+        if (dto.decision === ReportDecision.HIDE_REVIEW) {
+          const review = await tx.review.findUniqueOrThrow({
+            where: { id: current.targetId },
+            select: { id: true, authorId: true, bookingId: true },
+          });
+          if (review.authorId) {
+            await tx.notificationOutboxEvent.create({
+              data: {
+                recipientId: review.authorId,
+                bookingId: review.bookingId,
+                eventType: 'REVIEW_HIDDEN_BY_REPORT_REVIEW',
+                deduplicationKey: `report:${reportId}:review-hidden`,
+              },
+            });
+          }
+        }
         return updated;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
     return this.toAdminResponse(report);
+  }
+
+  async getReportedMessageContext(
+    adminId: string,
+    reportId: string,
+    context: AdminAuditContext,
+  ): Promise<AdminReportedMessageContext> {
+    return this.prisma.$transaction(async (tx) => {
+      const report = await tx.userReport.findFirst({
+        where: { id: reportId, targetType: ReportTargetType.MESSAGE },
+        select: { id: true, targetId: true },
+      });
+      if (!report) {
+        throw new NotFoundException('Жалоба на сообщение не найдена');
+      }
+      const message = await tx.bookingMessage.findUnique({
+        where: { id: report.targetId },
+        select: {
+          id: true,
+          bookingId: true,
+          authorRole: true,
+          body: true,
+          createdAt: true,
+        },
+      });
+      if (!message) {
+        throw new NotFoundException('Сообщение недоступно');
+      }
+      await tx.adminAuditLog.create({
+        data: {
+          adminId,
+          action: 'REPORTED_BOOKING_MESSAGE_ACCESSED',
+          entityType: 'BookingMessage',
+          entityId: message.id,
+          capability: AdminCapability.MODERATION,
+          requestId: context.requestId,
+          ipAddress: context.ipAddress,
+          deviceId: context.deviceId,
+          metadata: { reportId: report.id, bookingId: message.bookingId },
+        },
+      });
+      return message;
+    });
+  }
+
+  async getReportedReviewContext(
+    adminId: string,
+    reportId: string,
+    context: AdminAuditContext,
+  ): Promise<AdminReportedReviewContext> {
+    return this.prisma.$transaction(async (tx) => {
+      const report = await tx.userReport.findFirst({
+        where: { id: reportId, targetType: ReportTargetType.REVIEW },
+        select: { id: true, targetId: true },
+      });
+      if (!report) {
+        throw new NotFoundException('Жалоба на отзыв не найдена');
+      }
+      const review = await tx.review.findUnique({
+        where: { id: report.targetId },
+        select: {
+          id: true,
+          authorRole: true,
+          rating: true,
+          text: true,
+          publishAt: true,
+          createdAt: true,
+        },
+      });
+      if (!review) {
+        throw new NotFoundException('Отзыв недоступен');
+      }
+      await tx.adminAuditLog.create({
+        data: {
+          adminId,
+          action: 'REPORTED_REVIEW_ACCESSED',
+          entityType: 'Review',
+          entityId: review.id,
+          capability: AdminCapability.MODERATION,
+          requestId: context.requestId,
+          ipAddress: context.ipAddress,
+          deviceId: context.deviceId,
+          metadata: { reportId: report.id },
+        },
+      });
+      return {
+        id: review.id,
+        authorRole: review.authorRole,
+        rating: review.rating,
+        text: review.text,
+        publishedAt: review.publishAt,
+        createdAt: review.createdAt,
+      };
+    });
   }
 
   private validateReason(dto: CreateReportDto): void {
@@ -253,11 +392,32 @@ export class ReportsService {
         },
         select: { id: true },
       });
-    } else {
+    } else if (dto.targetType === ReportTargetType.BOOKING) {
       target = await this.prisma.booking.findFirst({
         where: {
           id: dto.targetId,
           OR: [{ borrowerId: reporterId }, { lenderId: reporterId }],
+        },
+        select: { id: true },
+      });
+    } else if (dto.targetType === ReportTargetType.MESSAGE) {
+      target = await this.prisma.bookingMessage.findFirst({
+        where: {
+          id: dto.targetId,
+          authorId: { not: reporterId },
+          booking: {
+            OR: [{ borrowerId: reporterId }, { lenderId: reporterId }],
+          },
+        },
+        select: { id: true },
+      });
+    } else {
+      target = await this.prisma.review.findFirst({
+        where: {
+          id: dto.targetId,
+          publishAt: { lte: new Date() },
+          hiddenAt: null,
+          OR: [{ authorId: { not: reporterId } }, { authorId: null }],
         },
         select: { id: true },
       });
@@ -293,6 +453,7 @@ export class ReportsService {
       targetId: string;
     },
     dto: DecideReportDto,
+    adminId: string,
   ): Promise<void> {
     if (dto.decision === ReportDecision.DISMISS) {
       return;
@@ -312,14 +473,47 @@ export class ReportsService {
       }
       return;
     }
-    if (report.targetType !== ReportTargetType.USER) {
+    if (dto.decision === ReportDecision.HIDE_REVIEW) {
+      if (report.targetType !== ReportTargetType.REVIEW) {
+        throw new BadRequestException('HIDE_REVIEW применим только к отзыву');
+      }
+      const updated = await tx.review.updateMany({
+        where: {
+          id: report.targetId,
+          hiddenAt: null,
+          publishAt: { lte: new Date() },
+        },
+        data: {
+          hiddenAt: new Date(),
+          hiddenById: adminId,
+          hiddenReason: dto.reason.trim(),
+        },
+      });
+      if (updated.count !== 1) {
+        throw new NotFoundException('Опубликованный отзыв не найден');
+      }
+      return;
+    }
+    let targetUserId: string;
+    if (report.targetType === ReportTargetType.USER) {
+      targetUserId = report.targetId;
+    } else if (report.targetType === ReportTargetType.MESSAGE) {
+      const message = await tx.bookingMessage.findUnique({
+        where: { id: report.targetId },
+        select: { authorId: true },
+      });
+      if (!message?.authorId) {
+        throw new NotFoundException('Автор сообщения недоступен');
+      }
+      targetUserId = message.authorId;
+    } else {
       throw new BadRequestException(
-        'BLOCK_USER применим только к жалобе на пользователя',
+        'BLOCK_USER применим только к жалобе на пользователя или сообщение',
       );
     }
     const activeBooking = await tx.booking.findFirst({
       where: {
-        OR: [{ borrowerId: report.targetId }, { lenderId: report.targetId }],
+        OR: [{ borrowerId: targetUserId }, { lenderId: targetUserId }],
         status: {
           in: [
             BookingStatus.PENDING,
@@ -338,7 +532,7 @@ export class ReportsService {
     }
     const updated = await tx.user.updateMany({
       where: {
-        id: report.targetId,
+        id: targetUserId,
         isBlocked: false,
         deletedAt: null,
       },
@@ -394,6 +588,46 @@ export class ReportsService {
       });
       return user
         ? { id: user.id, name: user.name, isBlocked: user.isBlocked }
+        : { id: targetId, unavailable: true };
+    }
+    if (targetType === ReportTargetType.MESSAGE) {
+      const message = await this.prisma.bookingMessage.findUnique({
+        where: { id: targetId },
+        select: {
+          id: true,
+          bookingId: true,
+          authorRole: true,
+          createdAt: true,
+        },
+      });
+      return message
+        ? {
+            id: message.id,
+            bookingId: message.bookingId,
+            authorRole: message.authorRole,
+            createdAt: message.createdAt.toISOString(),
+          }
+        : { id: targetId, unavailable: true };
+    }
+    if (targetType === ReportTargetType.REVIEW) {
+      const review = await this.prisma.review.findUnique({
+        where: { id: targetId },
+        select: {
+          id: true,
+          authorRole: true,
+          rating: true,
+          publishAt: true,
+          hiddenAt: true,
+        },
+      });
+      return review
+        ? {
+            id: review.id,
+            authorRole: review.authorRole,
+            rating: review.rating.toString(),
+            published: review.publishAt <= new Date(),
+            hidden: review.hiddenAt !== null,
+          }
         : { id: targetId, unavailable: true };
     }
     const booking = await this.prisma.booking.findUnique({

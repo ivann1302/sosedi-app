@@ -21,6 +21,7 @@ import {
   BOOKING_PENDING_TIMEOUT_REASON,
   BookingExpiryService,
 } from '../src/booking/booking-expiry.service';
+import { BOOKING_PENDING_TTL_MS } from '../src/booking/booking.service';
 import { BookingOutboxProcessor } from '../src/booking/booking-outbox.processor';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { UploadService } from '../src/upload/upload.service';
@@ -331,12 +332,13 @@ describe('Booking availability (e2e)', () => {
     ).resolves.toBe(0);
   });
 
-  it('creates only one of two concurrent overlapping requests', async () => {
+  it('creates two concurrent overlapping requests without reserving dates', async () => {
     const { firstBorrower, secondBorrower, item } = await createFixture();
     const [firstAuthorization, secondAuthorization] = await Promise.all([
       authorization(firstBorrower),
       authorization(secondBorrower),
     ]);
+    const requestedAt = Date.now();
     const payload = acceptedBookingPayload(item.id, '2026-08-10', '2026-08-11');
 
     const responses = await Promise.all([
@@ -351,16 +353,244 @@ describe('Booking availability (e2e)', () => {
     ]);
 
     expect(responses.map((response) => response.status).sort()).toEqual([
-      201, 409,
+      201, 201,
     ]);
+    for (const response of responses) {
+      const data = asRecord(asRecord(response.body).data);
+      const expiresAt = new Date(String(data.expiresAt)).getTime();
+      expect(expiresAt).toBeGreaterThanOrEqual(
+        requestedAt + BOOKING_PENDING_TTL_MS,
+      );
+      expect(expiresAt).toBeLessThanOrEqual(
+        Date.now() + BOOKING_PENDING_TTL_MS,
+      );
+    }
     await expect(
       prisma.booking.count({ where: { itemId: item.id } }),
-    ).resolves.toBe(1);
+    ).resolves.toBe(2);
     await expect(
       prisma.notificationOutboxEvent.count({
         where: { booking: { itemId: item.id } },
       }),
+    ).resolves.toBe(2);
+  });
+
+  it('lets the owner close dates while pending and rejects later confirmation', async () => {
+    const { owner, firstBorrower, item } = await createFixture();
+    const [ownerAuthorization, borrowerAuthorization] = await Promise.all([
+      authorization(owner),
+      authorization(firstBorrower),
+    ]);
+    const created = await request(httpServer())
+      .post('/api/v1/bookings')
+      .set('Authorization', borrowerAuthorization)
+      .send(acceptedBookingPayload(item.id, '2026-08-20', '2026-08-21'))
+      .expect(201);
+    const bookingId = String(asRecord(asRecord(created.body).data).id);
+
+    await request(httpServer())
+      .post(`/api/v1/items/${item.id}/unavailable-periods`)
+      .set('Authorization', ownerAuthorization)
+      .send({ startDate: '2026-08-20', endDate: '2026-08-21' })
+      .expect(201);
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/confirm`)
+      .set('Authorization', ownerAuthorization)
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          success: false,
+          data: null,
+          error: { code: 'CALENDAR_CONFLICT' },
+        });
+      });
+    await expect(
+      prisma.booking.findUniqueOrThrow({ where: { id: bookingId } }),
+    ).resolves.toMatchObject({ status: BookingStatus.PENDING });
+  });
+
+  it('keeps booking chat participant-only, idempotent and cursor-paginated', async () => {
+    const { owner, firstBorrower, secondBorrower, item } =
+      await createFixture();
+    const [ownerAuthorization, borrowerAuthorization, outsiderAuthorization] =
+      await Promise.all([
+        authorization(owner),
+        authorization(firstBorrower),
+        authorization(secondBorrower),
+      ]);
+    const created = await request(httpServer())
+      .post('/api/v1/bookings')
+      .set('Authorization', borrowerAuthorization)
+      .send(acceptedBookingPayload(item.id, '2026-08-22', '2026-08-23'))
+      .expect(201);
+    const bookingId = String(asRecord(asRecord(created.body).data).id);
+    const firstPayload = {
+      clientMessageId: '11111111-1111-4111-8111-111111111141',
+      body: '  Можно забрать после 18:00?  ',
+    };
+
+    const first = await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/messages`)
+      .set('Authorization', borrowerAuthorization)
+      .send(firstPayload)
+      .expect(201);
+    const repeated = await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/messages`)
+      .set('Authorization', borrowerAuthorization)
+      .send(firstPayload)
+      .expect(201);
+    expect(asRecord(repeated.body).data).toEqual(asRecord(first.body).data);
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/messages`)
+      .set('Authorization', borrowerAuthorization)
+      .send({ ...firstPayload, body: 'Другой текст с тем же UUID' })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          error: { code: 'IDEMPOTENCY_KEY_REUSED' },
+        });
+      });
+
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/messages`)
+      .set('Authorization', ownerAuthorization)
+      .send({
+        clientMessageId: '11111111-1111-4111-8111-111111111142',
+        body: 'Да, подойдёт.',
+      })
+      .expect(201);
+
+    await request(httpServer())
+      .get(`/api/v1/bookings/${bookingId}/messages`)
+      .set('Authorization', outsiderAuthorization)
+      .expect(404);
+    const firstPage = await request(httpServer())
+      .get(`/api/v1/bookings/${bookingId}/messages?limit=2`)
+      .set('Authorization', borrowerAuthorization)
+      .expect(200);
+    const firstPageData = asRecord(asRecord(firstPage.body).data);
+    const firstPageItems = firstPageData.items as Record<string, unknown>[];
+    expect(firstPageItems).toHaveLength(2);
+    const cursor = String(firstPageData.nextCursor);
+    expect(cursor).not.toBe('null');
+
+    const secondPage = await request(httpServer())
+      .get(`/api/v1/bookings/${bookingId}/messages?limit=2&cursor=${cursor}`)
+      .set('Authorization', borrowerAuthorization)
+      .expect(200);
+    const secondPageData = asRecord(asRecord(secondPage.body).data);
+    const secondPageItems = secondPageData.items as Record<string, unknown>[];
+    expect(secondPageItems).toHaveLength(1);
+    expect(secondPageData.nextCursor).toBeNull();
+    expect(
+      [...firstPageItems, ...secondPageItems].map((message) => message.body),
+    ).toEqual(
+      expect.arrayContaining([
+        'Заявка отправлена. Владелец ответит в течение 12 часов.',
+        'Можно забрать после 18:00?',
+        'Да, подойдёт.',
+      ]),
+    );
+    expect([...firstPageItems, ...secondPageItems]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          author: 'SYSTEM',
+          body: 'Заявка отправлена. Владелец ответит в течение 12 часов.',
+        }),
+      ]),
+    );
+    expect(
+      JSON.stringify([...firstPageItems, ...secondPageItems]),
+    ).not.toContain(owner.id);
+    await expect(
+      prisma.bookingMessage.count({ where: { bookingId } }),
+    ).resolves.toBe(3);
+    await expect(
+      prisma.notificationOutboxEvent.count({
+        where: { bookingId, eventType: 'BOOKING_MESSAGE_CREATED' },
+      }),
+    ).resolves.toBe(2);
+    await expect(outbox.processPending()).resolves.toBeGreaterThan(0);
+    await expect(
+      prisma.inboxEvent.count({
+        where: {
+          recipientId: firstBorrower.id,
+          bookingId,
+          eventType: 'BOOKING_MESSAGE_CREATED',
+          readAt: null,
+        },
+      }),
     ).resolves.toBe(1);
+    await request(httpServer())
+      .patch(`/api/v1/bookings/${bookingId}/messages/read`)
+      .set('Authorization', borrowerAuthorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          success: true,
+          data: { updatedCount: 1 },
+          error: null,
+        });
+      });
+    await request(httpServer())
+      .patch(`/api/v1/bookings/${bookingId}/messages/read`)
+      .set('Authorization', borrowerAuthorization)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ data: { updatedCount: 0 } });
+      });
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/messages`)
+      .set('Authorization', borrowerAuthorization)
+      .send({
+        clientMessageId: '11111111-1111-4111-8111-111111111145',
+        body: 'Фото в MVP не поддерживается',
+        attachmentUrl: 'https://example.test/file.jpg',
+      })
+      .expect(400);
+
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/messages/block-counterparty`)
+      .set('Authorization', borrowerAuthorization)
+      .expect(201);
+    await expect(
+      prisma.booking.findUniqueOrThrow({ where: { id: bookingId } }),
+    ).resolves.toMatchObject({
+      status: BookingStatus.CANCELLED,
+      cancellationReason: 'PARTICIPANT_BLOCKED',
+      expiresAt: null,
+    });
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/messages`)
+      .set('Authorization', ownerAuthorization)
+      .send({
+        clientMessageId: '11111111-1111-4111-8111-111111111143',
+        body: 'Это сообщение не должно сохраниться',
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          error: { code: 'BOOKING_CHAT_READ_ONLY' },
+        });
+      });
+
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: BookingStatus.CANCELLED, expiresAt: null },
+    });
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/messages`)
+      .set('Authorization', borrowerAuthorization)
+      .send({
+        clientMessageId: '11111111-1111-4111-8111-111111111144',
+        body: 'После отмены писать нельзя',
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          error: { code: 'BOOKING_CHAT_READ_ONLY' },
+        });
+      });
   });
 
   it('enforces provisional money ranges at the database boundary', async () => {
@@ -949,7 +1179,7 @@ describe('Booking availability (e2e)', () => {
     });
     const handoverIntent = await prisma.uploadIntent.create({
       data: {
-        actorId: firstBorrower.id,
+        actorId: owner.id,
         purpose: 'BOOKING_EVIDENCE',
         entityId: booking.id,
         bucket: 'private-test',
@@ -959,21 +1189,50 @@ describe('Booking availability (e2e)', () => {
         expiresAt: new Date('2026-08-01T00:00:00.000Z'),
       },
     });
-    const createdHandover = await request(httpServer())
+    await request(httpServer())
       .post(`/api/v1/bookings/${booking.id}/acts`)
-      .set('Authorization', borrowerAuthorization)
+      .set('Authorization', ownerAuthorization)
       .send({
         stage: BookingActStage.HANDOVER,
         intentId: handoverIntent.id,
       })
+      .expect(400);
+    const createdHandover = await request(httpServer())
+      .post(`/api/v1/bookings/${booking.id}/acts`)
+      .set('Authorization', ownerAuthorization)
+      .send({
+        stage: BookingActStage.HANDOVER,
+        intentId: handoverIntent.id,
+        readiness: {
+          isWorking: true,
+          isComplete: true,
+          visibleDefects: 'Потёртость на ручке',
+        },
+      })
       .expect(201);
     const handoverAct = asRecord(asRecord(createdHandover.body).data);
+    const replayedHandover = await request(httpServer())
+      .post(`/api/v1/bookings/${booking.id}/acts`)
+      .set('Authorization', ownerAuthorization)
+      .send({
+        stage: BookingActStage.HANDOVER,
+        intentId: handoverIntent.id,
+        readiness: {
+          isWorking: true,
+          isComplete: true,
+          visibleDefects: 'Потёртость на ручке',
+        },
+      })
+      .expect(201);
+    expect(asRecord(asRecord(replayedHandover.body).data).id).toBe(
+      handoverAct.id,
+    );
 
     await request(httpServer())
       .post(
         `/api/v1/bookings/${booking.id}/acts/${String(handoverAct.id)}/confirm`,
       )
-      .set('Authorization', borrowerAuthorization)
+      .set('Authorization', ownerAuthorization)
       .expect(409);
     await expect(
       prisma.bookingTransitionHistory.count({
@@ -984,7 +1243,7 @@ describe('Booking availability (e2e)', () => {
       .post(
         `/api/v1/bookings/${booking.id}/acts/${String(handoverAct.id)}/confirm`,
       )
-      .set('Authorization', ownerAuthorization)
+      .set('Authorization', borrowerAuthorization)
       .expect(200);
     await expect(
       prisma.booking.findUniqueOrThrow({ where: { id: booking.id } }),
@@ -992,7 +1251,7 @@ describe('Booking availability (e2e)', () => {
 
     const returnIntent = await prisma.uploadIntent.create({
       data: {
-        actorId: owner.id,
+        actorId: firstBorrower.id,
         purpose: 'BOOKING_EVIDENCE',
         entityId: booking.id,
         bucket: 'private-test',
@@ -1004,7 +1263,7 @@ describe('Booking availability (e2e)', () => {
     });
     const createdReturn = await request(httpServer())
       .post(`/api/v1/bookings/${booking.id}/acts`)
-      .set('Authorization', ownerAuthorization)
+      .set('Authorization', borrowerAuthorization)
       .send({
         stage: BookingActStage.RETURN,
         intentId: returnIntent.id,
@@ -1015,7 +1274,7 @@ describe('Booking availability (e2e)', () => {
       .post(
         `/api/v1/bookings/${booking.id}/acts/${String(returnAct.id)}/confirm`,
       )
-      .set('Authorization', borrowerAuthorization)
+      .set('Authorization', ownerAuthorization)
       .expect(200);
     await expect(
       prisma.booking.findUniqueOrThrow({ where: { id: booking.id } }),
@@ -1037,14 +1296,14 @@ describe('Booking availability (e2e)', () => {
     });
     expect(history).toMatchObject([
       {
-        actorId: owner.id,
+        actorId: firstBorrower.id,
         command: 'CONFIRM_HANDOVER',
         oldStatus: BookingStatus.CONFIRMED,
         newStatus: BookingStatus.ACTIVE,
         reason: null,
       },
       {
-        actorId: firstBorrower.id,
+        actorId: owner.id,
         command: 'CONFIRM_RETURN',
         oldStatus: BookingStatus.ACTIVE,
         newStatus: BookingStatus.RETURNED,
@@ -1069,15 +1328,28 @@ describe('Booking availability (e2e)', () => {
     expect(actsData).toMatchObject([
       {
         stage: BookingActStage.HANDOVER,
-        confirmedById: owner.id,
+        confirmedById: firstBorrower.id,
+        readiness: {
+          isWorking: true,
+          isComplete: true,
+          visibleDefects: 'Потёртость на ручке',
+          declaration: 'LENDER_SELF_DECLARATION',
+        },
         evidence: [{ sha256: 'a'.repeat(64) }],
       },
       {
         stage: BookingActStage.RETURN,
-        confirmedById: firstBorrower.id,
+        confirmedById: owner.id,
+        readiness: null,
         evidence: [{ sha256: 'a'.repeat(64) }],
       },
     ]);
+    await expect(
+      prisma.bookingAct.update({
+        where: { id: String(handoverAct.id) },
+        data: { readinessVisibleDefects: 'Изменено задним числом' },
+      }),
+    ).rejects.toThrow();
     await request(httpServer())
       .get(`/api/v1/bookings/${booking.id}/acts`)
       .set('Authorization', otherAuthorization)

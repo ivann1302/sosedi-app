@@ -1,7 +1,7 @@
 # ADR-0005: Монетизированная безопасная сделка
 
 - Status: PROPOSED
-- Date: 2026-08-06
+- Date: 2026-08-09
 - Decision owner: Product owner
 - Reviewers: payment provider, legal, accounting/tax
 - Related checklist gate: раздел 14 Payments
@@ -14,6 +14,9 @@ Sosedi должен получать вознаграждение с завер�
 арендатора должны быть защищены до возврата вещи, а стоимость аренды должна
 выплачиваться частному владельцу без промежуточного зачисления всей суммы на
 расчётный счёт Sosedi.
+
+Этот ADR покрывает только внешние P2P-объявления. Платёжный/фискальный сценарий
+имущества ИП/ООО Sosedi относится к PROPOSED ADR-0006 и не включается неявно.
 
 Обычный checkout + webhook не решает hold, refund и выплату частному владельцу.
 Ручная выплата со счёта Sosedi не допускается.
@@ -42,13 +45,27 @@ Sosedi должен получать вознаграждение с завер�
   аренды.
 - Вознаграждение Sosedi признаётся после успешной выплаты владельцу, чтобы
   полный возврат не требовал возвращать уже полученную комиссию площадки.
-- Для fake-provider и расчёта unit-тестов используется рабочее допущение: 1% от
-  стоимости аренды, без fixed/min/max, вычитаются из выплаты владельцу и
-  округляются до ближайшей копейки (ровно половина копейки — вверх). Арендатор
-  платит стоимость аренды без дополнительной наценки.
-- Этот 1% не является опубликованным тарифом. Процент, fixed/min/max, касса,
-  provider cost, refund rules и KYC остаются `TBD` до коммерческого предложения
-  и legal/accounting review.
+- Продуктовая цель монетизированного пилота — platform fee 1% от стоимости
+  аренды. Кто его платит, как показывается gross price и как покрывается provider
+  cost, пока не решено.
+- Fake-provider пока технически использует 1% без fixed/min/max из выплаты
+  владельцу, без наценки арендатору; округление до ближайшей копейки, ровно
+  половина — вверх. Это placeholder для unit-тестов, а не production fee-payer
+  decision.
+- 1% не является разрешением публиковать тариф или экономически самодостаточной
+  моделью. До `ACCEPTED` нужно выбрать owner deduction, renter fee/наценку,
+  отдельное раскрытие provider cost или ограниченную subsidy; для subsidy заранее
+  утверждаются бюджет/cap и disclosure.
+- После пилота продуктовая цель — 5% маржи Sosedi по отдельно утверждённой
+  формуле. Её база, состав учитываемых provider/fiscal/refund costs и будущий
+  displayed fee остаются `TBD`; «маржа 5%» нельзя молча заменить «комиссией 5%».
+- Тариф хранится как `commissionBps + pricingPolicyVersion + effectiveAt` и
+  snapshot конкретной Booking; новая политика не пересчитывает старые сделки.
+- После подтверждения владельцем арендатору предлагается 30 минут на Safe Deal
+  оплату. `payBy`, provider expiry/cancel и обработка позднего webhook требуют
+  подтверждения API и не применяются к `PAY_ON_HANDOVER`.
+- Fixed/min/max, касса, provider cost, refund rules и KYC остаются `TBD` до
+  коммерческого предложения и legal/accounting review.
 
 Это `PROPOSED`, а не разрешение включать production payments.
 
@@ -60,8 +77,9 @@ Sosedi должен получать вознаграждение с завер�
 - Рабочая формула реализована только как чистый расчёт в minor units и не
   подключена к Booking/API.
 - Production schema/API/provider integration остаются заблокированными.
-- После предложения провайдера нужно утвердить price formula, KYC-ветку,
-  cancellation/dispute matrix, чеки и reconciliation.
+- После предложения провайдера нужно утвердить price formula/fee payer/provider-
+  cost coverage, KYC-ветку, cancellation/dispute/payment-timeout matrix, чеки и
+  reconciliation.
 
 ## Rollout и rollback
 

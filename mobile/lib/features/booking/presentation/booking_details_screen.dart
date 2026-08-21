@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/permissions/app_permissions.dart';
 import '../../../core/permissions/permission_prompt.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../../auth/domain/auth_state.dart';
+import '../../reviews/data/review_models.dart';
+import '../../reviews/data/review_service.dart';
 import '../../safety/domain/safety_action_controller.dart';
 import '../../safety/presentation/report_dialog.dart';
 import '../data/booking_models.dart';
@@ -117,17 +121,48 @@ class BookingDetailsScreen extends ConsumerWidget {
     if (submission == null || !context.mounted) {
       return;
     }
-    await ref
+    final receipt = await ref
         .read(bookingActionProvider.notifier)
         .reportIssue(
           bookingId: booking.id,
           reason: submission.reason,
           details: submission.details,
         );
-    if (context.mounted && !ref.read(bookingActionProvider).hasError) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Обращение отправлено')));
+    if (receipt == null || !context.mounted) {
+      return;
+    }
+    final openTicket = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Обращение принято'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Номер: ${receipt.id}'),
+            Text('Время сервера: ${_time(receipt.createdAt)}'),
+            Text('Статус: ${_supportStatus(receipt.status)}'),
+            const SizedBox(height: 12),
+            const Text(
+              'Ориентир первой реакции — до 12 часов. Бронь и сумма не '
+              'изменились автоматически. Фото можно добавить в обращении.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Закрыть'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Открыть обращение'),
+          ),
+        ],
+      ),
+    );
+    if (openTicket == true && context.mounted) {
+      context.push('/support/${receipt.id}');
     }
   }
 
@@ -138,28 +173,39 @@ class BookingDetailsScreen extends ConsumerWidget {
   ) async {
     final stage = booking.status == 'CONFIRMED' ? 'HANDOVER' : 'RETURN';
     final label = stage == 'HANDOVER' ? 'передачи' : 'возврата';
-    final approved = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Создать акт $label?'),
-        content: const Text(
-          'Выберите один снимок состояния и комплектации вещи. '
-          'Вторая сторона должна отдельно подтвердить акт.',
+    HandoverReadinessInput? readiness;
+    if (stage == 'HANDOVER') {
+      readiness = await showDialog<HandoverReadinessInput>(
+        context: context,
+        builder: (_) => const _ReadinessDialog(),
+      );
+      if (readiness == null || !context.mounted) {
+        return;
+      }
+    } else {
+      final approved = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Создать акт $label?'),
+          content: const Text(
+            'Выберите один снимок состояния и комплектации вещи. '
+            'Вторая сторона должна отдельно подтвердить акт.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Отмена'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Выбрать снимок'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Выбрать снимок'),
-          ),
-        ],
-      ),
-    );
-    if (approved != true || !context.mounted) {
-      return;
+      );
+      if (approved != true || !context.mounted) {
+        return;
+      }
     }
     final allowed = await requestPermissionFromUserAction(
       context: context,
@@ -175,7 +221,12 @@ class BookingDetailsScreen extends ConsumerWidget {
     }
     await ref
         .read(bookingActionProvider.notifier)
-        .createAct(bookingId: booking.id, stage: stage, photo: photo);
+        .createAct(
+          bookingId: booking.id,
+          stage: stage,
+          photo: photo,
+          readiness: readiness,
+        );
     if (context.mounted && !ref.read(bookingActionProvider).hasError) {
       ScaffoldMessenger.of(
         context,
@@ -295,6 +346,9 @@ class BookingDetailsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final booking = ref.watch(bookingDetailsProvider(bookingId));
     final acts = ref.watch(bookingActsProvider(bookingId));
+    final reviews = booking.value?.status == 'COMPLETED'
+        ? ref.watch(bookingReviewsProvider(bookingId))
+        : const AsyncData<List<ParticipantReview>>([]);
     final action = ref.watch(bookingActionProvider);
     final safetyAction = ref.watch(safetyActionProvider);
     final auth = ref.watch(authControllerProvider);
@@ -326,6 +380,7 @@ class BookingDetailsScreen extends ConsumerWidget {
           data: (value) => _Content(
             booking: value,
             acts: acts,
+            reviews: reviews,
             action: action,
             safetyAction: safetyAction,
             currentUserId: currentUserId,
@@ -337,7 +392,7 @@ class BookingDetailsScreen extends ConsumerWidget {
                 builder: (context) => AlertDialog(
                   title: const Text('Отменить заявку?'),
                   content: const Text(
-                    'Ожидающая заявка будет отменена, а даты снова станут свободны.',
+                    'Заявка будет отменена. Владелец больше не сможет её подтвердить.',
                   ),
                   actions: [
                     TextButton(
@@ -366,6 +421,10 @@ class BookingDetailsScreen extends ConsumerWidget {
                 _openEvidence(context, ref, evidenceId),
             onRetryActs: () => ref.invalidate(bookingActsProvider(bookingId)),
             onReportSafety: () => _reportSafety(context, ref, value),
+            onOpenChat: () => context.push('/bookings/$bookingId/chat'),
+            onOpenReview: () => context.push('/bookings/$bookingId/review'),
+            onRetryReviews: () =>
+                ref.invalidate(bookingReviewsProvider(bookingId)),
           ),
         ),
       ),
@@ -377,6 +436,7 @@ class _Content extends StatelessWidget {
   const _Content({
     required this.booking,
     required this.acts,
+    required this.reviews,
     required this.action,
     required this.safetyAction,
     required this.currentUserId,
@@ -388,10 +448,14 @@ class _Content extends StatelessWidget {
     required this.onOpenEvidence,
     required this.onRetryActs,
     required this.onReportSafety,
+    required this.onOpenChat,
+    required this.onOpenReview,
+    required this.onRetryReviews,
   });
 
   final ParticipantBooking booking;
   final AsyncValue<List<BookingAct>> acts;
+  final AsyncValue<List<ParticipantReview>> reviews;
   final AsyncValue<String?> action;
   final AsyncValue<String?> safetyAction;
   final String? currentUserId;
@@ -403,6 +467,9 @@ class _Content extends StatelessWidget {
   final ValueChanged<String> onOpenEvidence;
   final VoidCallback onRetryActs;
   final VoidCallback onReportSafety;
+  final VoidCallback onOpenChat;
+  final VoidCallback onOpenReview;
+  final VoidCallback onRetryReviews;
 
   @override
   Widget build(BuildContext context) {
@@ -417,6 +484,15 @@ class _Content extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Chip(label: Text(bookingStatusLabel(booking.status))),
+        const SizedBox(height: 8),
+        _NextActionCard(
+          booking: booking,
+          isLoading: action.isLoading,
+          onConfirm: onConfirm,
+          onOpenChat: onOpenChat,
+          onOpenReview: onOpenReview,
+          onReportIssue: onReportIssue,
+        ),
         const SizedBox(height: 16),
         _Row(
           label: 'Период',
@@ -429,7 +505,7 @@ class _Content extends StatelessWidget {
           value: booking.actorRole == 'LENDER' ? 'Сдаёте' : 'Арендуете',
         ),
         if (booking.status == 'PENDING' && booking.expiresAt != null)
-          _Row(label: 'Заявка действует до', value: _time(booking.expiresAt!)),
+          _Row(label: 'Ответ владельца до', value: _time(booking.expiresAt!)),
         if (booking.cancellationReason != null)
           _Row(label: 'Причина', value: booking.cancellationReason!),
         if (terms != null) ...[
@@ -468,15 +544,29 @@ class _Content extends StatelessWidget {
                 ? 'При передаче вещи'
                 : terms.paymentScenario,
           ),
-          _Row(label: 'Версия объявления', value: terms.listingVersion),
-          _Row(
-            label: 'Оферта',
-            value: terms.offerVersion ?? 'Ожидает публикации',
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            title: const Text('Технические детали'),
+            children: [
+              _Row(label: 'Версия объявления', value: terms.listingVersion),
+              _Row(
+                label: 'Оферта',
+                value: terms.offerVersion ?? 'Ожидает публикации',
+              ),
+              _Row(
+                label: 'Правила отмены',
+                value: terms.cancellationPolicyVersion ?? 'Ожидают публикации',
+              ),
+            ],
           ),
-          _Row(
-            label: 'Правила отмены',
-            value: terms.cancellationPolicyVersion ?? 'Ожидают публикации',
-          ),
+        ],
+        if (AppConfig.demoStubsEnabled &&
+            booking.actorRole == 'BORROWER' &&
+            booking.status == 'CONFIRMED' &&
+            terms != null) ...[
+          const SizedBox(height: 16),
+          _DemoPaymentCard(total: terms.total, currency: terms.currency),
         ],
         if (booking.handover != null) ...[
           const SizedBox(height: 16),
@@ -517,6 +607,44 @@ class _Content extends StatelessWidget {
             onOpenEvidence: onOpenEvidence,
           ),
         ),
+        if (booking.status == 'COMPLETED') ...[
+          const SizedBox(height: 16),
+          reviews.when(
+            loading: () => const LinearProgressIndicator(),
+            error: (error, _) => Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    userFacingError(
+                      error,
+                      fallback: 'Не удалось проверить отзыв',
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onRetryReviews,
+                  child: const Text('Повторить'),
+                ),
+              ],
+            ),
+            data: (values) {
+              final hasOwnReview = values.any(
+                (review) => review.author == 'SELF',
+              );
+              return FilledButton.icon(
+                onPressed: onOpenReview,
+                icon: Icon(
+                  hasOwnReview
+                      ? Icons.check_circle_outline
+                      : Icons.star_outline,
+                ),
+                label: Text(
+                  hasOwnReview ? 'Посмотреть свой отзыв' : 'Оставить отзыв',
+                ),
+              );
+            },
+          ),
+        ],
         if (actionError != null) ...[
           const SizedBox(height: 12),
           Text(
@@ -526,28 +654,11 @@ class _Content extends StatelessWidget {
             ),
           ),
         ],
-        if (booking.actorRole == 'LENDER' && booking.status == 'PENDING') ...[
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: action.isLoading ? null : onConfirm,
-            child: action.isLoading
-                ? const CircularProgressIndicator()
-                : const Text('Подтвердить бронирование'),
-          ),
-        ],
         if (booking.status == 'PENDING') ...[
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: action.isLoading ? null : onCancel,
             child: const Text('Отменить заявку'),
-          ),
-        ],
-        if (onReportIssue != null) ...[
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: action.isLoading ? null : onReportIssue,
-            icon: const Icon(Icons.support_agent),
-            label: const Text('Сообщить о проблеме'),
           ),
         ],
         const SizedBox(height: 8),
@@ -564,6 +675,175 @@ class _Content extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+enum _DemoPaymentResult { idle, succeeded, declined }
+
+class _DemoPaymentCard extends StatefulWidget {
+  const _DemoPaymentCard({required this.total, required this.currency});
+
+  final double total;
+  final String currency;
+
+  @override
+  State<_DemoPaymentCard> createState() => _DemoPaymentCardState();
+}
+
+class _DemoPaymentCardState extends State<_DemoPaymentCard> {
+  _DemoPaymentResult _result = _DemoPaymentResult.idle;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = switch (_result) {
+      _DemoPaymentResult.idle => null,
+      _DemoPaymentResult.succeeded => 'Тестовая оплата успешна',
+      _DemoPaymentResult.declined => 'Тестовый отказ оплаты',
+    };
+    final statusIcon = _result == _DemoPaymentResult.succeeded
+        ? Icons.check_circle_outline
+        : Icons.error_outline;
+
+    return Card(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Тестовая оплата',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Демо-заглушка. Деньги не списываются, серверное состояние '
+              'брони не меняется.',
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Сумма: ${_money(widget.total)} ${widget.currency}',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            if (status != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(statusIcon),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(status)),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () =>
+                  setState(() => _result = _DemoPaymentResult.succeeded),
+              child: const Text('Успешная оплата'),
+            ),
+            OutlinedButton(
+              onPressed: () =>
+                  setState(() => _result = _DemoPaymentResult.declined),
+              child: const Text('Отказ оплаты'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NextActionCard extends StatelessWidget {
+  const _NextActionCard({
+    required this.booking,
+    required this.isLoading,
+    required this.onConfirm,
+    required this.onOpenChat,
+    required this.onOpenReview,
+    required this.onReportIssue,
+  });
+
+  final ParticipantBooking booking;
+  final bool isLoading;
+  final VoidCallback onConfirm;
+  final VoidCallback onOpenChat;
+  final VoidCallback onOpenReview;
+  final VoidCallback? onReportIssue;
+
+  @override
+  Widget build(BuildContext context) {
+    final nextAction = booking.nextAction;
+    final step = switch (booking.status) {
+      'PENDING' => 1,
+      'CONFIRMED' => 2,
+      'ACTIVE' => 3,
+      'RETURNED' => 4,
+      'COMPLETED' => 5,
+      _ => 1,
+    };
+    final primaryAction = switch (nextAction.code) {
+      'REVIEW_REQUEST' => onConfirm,
+      'LEAVE_REVIEW' => onOpenReview,
+      'NONE' => null,
+      _ => onOpenChat,
+    };
+    final primaryLabel = switch (nextAction.code) {
+      'REVIEW_REQUEST' => 'Подтвердить бронирование',
+      'LEAVE_REVIEW' => 'Оставить отзыв',
+      _ => 'Открыть чат',
+    };
+
+    return Card(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Следующее действие',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              nextAction.title,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 4),
+            Text(nextAction.description),
+            const SizedBox(height: 12),
+            LinearProgressIndicator(value: step / 5),
+            const SizedBox(height: 6),
+            Text(
+              booking.status == 'CANCELLED'
+                  ? 'Заявка отменена'
+                  : 'Этап $step из 5',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            if (primaryAction != null) ...[
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: isLoading ? null : primaryAction,
+                child: Text(primaryLabel),
+              ),
+            ],
+            if (nextAction.code == 'REVIEW_REQUEST' ||
+                nextAction.code == 'LEAVE_REVIEW')
+              TextButton.icon(
+                onPressed: onOpenChat,
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: const Text('Открыть чат'),
+              ),
+            if (onReportIssue != null)
+              TextButton.icon(
+                onPressed: isLoading ? null : onReportIssue,
+                icon: const Icon(Icons.support_agent),
+                label: const Text('Есть проблема'),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -600,6 +880,11 @@ class _Acts extends StatelessWidget {
         values.any(
           (act) => act.stage == currentStage && act.authorId == currentUserId,
         );
+    final canCreateCurrentAct = switch (currentStage) {
+      'HANDOVER' => booking.actorRole == 'LENDER',
+      'RETURN' => booking.actorRole == 'BORROWER',
+      _ => false,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -626,6 +911,39 @@ class _Acts extends StatelessWidget {
                         ? 'Ожидает подтверждения'
                         : 'Подтверждён',
                   ),
+                  if (act.readiness case final readiness?) ...[
+                    const SizedBox(height: 12),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Чек-лист готовности',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const Text('✓ Вещь исправна'),
+                            const Text('✓ Комплектация полная'),
+                            Text(
+                              'Видимые дефекты: ${readiness.visibleDefects}',
+                            ),
+                            Text('Отмечено: ${_time(readiness.declaredAt)}'),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Заявление владельца, не проверка Sosedi.',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   for (var index = 0; index < act.evidence.length; index += 1)
                     TextButton.icon(
                       onPressed: () => onOpenEvidence(act.evidence[index].id),
@@ -648,7 +966,10 @@ class _Acts extends StatelessWidget {
               ),
             ),
           ),
-        if (currentStage != null && currentUserId != null && !hasOwnCurrentAct)
+        if (currentStage != null &&
+            currentUserId != null &&
+            canCreateCurrentAct &&
+            !hasOwnCurrentAct)
           OutlinedButton.icon(
             onPressed: isLoading ? null : onCreate,
             icon: const Icon(Icons.add_a_photo_outlined),
@@ -658,6 +979,89 @@ class _Acts extends StatelessWidget {
                   : 'Создать акт возврата',
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _ReadinessDialog extends StatefulWidget {
+  const _ReadinessDialog();
+
+  @override
+  State<_ReadinessDialog> createState() => _ReadinessDialogState();
+}
+
+class _ReadinessDialogState extends State<_ReadinessDialog> {
+  final _defectsController = TextEditingController();
+  var _isWorking = false;
+  var _isComplete = false;
+
+  bool get _canContinue =>
+      _isWorking && _isComplete && _defectsController.text.trim().length >= 2;
+
+  @override
+  void dispose() {
+    _defectsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Готовность к передаче'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Перед снимком подтвердите состояние вещи. '
+              'Ответы сохранятся вместе с актом.',
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _isWorking,
+              onChanged: (value) => setState(() => _isWorking = value ?? false),
+              title: const Text('Вещь исправна'),
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _isComplete,
+              onChanged: (value) =>
+                  setState(() => _isComplete = value ?? false),
+              title: const Text('Комплектация полная'),
+            ),
+            TextField(
+              controller: _defectsController,
+              maxLength: 500,
+              maxLines: 3,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Видимые дефекты',
+                hintText: 'Например: нет или потёртость на ручке',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Отмена'),
+        ),
+        FilledButton(
+          onPressed: _canContinue
+              ? () => Navigator.pop(
+                  context,
+                  HandoverReadinessInput(
+                    isWorking: _isWorking,
+                    isComplete: _isComplete,
+                    visibleDefects: _defectsController.text.trim(),
+                  ),
+                )
+              : null,
+          child: const Text('Выбрать снимок'),
+        ),
       ],
     );
   }
@@ -719,3 +1123,10 @@ String _time(DateTime value) =>
     '${bookingDate(value.toLocal())} '
     '${value.toLocal().hour.toString().padLeft(2, '0')}:'
     '${value.toLocal().minute.toString().padLeft(2, '0')}';
+
+String _supportStatus(String status) => switch (status) {
+  'OPEN' => 'Открыто',
+  'IN_PROGRESS' => 'В работе',
+  'CLOSED' => 'Закрыто',
+  _ => status,
+};

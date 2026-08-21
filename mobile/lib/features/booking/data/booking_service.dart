@@ -29,6 +29,13 @@ final bookingActsProvider = FutureProvider.autoDispose
       retry: (_, _) => null,
     );
 
+final bookingMessagesProvider = FutureProvider.autoDispose
+    .family<BookingMessagePage, String>(
+      (ref, bookingId) =>
+          ref.watch(bookingServiceProvider).listMessages(bookingId),
+      retry: (_, _) => null,
+    );
+
 class BookingService {
   const BookingService(this._dio);
 
@@ -118,6 +125,64 @@ class BookingService {
     return _data(envelope, 'Не удалось загрузить бронирование');
   }
 
+  Future<BookingMessagePage> listMessages(
+    String bookingId, {
+    String? cursor,
+    int limit = 50,
+  }) async {
+    final queryParameters = <String, Object?>{'limit': limit};
+    if (cursor case final cursor?) {
+      queryParameters['cursor'] = cursor;
+    }
+    final body = await _get(
+      '/bookings/$bookingId/messages',
+      queryParameters: queryParameters,
+    );
+    final envelope = ApiEnvelope<BookingMessagePage>.fromJson(
+      body,
+      (json) => BookingMessagePage.fromJson(json! as Map<String, dynamic>),
+    );
+    return _data(envelope, 'Не удалось загрузить сообщения');
+  }
+
+  Future<BookingMessage> sendMessage({
+    required String bookingId,
+    required String body,
+    required String clientMessageId,
+  }) async {
+    final response = await _post(
+      '/bookings/$bookingId/messages',
+      data: {'body': body.trim(), 'clientMessageId': clientMessageId},
+      fallback: 'Не удалось отправить сообщение',
+    );
+    final envelope = ApiEnvelope<BookingMessage>.fromJson(
+      response,
+      (json) => BookingMessage.fromJson(json! as Map<String, dynamic>),
+    );
+    return _data(envelope, 'Не удалось отправить сообщение');
+  }
+
+  Future<void> markMessagesRead(String bookingId) async {
+    final body = await _patch('/bookings/$bookingId/messages/read');
+    final envelope = ApiEnvelope<Map<String, dynamic>>.fromJson(
+      body,
+      (json) => json! as Map<String, dynamic>,
+    );
+    _data(envelope, 'Не удалось отметить сообщения прочитанными');
+  }
+
+  Future<void> blockCounterparty(String bookingId) async {
+    final body = await _post(
+      '/bookings/$bookingId/messages/block-counterparty',
+      fallback: 'Не удалось заблокировать собеседника',
+    );
+    final envelope = ApiEnvelope<Map<String, dynamic>>.fromJson(
+      body,
+      (json) => json! as Map<String, dynamic>,
+    );
+    _data(envelope, 'Не удалось заблокировать собеседника');
+  }
+
   Future<void> confirm(String id, {required String requestId}) async {
     return _command(
       '/bookings/$id/confirm',
@@ -134,7 +199,7 @@ class BookingService {
     );
   }
 
-  Future<void> reportIssue({
+  Future<BookingIssueReceipt> reportIssue({
     required String bookingId,
     required String reason,
     required String details,
@@ -149,27 +214,21 @@ class BookingService {
       'ITEM_LOST' => 'Потеря вещи',
       _ => 'Проблема с бронированием',
     };
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/support/tickets',
-        data: {
-          'bookingId': bookingId,
-          'bookingIssueReason': reason,
-          'subject': subject,
-          'message': details.trim(),
-        },
-      );
-      if (response.data?['success'] != true) {
-        throw const ApiException(
-          code: 'INVALID_RESPONSE',
-          message: 'Не удалось отправить обращение',
-        );
-      }
-    } on ApiException {
-      rethrow;
-    } on DioException catch (error) {
-      throw _dioException(error, 'Не удалось отправить обращение');
-    }
+    final body = await _post(
+      '/support/tickets',
+      data: {
+        'bookingId': bookingId,
+        'bookingIssueReason': reason,
+        'subject': subject,
+        'message': details.trim(),
+      },
+      fallback: 'Не удалось отправить обращение',
+    );
+    final envelope = ApiEnvelope<BookingIssueReceipt>.fromJson(
+      body,
+      (json) => BookingIssueReceipt.fromJson(json! as Map<String, dynamic>),
+    );
+    return _data(envelope, 'Не удалось отправить обращение');
   }
 
   Future<List<BookingAct>> listActs(String bookingId) async {
@@ -187,11 +246,16 @@ class BookingService {
     required String bookingId,
     required String stage,
     required XFile photo,
+    HandoverReadinessInput? readiness,
   }) async {
     final intentId = await _uploadBookingEvidence(bookingId, photo);
     final body = await _post(
       '/bookings/$bookingId/acts',
-      data: {'stage': stage, 'intentId': intentId},
+      data: {
+        'stage': stage,
+        'intentId': intentId,
+        if (readiness != null) 'readiness': readiness.toJson(),
+      },
       fallback: 'Не удалось создать акт',
     );
     final envelope = ApiEnvelope<BookingAct>.fromJson(
@@ -359,6 +423,24 @@ class BookingService {
       rethrow;
     } on DioException catch (error) {
       throw _dioException(error, fallback);
+    }
+  }
+
+  Future<Map<String, dynamic>> _patch(String path) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(path);
+      final body = response.data;
+      if (body == null) {
+        throw const ApiException(
+          code: 'INVALID_RESPONSE',
+          message: 'Не удалось прочитать ответ',
+        );
+      }
+      return body;
+    } on ApiException {
+      rethrow;
+    } on DioException catch (error) {
+      throw _dioException(error, 'Не удалось обновить данные');
     }
   }
 

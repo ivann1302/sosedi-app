@@ -182,6 +182,14 @@ self-hosted HTTPS DSN, hosted `sentry.io` блокируется. `beforeSend` �
 user/request/attachments и очищает всё событие. Полный контракт:
 [docs/observability-data-redaction.md](docs/observability-data-redaction.md).
 
+В local/debug по умолчанию доступны две явно помеченные UX-заглушки: демо-карта
+строится только из публичных приблизительных точек текущего каталога, а карточка
+подтверждённой брони арендатора позволяет показать успешную или отклонённую
+тестовую оплату без списания денег и без изменения server state. Они всегда
+выключены при `APP_ENVIRONMENT=production` и в release; локально их также можно
+скрыть через `--dart-define=ENABLE_DEMO_STUBS=false`. Заглушки не закрывают
+MapKit, payment/provider, legal и device-smoke gates checklist.
+
 Mobile analytics использует consent-first allowlist из восьми funnel events без
 произвольных параметров. AppMetrica transport не подключён и не может собирать
 данные до privacy/legal gate; opt-out прекращает отправку и очищает локальное
@@ -265,9 +273,9 @@ MapKit. Перед релизом граница `RF only`, согласия и 
 неизменяемый URL.
 
 Черновик намеренно закрыт от индексации и не является опубликованной офертой.
-Перед использованием URL в mobile/store listing нужно утвердить юридические
-тексты и support-канал, настроить production-домен/HTTPS и выполнить release
-smoke.
+Публичный support-канал утверждён: `sosedi.rs@yandex.ru`. Перед использованием
+URL в mobile/store listing нужно утвердить юридические тексты, настроить
+production-домен/HTTPS и выполнить release smoke.
 
 Пока legal/safety gate и эти URL не готовы, публичные booking/payment функции
 считаются выключенными.

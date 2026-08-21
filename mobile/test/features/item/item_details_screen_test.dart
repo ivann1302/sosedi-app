@@ -12,6 +12,9 @@ import 'package:mobile/features/auth/domain/auth_state.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/item/data/item_service.dart';
 import 'package:mobile/features/item/presentation/item_details_screen.dart';
+import 'package:mobile/features/reviews/data/review_models.dart';
+import 'package:mobile/features/reviews/data/review_service.dart';
+import 'package:mobile/features/reviews/presentation/owner_profile_screen.dart';
 import 'package:mobile/features/safety/data/safety_service.dart';
 
 void main() {
@@ -23,6 +26,9 @@ void main() {
       ProviderScope(
         overrides: [
           itemDetailsProvider(item.id).overrideWith((ref) async => item),
+          publicReviewsProvider(
+            item.owner.id,
+          ).overrideWith((ref) async => emptyReviews),
         ],
         child: MaterialApp(home: ItemDetailsScreen(itemId: item.id)),
       ),
@@ -36,6 +42,7 @@ void main() {
     expect(find.text('Кейс и два бура'), findsOneWidget);
     expect(find.text('Используйте защитные очки'), findsOneWidget);
     expect(find.text('Доступность проверяется по датам'), findsOneWidget);
+    expect(find.text('Новый владелец'), findsOneWidget);
     expect(find.textContaining('Тверская'), findsNothing);
   });
 
@@ -80,6 +87,9 @@ void main() {
       ProviderScope(
         overrides: [
           itemDetailsProvider(item.id).overrideWith((ref) async => item),
+          publicReviewsProvider(
+            item.owner.id,
+          ).overrideWith((ref) async => emptyReviews),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
@@ -116,6 +126,9 @@ void main() {
         overrides: [
           authControllerProvider.overrideWith(_OwnerController.new),
           itemDetailsProvider(item.id).overrideWith((ref) async => item),
+          publicReviewsProvider(
+            item.owner.id,
+          ).overrideWith((ref) async => emptyReviews),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),
@@ -150,6 +163,9 @@ void main() {
       ProviderScope(
         overrides: [
           itemDetailsProvider(item.id).overrideWith((ref) async => item),
+          publicReviewsProvider(
+            item.owner.id,
+          ).overrideWith((ref) async => emptyReviews),
           marketplaceDocumentsConfigProvider.overrideWithValue(documents),
         ],
         child: MaterialApp.router(routerConfig: router),
@@ -178,6 +194,9 @@ void main() {
             }
             return item;
           }),
+          publicReviewsProvider(
+            item.owner.id,
+          ).overrideWith((ref) async => emptyReviews),
         ],
         child: MaterialApp(home: ItemDetailsScreen(itemId: item.id)),
       ),
@@ -200,6 +219,9 @@ void main() {
       ProviderScope(
         overrides: [
           itemDetailsProvider(item.id).overrideWith((ref) async => item),
+          publicReviewsProvider(
+            item.owner.id,
+          ).overrideWith((ref) async => emptyReviews),
           authControllerProvider.overrideWith(_AuthenticatedController.new),
           safetyServiceProvider.overrideWithValue(safety),
         ],
@@ -242,6 +264,79 @@ void main() {
 
     expect(safety.blockCalls, 1);
   });
+
+  testWidgets('opens a public owner profile with verified reviews', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final safety = _FakeSafetyService();
+    final router = GoRouter(
+      initialLocation: '/items/${item.id}',
+      routes: [
+        GoRoute(
+          path: '/items/:id',
+          builder: (_, _) => ItemDetailsScreen(itemId: item.id),
+        ),
+        GoRoute(
+          path: '/items/:id/owner',
+          builder: (_, _) => OwnerProfileScreen(itemId: item.id),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          itemDetailsProvider(item.id).overrideWith((ref) async => item),
+          publicReviewsProvider(
+            item.owner.id,
+          ).overrideWith((ref) async => ratedReviews),
+          authControllerProvider.overrideWith(_AuthenticatedController.new),
+          safetyServiceProvider.overrideWithValue(safety),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+    expect(find.text('4.5 · 2 подтверждённых отзывов'), findsOneWidget);
+    await tester.tap(find.text('Профиль и отзывы владельца'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Профиль владельца'), findsOneWidget);
+    expect(find.text('Подтверждённые отзывы'), findsOneWidget);
+    expect(find.text('Подтверждённая аренда'), findsOneWidget);
+    expect(find.text('Вещь передали вовремя.'), findsOneWidget);
+
+    await tester.tap(find.text('Пожаловаться на отзыв'));
+    await tester.pumpAndSettle();
+    final reportForm = tester.state<FormBuilderState>(find.byType(FormBuilder));
+    reportForm.patchValue({
+      'reason': 'PRIVACY_VIOLATION',
+      'description': 'В отзыве опубликованы персональные данные пользователя.',
+    });
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, 'Отправить'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(safety.lastTargetType, 'REVIEW');
+    expect(safety.lastTargetId, 'review-1');
+    await tester.tap(find.text('Заблокировать владельца'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, 'Заблокировать'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(safety.blockCalls, 1);
+  });
 }
 
 class _FakeSafetyService extends SafetyService {
@@ -250,6 +345,7 @@ class _FakeSafetyService extends SafetyService {
   var reportCalls = 0;
   var blockCalls = 0;
   String? lastTargetType;
+  String? lastTargetId;
 
   @override
   Future<void> createReport({
@@ -260,6 +356,7 @@ class _FakeSafetyService extends SafetyService {
   }) async {
     reportCalls += 1;
     lastTargetType = targetType;
+    lastTargetId = targetId;
   }
 
   @override
@@ -322,6 +419,28 @@ final item = CatalogItem(
   photos: const [],
   createdAt: DateTime.utc(2026, 7, 29),
   updatedAt: DateTime.utc(2026, 7, 29),
+);
+
+const emptyReviews = PublicReviewPage(
+  summary: ReviewSummary(average: null, count: 0),
+  items: [],
+  nextCursor: null,
+);
+
+final ratedReviews = PublicReviewPage(
+  summary: const ReviewSummary(average: 4.5, count: 2),
+  items: [
+    PublicReview(
+      id: 'review-1',
+      authorRole: 'BORROWER',
+      rating: 5,
+      text: 'Вещь передали вовремя.',
+      verifiedRental: true,
+      publishedAt: DateTime.utc(2026, 8, 9),
+      createdAt: DateTime.utc(2026, 8, 9),
+    ),
+  ],
+  nextCursor: null,
 );
 
 const documents = MarketplaceDocumentsConfig(

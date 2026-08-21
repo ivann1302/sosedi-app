@@ -184,6 +184,17 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
                 const SizedBox(height: 20),
                 const Card(
                   child: ListTile(
+                    leading: Icon(Icons.schedule_outlined),
+                    title: Text('Владелец ответит в течение 12 часов'),
+                    subtitle: Text(
+                      'До подтверждения даты не зарезервированы. Если владелец '
+                      'примет другую пересекающуюся заявку, эта заявка отменится.',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Card(
+                  child: ListTile(
                     leading: Icon(Icons.payments_outlined),
                     title: Text('Оплата при передаче вещи'),
                     subtitle: Text(

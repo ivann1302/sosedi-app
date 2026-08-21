@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import '../../../core/permissions/permission_prompt.dart';
 import '../../../shared/widgets/unsaved_changes_guard.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/domain/catalog_controller.dart';
+import '../data/create_item_draft_storage.dart';
 import '../data/create_item_models.dart';
 import '../domain/create_item_controller.dart';
 
@@ -45,6 +48,19 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   final _formKey = GlobalKey<FormBuilderState>();
   List<XFile> _photos = const [];
   var _hasUnsavedChanges = false;
+  var _step = 0;
+  var _draftLoading = true;
+  var _photoError = false;
+  Map<String, dynamic> _initialValue = const {};
+  late final CreateItemDraftStorage _draftStorage;
+  Future<void> _draftWrites = Future.value();
+
+  @override
+  void initState() {
+    super.initState();
+    _draftStorage = ref.read(createItemDraftStorageProvider);
+    unawaited(_restoreDraft());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,20 +77,24 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
 
     return UnsavedChangesGuard(
       hasUnsavedChanges: _hasUnsavedChanges,
+      onDiscard: _draftStorage.clear,
       child: Scaffold(
         appBar: AppBar(title: const Text('Новое объявление')),
         body: SafeArea(
-          child: categories.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) => _CategoriesError(
-              onRetry: () => ref.invalidate(catalogCategoriesProvider),
-            ),
-            data: (value) => _buildForm(
-              value,
-              isSubmitting: submission.isLoading,
-              error: submission.error,
-            ),
-          ),
+          child: _draftLoading
+              ? const Center(child: CircularProgressIndicator())
+              : categories.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (_, _) => _CategoriesError(
+                    onRetry: () => ref.invalidate(catalogCategoriesProvider),
+                  ),
+                  data: (value) => _buildForm(
+                    value,
+                    isSubmitting: submission.isLoading,
+                    error: submission.error,
+                  ),
+                ),
         ),
       ),
     );
@@ -87,192 +107,311 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   }) {
     return FormBuilder(
       key: _formKey,
-      onChanged: _markDirty,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
+      initialValue: _initialValue,
+      onChanged: _onFormChanged,
+      child: Column(
         children: [
-          if (error != null) ...[
-            const Text(
-              'Не удалось отправить объявление. Проверьте данные и повторите.',
-            ),
-            const SizedBox(height: 16),
-          ],
-          _text(
-            name: 'title',
-            label: 'Название',
-            validators: [
-              FormBuilderValidators.required(errorText: 'Обязательное поле'),
-              FormBuilderValidators.minLength(3),
-              FormBuilderValidators.maxLength(120),
-            ],
-          ),
-          _text(
-            name: 'description',
-            label: 'Описание',
-            maxLines: 4,
-            validators: [
-              FormBuilderValidators.required(errorText: 'Обязательное поле'),
-              FormBuilderValidators.minLength(10),
-              FormBuilderValidators.maxLength(4000),
-            ],
-          ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: FormBuilderDropdown<String>(
-              name: 'categoryId',
-              decoration: const InputDecoration(labelText: 'Категория'),
-              items: categories
-                  .map(
-                    (category) => DropdownMenuItem(
-                      value: category.id,
-                      child: Text(category.name),
-                    ),
-                  )
-                  .toList(growable: false),
-              validator: FormBuilderValidators.required(
-                errorText: 'Обязательное поле',
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: FormBuilderDropdown<String>(
-              name: 'condition',
-              decoration: const InputDecoration(labelText: 'Состояние'),
-              items: const [
-                DropdownMenuItem(value: 'NEW', child: Text('Новое')),
-                DropdownMenuItem(value: 'LIKE_NEW', child: Text('Как новое')),
-                DropdownMenuItem(value: 'GOOD', child: Text('Хорошее')),
-                DropdownMenuItem(
-                  value: 'FAIR',
-                  child: Text('Удовлетворительное'),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Шаг ${_step + 1} из 3 · ${_stepTitle(_step)}',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(value: (_step + 1) / 3),
               ],
-              validator: FormBuilderValidators.required(
-                errorText: 'Обязательное поле',
-              ),
             ),
           ),
-          _text(
-            name: 'completeness',
-            label: 'Комплектация',
-            maxLines: 2,
-            validators: [
-              FormBuilderValidators.required(errorText: 'Обязательное поле'),
-              FormBuilderValidators.minLength(3),
-              FormBuilderValidators.maxLength(1000),
-            ],
-          ),
-          _text(
-            name: 'handoverTerms',
-            label: 'Передача и безопасность',
-            maxLines: 3,
-            validators: [
-              FormBuilderValidators.required(errorText: 'Обязательное поле'),
-              FormBuilderValidators.minLength(3),
-              FormBuilderValidators.maxLength(1000),
-            ],
-          ),
-          _number(
-            name: 'pricePerDay',
-            label: 'Цена за день, ₽',
-            min: 1,
-            max: 1000000,
-          ),
-          _text(
-            name: 'publicArea',
-            label: 'Район для публичной карточки',
-            validators: [
-              FormBuilderValidators.required(errorText: 'Обязательное поле'),
-              FormBuilderValidators.minLength(2),
-              FormBuilderValidators.maxLength(120),
-            ],
-          ),
-          _text(
-            name: 'address',
-            label: 'Точный адрес передачи (приватно)',
-            validators: [
-              FormBuilderValidators.required(errorText: 'Обязательное поле'),
-              FormBuilderValidators.minLength(5),
-              FormBuilderValidators.maxLength(300),
-            ],
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _number(
-                  name: 'latitude',
-                  label: 'Широта',
-                  min: -90,
-                  max: 90,
-                ),
+          if (error != null)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: Text(
+                'Не удалось отправить объявление. Проверьте данные и повторите.',
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _number(
-                  name: 'longitude',
-                  label: 'Долгота',
-                  min: -180,
-                  max: 180,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: isSubmitting ? null : _pickPhotos,
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: Text(
-              _photos.isEmpty
-                  ? 'Добавить фото'
-                  : 'Выбрано фото: ${_photos.length}',
             ),
-          ),
-          if (_photos.isNotEmpty)
-            Wrap(
-              spacing: 8,
-              children: _photos
-                  .map(
-                    (photo) => InputChip(
-                      label: Text(photo.name),
-                      onDeleted: isSubmitting
-                          ? null
-                          : () => setState(
-                              () => _photos = _photos
-                                  .where((candidate) => candidate != photo)
-                                  .toList(growable: false),
-                            ),
-                    ),
-                  )
-                  .toList(growable: false),
+          Expanded(
+            child: IndexedStack(
+              index: _step,
+              children: [
+                _photoStep(isSubmitting),
+                _descriptionStep(categories, isSubmitting),
+                _locationStep(isSubmitting),
+              ],
             ),
-          const SizedBox(height: 12),
-          _confirmation(
-            'ownershipConfirmed',
-            'Я вправе распоряжаться этой вещью',
-          ),
-          _confirmation('conditionConfirmed', 'Состояние вещи указано верно'),
-          _confirmation(
-            'completenessConfirmed',
-            'Комплектация указана полностью',
-          ),
-          _confirmation(
-            'safetyAndMarketplaceRulesAccepted',
-            'Я принимаю правила публикации $_listingRulesVersion и требования безопасности категории',
-          ),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: isSubmitting ? null : _submit,
-            child: isSubmitting
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Отправить на модерацию'),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _photoStep(bool isSubmitting) {
+    return ListView(
+      key: const ValueKey('create-item-photo-step'),
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text('Покажите вещь', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 8),
+        const Text(
+          'Добавьте до 5 чётких фото. Первое будет главным в каталоге.',
+        ),
+        const SizedBox(height: 20),
+        OutlinedButton.icon(
+          onPressed: isSubmitting ? null : _pickPhotos,
+          icon: const Icon(Icons.add_photo_alternate_outlined),
+          label: Text(
+            _photos.isEmpty
+                ? 'Добавить фото'
+                : 'Выбрано фото: ${_photos.length}',
+          ),
+        ),
+        if (_photoError)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text(
+              'Добавьте хотя бы одно фото',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        if (_photos.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          const Text('Нажмите на фото, чтобы сделать его главным.'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var index = 0; index < _photos.length; index += 1)
+                InputChip(
+                  avatar: Icon(
+                    index == 0 ? Icons.star : Icons.image_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    index == 0
+                        ? 'Главное · ${_photos[index].name}'
+                        : _photos[index].name,
+                  ),
+                  onPressed: isSubmitting ? null : () => _makeCover(index),
+                  onDeleted: isSubmitting ? null : () => _removePhoto(index),
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 24),
+        FilledButton(onPressed: _nextFromPhotos, child: const Text('Далее')),
+      ],
+    );
+  }
+
+  Widget _descriptionStep(List<CatalogCategory> categories, bool isSubmitting) {
+    return ListView(
+      key: const ValueKey('create-item-description-step'),
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          'Опишите вещь и цену',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 16),
+        _text(
+          name: 'title',
+          label: 'Название',
+          validators: [
+            FormBuilderValidators.required(errorText: 'Обязательное поле'),
+            FormBuilderValidators.minLength(3),
+            FormBuilderValidators.maxLength(120),
+          ],
+        ),
+        _text(
+          name: 'description',
+          label: 'Описание',
+          maxLines: 4,
+          validators: [
+            FormBuilderValidators.required(errorText: 'Обязательное поле'),
+            FormBuilderValidators.minLength(10),
+            FormBuilderValidators.maxLength(4000),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: FormBuilderDropdown<String>(
+            name: 'categoryId',
+            decoration: const InputDecoration(labelText: 'Категория'),
+            items: categories
+                .map(
+                  (category) => DropdownMenuItem(
+                    value: category.id,
+                    child: Text(category.name),
+                  ),
+                )
+                .toList(growable: false),
+            validator: FormBuilderValidators.required(
+              errorText: 'Обязательное поле',
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: FormBuilderDropdown<String>(
+            name: 'condition',
+            decoration: const InputDecoration(labelText: 'Состояние'),
+            items: const [
+              DropdownMenuItem(value: 'NEW', child: Text('Новое')),
+              DropdownMenuItem(value: 'LIKE_NEW', child: Text('Как новое')),
+              DropdownMenuItem(value: 'GOOD', child: Text('Хорошее')),
+              DropdownMenuItem(
+                value: 'FAIR',
+                child: Text('Удовлетворительное'),
+              ),
+            ],
+            validator: FormBuilderValidators.required(
+              errorText: 'Обязательное поле',
+            ),
+          ),
+        ),
+        _text(
+          name: 'completeness',
+          label: 'Комплектация',
+          maxLines: 2,
+          validators: [
+            FormBuilderValidators.required(errorText: 'Обязательное поле'),
+            FormBuilderValidators.minLength(3),
+            FormBuilderValidators.maxLength(1000),
+          ],
+        ),
+        _text(
+          name: 'handoverTerms',
+          label: 'Передача и безопасность',
+          maxLines: 3,
+          validators: [
+            FormBuilderValidators.required(errorText: 'Обязательное поле'),
+            FormBuilderValidators.minLength(3),
+            FormBuilderValidators.maxLength(1000),
+          ],
+        ),
+        _number(
+          name: 'pricePerDay',
+          label: 'Цена за день, ₽',
+          min: 1,
+          max: 1000000,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: isSubmitting ? null : _previousStep,
+                child: const Text('Назад'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton(
+                onPressed: isSubmitting ? null : _nextFromDescription,
+                child: const Text('Далее'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _locationStep(bool isSubmitting) {
+    return ListView(
+      key: const ValueKey('create-item-location-step'),
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          'Место и доступность',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Точный адрес видят только участники подтверждённой аренды.',
+        ),
+        const SizedBox(height: 16),
+        _text(
+          name: 'publicArea',
+          label: 'Район для публичной карточки',
+          validators: [
+            FormBuilderValidators.required(errorText: 'Обязательное поле'),
+            FormBuilderValidators.minLength(2),
+            FormBuilderValidators.maxLength(120),
+          ],
+        ),
+        _text(
+          name: 'address',
+          label: 'Точный адрес передачи (приватно)',
+          validators: [
+            FormBuilderValidators.required(errorText: 'Обязательное поле'),
+            FormBuilderValidators.minLength(5),
+            FormBuilderValidators.maxLength(300),
+          ],
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _number(
+                name: 'latitude',
+                label: 'Широта',
+                min: -90,
+                max: 90,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _number(
+                name: 'longitude',
+                label: 'Долгота',
+                min: -180,
+                max: 180,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _confirmation(
+          'ownershipConfirmed',
+          'Я вправе распоряжаться этой вещью',
+        ),
+        _confirmation('conditionConfirmed', 'Состояние вещи указано верно'),
+        _confirmation(
+          'completenessConfirmed',
+          'Комплектация указана полностью',
+        ),
+        _confirmation(
+          'safetyAndMarketplaceRulesAccepted',
+          'Я принимаю правила публикации $_listingRulesVersion и требования безопасности категории',
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: isSubmitting ? null : _previousStep,
+                child: const Text('Назад'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton(
+                onPressed: isSubmitting ? null : _submit,
+                child: isSubmitting
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('На модерацию'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -327,13 +466,20 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final form = _formKey.currentState;
+    if (_photos.isEmpty) {
+      setState(() {
+        _step = 0;
+        _photoError = true;
+      });
+      return;
+    }
     if (form == null || !form.saveAndValidate()) {
       return;
     }
     final values = form.value;
-    ref
+    await ref
         .read(createItemProvider.notifier)
         .submit(
           CreateItemDraft(
@@ -357,6 +503,12 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
           ),
           _photos,
         );
+    if (ref.read(createItemProvider).value != null) {
+      await _draftStorage.clear();
+      if (mounted) {
+        setState(() => _hasUnsavedChanges = false);
+      }
+    }
   }
 
   double _double(Object? value) => double.parse(value! as String);
@@ -377,15 +529,149 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
     setState(() {
       _photos = photos.take(5).toList(growable: false);
       _hasUnsavedChanges = true;
+      _photoError = false;
     });
   }
 
-  void _markDirty() {
+  Future<void> _restoreDraft() async {
+    final draft = await _draftStorage.load();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      if (draft != null) {
+        _step = draft.step < 0 ? 0 : (draft.step > 2 ? 2 : draft.step);
+        _initialValue = {
+          'categoryId': draft.categoryId,
+          'title': draft.title,
+          'description': draft.description,
+          'condition': draft.condition,
+          'completeness': draft.completeness,
+          'handoverTerms': draft.handoverTerms,
+          'pricePerDay': draft.pricePerDay,
+          'publicArea': draft.publicArea,
+        };
+        _hasUnsavedChanges = _initialValue.values.any(
+          (value) => value is String && value.isNotEmpty,
+        );
+      }
+      _draftLoading = false;
+    });
+  }
+
+  void _onFormChanged() {
     if (!_hasUnsavedChanges) {
       setState(() => _hasUnsavedChanges = true);
     }
+    _persistDraft();
+  }
+
+  void _persistDraft() {
+    final values = _formKey.currentState?.instantValue ?? _initialValue;
+    final draft = LocalCreateItemDraft(
+      step: _step,
+      categoryId: _stringValue(values['categoryId']),
+      title: _stringValue(values['title']),
+      description: _stringValue(values['description']),
+      condition: _stringValue(values['condition']),
+      completeness: _stringValue(values['completeness']),
+      handoverTerms: _stringValue(values['handoverTerms']),
+      pricePerDay: _stringValue(values['pricePerDay']),
+      publicArea: _stringValue(values['publicArea']),
+    );
+    _draftWrites = _draftWrites
+        .catchError((Object _, StackTrace _) {})
+        .then((_) => _draftStorage.save(draft));
+    unawaited(_draftWrites.catchError((Object _, StackTrace _) {}));
+  }
+
+  String? _stringValue(Object? value) {
+    if (value is! String || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  void _nextFromPhotos() {
+    if (_photos.isEmpty) {
+      setState(() => _photoError = true);
+      return;
+    }
+    setState(() {
+      _photoError = false;
+      _step = 1;
+    });
+    _persistDraft();
+  }
+
+  void _nextFromDescription() {
+    if (!_validateFields(const [
+      'title',
+      'description',
+      'categoryId',
+      'condition',
+      'completeness',
+      'handoverTerms',
+      'pricePerDay',
+    ])) {
+      return;
+    }
+    setState(() => _step = 2);
+    _persistDraft();
+  }
+
+  bool _validateFields(List<String> names) {
+    var valid = true;
+    final fields = _formKey.currentState?.fields;
+    if (fields == null) {
+      return false;
+    }
+    for (final name in names) {
+      if (!(fields[name]?.validate() ?? false)) {
+        valid = false;
+      }
+    }
+    return valid;
+  }
+
+  void _previousStep() {
+    if (_step == 0) {
+      return;
+    }
+    setState(() => _step -= 1);
+    _persistDraft();
+  }
+
+  void _makeCover(int index) {
+    if (index <= 0 || index >= _photos.length) {
+      return;
+    }
+    setState(() {
+      final selected = _photos[index];
+      _photos = [
+        selected,
+        for (var itemIndex = 0; itemIndex < _photos.length; itemIndex += 1)
+          if (itemIndex != index) _photos[itemIndex],
+      ];
+    });
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _photos = [
+        for (var itemIndex = 0; itemIndex < _photos.length; itemIndex += 1)
+          if (itemIndex != index) _photos[itemIndex],
+      ];
+      _photoError = _photos.isEmpty;
+    });
   }
 }
+
+String _stepTitle(int step) => switch (step) {
+  0 => 'Фото',
+  1 => 'Описание и цена',
+  _ => 'Место и доступность',
+};
 
 class _CreatedItem extends StatelessWidget {
   const _CreatedItem({required this.result, required this.onRetryPhotos});
@@ -435,7 +721,7 @@ class _CreatedItem extends StatelessWidget {
               FilledButton(
                 onPressed: result.isUploadingPhotos
                     ? null
-                    : () => context.go('/home'),
+                    : () => context.go('/items/mine'),
                 child: const Text('Готово'),
               ),
             ],

@@ -11,6 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../catalog/data/catalog_models.dart';
+import '../../reviews/data/review_service.dart';
 import '../../safety/domain/safety_action_controller.dart';
 import '../../safety/presentation/report_dialog.dart';
 import '../data/item_service.dart';
@@ -39,6 +40,11 @@ class ItemDetailsScreen extends ConsumerWidget {
           ),
           data: (value) => _ItemContent(item: value),
         ),
+      ),
+      bottomNavigationBar: item.when(
+        loading: () => null,
+        error: (_, _) => null,
+        data: (value) => _ItemPrimaryAction(item: value),
       ),
     );
   }
@@ -116,47 +122,134 @@ class _ItemContent extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     final documents = ref.watch(marketplaceDocumentsConfigProvider);
     final safety = ref.watch(safetyActionProvider);
+    final reviews = ref.watch(publicReviewsProvider(item.owner.id));
     final currentUserId = auth is AuthAuthenticated ? auth.user.id : null;
     final isOwner = currentUserId == item.owner.id;
     final canReport = currentUserId != null && !isOwner;
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       children: [
         _PhotoGallery(photos: item.photos),
         const SizedBox(height: 20),
         Text(item.title, style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 12),
-        Text(
-          '${_price(item.pricePerDay)} ₽ / день',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.warmSand,
+              borderRadius: BorderRadius.circular(AppRadii.small),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                '${_price(item.pricePerDay)} ₽ / день',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 20),
-        _DetailRow(label: 'Категория', value: item.category.name),
-        _DetailRow(label: 'Район', value: item.area),
-        _DetailRow(
-          label: 'Владелец',
-          value: item.owner.name?.trim().isNotEmpty == true
-              ? item.owner.name!
-              : 'Сосед',
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Column(
+              children: [
+                _DetailRow(label: 'Категория', value: item.category.name),
+                _DetailRow(label: 'Район', value: item.area),
+                _DetailRow(
+                  label: 'Владелец',
+                  value: item.owner.name?.trim().isNotEmpty == true
+                      ? item.owner.name!
+                      : 'Сосед',
+                ),
+                _DetailRow(
+                  label: 'Состояние',
+                  value: _condition(item.condition),
+                ),
+                _DetailRow(label: 'Комплектация', value: item.completeness),
+              ],
+            ),
+          ),
         ),
-        _DetailRow(label: 'Состояние', value: _condition(item.condition)),
-        _DetailRow(label: 'Комплектация', value: item.completeness),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Рейтинг владельца',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 6),
+                reviews.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (_, _) => const Text('Рейтинг временно недоступен'),
+                  data: (page) => page.summary.count == 0
+                      ? const Text('Новый владелец')
+                      : Row(
+                          children: [
+                            const Icon(Icons.star_rounded, size: 18),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${page.summary.average!.toStringAsFixed(1)} · '
+                              '${page.summary.count} подтверждённых отзывов',
+                            ),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/items/${item.id}/owner'),
+                  icon: const Icon(Icons.person_outline),
+                  label: const Text('Профиль и отзывы владельца'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
         Text('Описание', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
         Text(item.description),
-        const SizedBox(height: 20),
-        Text(
-          'Передача и использование',
-          style: Theme.of(context).textTheme.titleLarge,
+        const SizedBox(height: 24),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppColors.warmSand,
+            borderRadius: BorderRadius.circular(AppRadii.medium),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.handshake_outlined, color: AppColors.slate800),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Передача и использование',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(item.handoverTerms),
+                      const SizedBox(height: 8),
+                      Text(
+                        item.category.safetyNotice,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(item.handoverTerms),
-        const SizedBox(height: 8),
-        Text(item.category.safetyNotice),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         const Card(
           child: ListTile(
             leading: Icon(Icons.event_available_outlined),
@@ -178,24 +271,8 @@ class _ItemContent extends ConsumerWidget {
             ),
           ),
         ],
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: () {
-            if (isOwner) {
-              context.push('/items/${item.id}/edit');
-              return;
-            }
-            unawaited(
-              ref
-                  .read(analyticsServiceProvider)
-                  .track(AnalyticsEvent.bookingStarted),
-            );
-            context.push('/items/${item.id}/booking');
-          },
-          child: Text(isOwner ? 'Управлять объявлением' : 'Выбрать даты'),
-        ),
         if (canReport) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
           OutlinedButton.icon(
             onPressed: safety.isLoading
                 ? null
@@ -253,6 +330,45 @@ class _ItemContent extends ConsumerWidget {
       'FAIR' => 'Удовлетворительное',
       _ => 'Не указано',
     };
+  }
+}
+
+class _ItemPrimaryAction extends ConsumerWidget {
+  const _ItemPrimaryAction({required this.item});
+
+  final CatalogItem item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authControllerProvider);
+    final currentUserId = auth is AuthAuthenticated ? auth.user.id : null;
+    final isOwner = currentUserId == item.owner.id;
+
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+        child: FilledButton(
+          onPressed: () {
+            if (isOwner) {
+              context.push('/items/${item.id}/edit');
+              return;
+            }
+            unawaited(
+              ref
+                  .read(analyticsServiceProvider)
+                  .track(AnalyticsEvent.bookingStarted),
+            );
+            context.push('/items/${item.id}/booking');
+          },
+          child: Text(isOwner ? 'Управлять объявлением' : 'Выбрать даты'),
+        ),
+      ),
+    );
   }
 }
 

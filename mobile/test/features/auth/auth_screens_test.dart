@@ -88,15 +88,15 @@ void main() {
     expect(button.onPressed, isNotNull);
   });
 
-  testWidgets('opens home after successful OTP verification', (tester) async {
+  testWidgets('opens find after successful OTP verification', (tester) async {
     final controller = _ScreenAuthController(codeSentState);
     final router = GoRouter(
       initialLocation: '/auth/otp',
       routes: [
         GoRoute(path: '/auth/otp', builder: (_, _) => const OtpScreen()),
         GoRoute(
-          path: '/home',
-          builder: (_, _) => const Scaffold(body: Text('Главная')),
+          path: '/catalog',
+          builder: (_, _) => const Scaffold(body: Text('Найти')),
         ),
       ],
     );
@@ -115,7 +115,42 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(controller.verifyOtpCalls, 1);
-    expect(find.text('Главная'), findsOneWidget);
+    expect(find.text('Найти'), findsOneWidget);
+  });
+
+  testWidgets('resumes a protected intent after successful OTP verification', (
+    tester,
+  ) async {
+    final controller = _ScreenAuthController(codeSentState);
+    final router = GoRouter(
+      initialLocation: '/auth/otp',
+      routes: [
+        GoRoute(
+          path: '/auth/otp',
+          builder: (_, _) => const OtpScreen(returnTo: '/items/item-1/booking'),
+        ),
+        GoRoute(
+          path: '/items/:id/booking',
+          builder: (_, state) =>
+              Scaffold(body: Text('Бронь ${state.pathParameters['id']}')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [authControllerProvider.overrideWith(() => controller)],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(EditableText), '123456');
+    await tester.tap(find.text('Продолжить'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Бронь item-1'), findsOneWidget);
   });
 }
 

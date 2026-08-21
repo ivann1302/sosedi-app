@@ -56,7 +56,9 @@ class InboxService {
 
     final bookingId = event.bookingId;
     if (bookingId != null) {
-      return '/bookings/$bookingId';
+      return event.eventType == 'BOOKING_MESSAGE_CREATED'
+          ? '/bookings/$bookingId/chat'
+          : '/bookings/$bookingId';
     }
     final supportTicketId = event.supportTicketId;
     if (supportTicketId != null) {

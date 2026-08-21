@@ -54,6 +54,7 @@ function createService({
     service: new BookingAvailabilityService(prisma as unknown as PrismaService),
     create,
     lock: tx.$executeRaw,
+    bookingFindFirst: tx.booking.findFirst,
   };
 }
 
@@ -67,7 +68,7 @@ describe('BookingAvailabilityService', () => {
   });
 
   it('creates an owner period under the item lock', async () => {
-    const { service, create, lock } = createService();
+    const { service, create, lock, bookingFindFirst } = createService();
 
     const result = await service.create('owner-1', 'item-1', {
       startDate: '2026-08-01',
@@ -78,6 +79,14 @@ describe('BookingAvailabilityService', () => {
     expect(lock).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledWith({
       data: expect.objectContaining({ itemId: 'item-1' }) as object,
+    });
+    expect(bookingFindFirst).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        status: {
+          in: ['CONFIRMED', 'ACTIVE', 'RETURNED'],
+        },
+      }) as object,
+      select: { id: true },
     });
   });
 
@@ -125,4 +134,22 @@ describe('BookingAvailabilityService', () => {
       ).resolves.toEqual({ available });
     },
   );
+
+  it('does not let pending requests hide dates from public availability', async () => {
+    const { service, bookingFindFirst } = createService();
+
+    await service.check('item-1', {
+      startDate: '2026-08-01',
+      endDate: '2026-08-03',
+    });
+
+    expect(bookingFindFirst).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        status: {
+          in: ['CONFIRMED', 'ACTIVE', 'RETURNED'],
+        },
+      }) as object,
+      select: { id: true },
+    });
+  });
 });

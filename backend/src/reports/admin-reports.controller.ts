@@ -18,7 +18,12 @@ import type { AuthenticatedRequest, AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ok, type ApiResponse } from '../common/http/api-response';
 import { DecideReportDto } from './dto/decide-report.dto';
-import { ReportsService, type AdminReportResponse } from './reports.service';
+import {
+  type AdminReportedMessageContext,
+  type AdminReportedReviewContext,
+  type AdminReportResponse,
+  ReportsService,
+} from './reports.service';
 
 @ApiTags('admin-reports')
 @ApiCookieAuth(ADMIN_SESSION_COOKIE)
@@ -32,6 +37,38 @@ export class AdminReportsController {
   @Get()
   async list(): Promise<ApiResponse<AdminReportResponse[]>> {
     return ok(await this.reports.listOpenForAdmin());
+  }
+
+  @ApiOkResponse({ description: 'Аудируемый текст сообщения из жалобы' })
+  @Get(':id/message-context')
+  async messageContext(
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiResponse<AdminReportedMessageContext>> {
+    return ok(
+      await this.reports.getReportedMessageContext(
+        user.id,
+        id,
+        getAdminAuditContext(request),
+      ),
+    );
+  }
+
+  @ApiOkResponse({ description: 'Аудируемый текст опубликованного отзыва' })
+  @Get(':id/review-context')
+  async reviewContext(
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiResponse<AdminReportedReviewContext>> {
+    return ok(
+      await this.reports.getReportedReviewContext(
+        user.id,
+        id,
+        getAdminAuditContext(request),
+      ),
+    );
   }
 
   @ApiOkResponse({ description: 'Результат решения по жалобе' })

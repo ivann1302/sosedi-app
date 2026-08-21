@@ -5,7 +5,7 @@ TEST_REDIS_URL ?= redis://localhost:$(TEST_REDIS_PORT)/15
 MOBILE_LINE_COVERAGE_MIN ?= 80
 TEST_COMPOSE = docker compose -f docker-compose.test.yml
 
-.PHONY: help infra-up infra-down container-mirror production-images production-boundary production-boundary-test release-gates release-gates-test production-smoke production-release production-rollback production-release-test backend-image-build backend-image-smoke backend-image-rollback-smoke glitchtip-config glitchtip-event-smoke environment-isolation environment-isolation-test time-sync time-sync-test alerts-verify alerts-test backup-scheduler-verify backup-scheduler-test git-backup-verify git-backup-test postgres-backup postgres-restore-drill s3-restore-sample test-infra-up test-infra-down backend-dev backend-build backend-lint backend-lint-check backend-test backend-test-coverage backend-test-e2e backend-test-db-migrate backend-prisma-generate backend-prisma-migrate backend-admin-bootstrap operator-dev operator-build public-web-dev public-web-check mobile-release-config mobile-release-config-test mobile-release-artifact-verify mobile-android-release mobile-ios-release mobile-analyze mobile-test mobile-test-coverage mobile-coverage-check mobile-ios-smoke mobile-gen security-scan check ci hooks-install hooks-run
+.PHONY: help infra-up infra-down container-mirror production-images production-boundary production-boundary-test release-gates release-gates-test production-smoke production-release production-rollback production-release-test backend-image-build backend-image-smoke backend-image-rollback-smoke glitchtip-config glitchtip-event-smoke environment-isolation environment-isolation-test time-sync time-sync-test alerts-verify alerts-test backup-scheduler-verify backup-scheduler-test git-backup-verify git-backup-test postgres-backup postgres-restore-drill s3-restore-sample test-infra-up test-infra-down backend-dev backend-build backend-lint backend-lint-check backend-test backend-test-coverage backend-test-e2e backend-test-db-migrate backend-prisma-generate backend-prisma-migrate backend-admin-bootstrap operator-dev operator-build public-web-dev public-web-check mobile-release-config mobile-release-config-test mobile-release-artifact-verify mobile-android-release mobile-ios-release mobile-analyze mobile-test mobile-test-coverage mobile-coverage-check mobile-screenshots mobile-ios-smoke mobile-gen security-scan check ci hooks-install hooks-run
 
 help:
 	@printf '%s\n' \
@@ -56,6 +56,7 @@ help:
 		'  make mobile-analyze           Run Flutter analyzer' \
 		'  make mobile-test              Run Flutter tests' \
 		'  make mobile-test-coverage     Run Flutter tests with coverage gate' \
+		'  make mobile-screenshots       Regenerate client route screenshots' \
 		'  make mobile-ios-smoke         Build locked iOS release without signing' \
 		'  make mobile-gen               Run Dart code generation' \
 		'  make security-scan             Run offline dependency and local secret scans' \
@@ -256,6 +257,9 @@ mobile-coverage-check:
 			printf "Flutter line coverage: %.2f%% (minimum %.2f%%)\n", percentage, minimum; \
 			if (percentage + 0.000001 < minimum) exit 1; \
 		}' mobile/coverage/lcov.info
+
+mobile-screenshots:
+	cd mobile && flutter test --update-goldens tool/capture_client_screenshots_test.dart
 
 mobile-ios-smoke:
 	cd mobile && flutter pub get --enforce-lockfile

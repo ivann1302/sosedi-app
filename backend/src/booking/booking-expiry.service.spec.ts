@@ -12,6 +12,9 @@ describe('BookingExpiryService', () => {
     const tx = {
       $executeRaw: jest.fn().mockResolvedValue(1),
       booking: { updateMany },
+      bookingMessage: {
+        create: jest.fn().mockResolvedValue({ id: 'message-1' }),
+      },
       notificationOutboxEvent: { create: createOutbox },
       bookingTransitionHistory: {
         create: jest.fn().mockResolvedValue({ id: 'transition-1' }),
@@ -44,6 +47,7 @@ describe('BookingExpiryService', () => {
       data: {
         status: BookingStatus.CANCELLED,
         cancellationReason: BOOKING_PENDING_TIMEOUT_REASON,
+        expiresAt: null,
       },
     });
     expect(updateMany).toHaveBeenCalledTimes(2);

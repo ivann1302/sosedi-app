@@ -86,6 +86,31 @@ void main() {
     expect(service.radii, [null, 5, 5]);
     expect(service.offsets, [0, 0, 1]);
   });
+
+  test('uses the selected dates for refresh and pagination', () async {
+    final service = _ControlledCatalogService();
+    final container = ProviderContainer(
+      overrides: [catalogServiceProvider.overrideWithValue(service)],
+    );
+    addTearDown(container.dispose);
+
+    final initial = container.read(catalogProvider.future);
+    service.calls[0].complete(_state('initial'));
+    await initial;
+
+    final filter = container
+        .read(catalogProvider.notifier)
+        .setAvailability('2026-08-12', '2026-08-14');
+    await Future<void>.delayed(Duration.zero);
+    service.calls[1].complete(_state('available', hasMore: true));
+    await filter;
+    final loadMore = container.read(catalogProvider.notifier).loadMore();
+    service.calls[2].complete(_state('next'));
+    await loadMore;
+
+    expect(service.availableFrom, [null, '2026-08-12', '2026-08-12']);
+    expect(service.availableTo, [null, '2026-08-14', '2026-08-14']);
+  });
 }
 
 class _FakeLocationService extends LocationService {
@@ -104,6 +129,8 @@ class _ControlledCatalogService extends CatalogService {
   final List<double?> latitudes = [];
   final List<double?> longitudes = [];
   final List<double?> radii = [];
+  final List<String?> availableFrom = [];
+  final List<String?> availableTo = [];
 
   @override
   Future<CatalogState> fetchItems({
@@ -113,6 +140,8 @@ class _ControlledCatalogService extends CatalogService {
     String? categoryId,
     double? minPrice,
     double? maxPrice,
+    String? availableFrom,
+    String? availableTo,
     double? latitude,
     double? longitude,
     double? radiusKm,
@@ -121,6 +150,8 @@ class _ControlledCatalogService extends CatalogService {
     latitudes.add(latitude);
     longitudes.add(longitude);
     radii.add(radiusKm);
+    this.availableFrom.add(availableFrom);
+    this.availableTo.add(availableTo);
     final completer = Completer<CatalogState>();
     calls.add(completer);
     return completer.future;

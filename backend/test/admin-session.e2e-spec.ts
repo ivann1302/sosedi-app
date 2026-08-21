@@ -3,6 +3,9 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import {
   AdminCapability,
+  BookingIssueReason,
+  BookingMessageAuthorRole,
+  BookingStatus,
   CategoryListingPolicy,
   ItemCondition,
   ItemStatus,
@@ -294,9 +297,30 @@ describe('Admin session (e2e)', () => {
         longitude: 37.62,
       },
     });
+    const supportBooking = await prisma.booking.create({
+      data: {
+        itemId: pendingItem.id,
+        borrowerId: reporter.id,
+        lenderId: owner.id,
+        startDate: new Date('2026-08-20T00:00:00.000Z'),
+        endDate: new Date('2026-08-21T00:00:00.000Z'),
+        totalAmount: 1000,
+        status: BookingStatus.CONFIRMED,
+      },
+    });
+    const reportedMessage = await prisma.bookingMessage.create({
+      data: {
+        bookingId: supportBooking.id,
+        authorId: owner.id,
+        authorRole: BookingMessageAuthorRole.LENDER,
+        body: 'Текст доступен только через аудируемый контекст.',
+      },
+    });
     const supportTicket = await prisma.supportTicket.create({
       data: {
         userId: owner.id,
+        bookingId: supportBooking.id,
+        bookingIssueReason: BookingIssueReason.ITEM_FAULTY,
         subject: 'Вопрос в поддержку',
         message: 'Нужна помощь с договорённостью о встрече.',
       },
@@ -339,6 +363,15 @@ describe('Admin session (e2e)', () => {
         reason: ReportReason.MISLEADING_LISTING,
         description:
           'Описание объявления не соответствует фактическому состоянию вещи.',
+      },
+    });
+    const messageReport = await prisma.userReport.create({
+      data: {
+        reporterId: reporter.id,
+        targetType: ReportTargetType.MESSAGE,
+        targetId: reportedMessage.id,
+        reason: ReportReason.HARASSMENT,
+        description: 'Сообщение требует проверки оператором модерации.',
       },
     });
     const accessToken = await jwt.signAsync(
@@ -558,6 +591,34 @@ describe('Admin session (e2e)', () => {
         expect(messages).toHaveLength(2);
       });
     await request(httpServer())
+      .get(`/api/v1/admin/support/tickets/${supportTicket.id}/booking-chat`)
+      .set('Cookie', adminSession.cookie)
+      .set('X-Request-Id', 'support-booking-chat-request')
+      .expect(200)
+      .expect(({ body }) => {
+        const messages = asRecord(body as unknown).data;
+        expect(messages).toEqual([
+          expect.objectContaining({
+            id: reportedMessage.id,
+            authorRole: BookingMessageAuthorRole.LENDER,
+            body: reportedMessage.body,
+          }),
+        ]);
+      });
+    await expect(
+      prisma.adminAuditLog.findFirstOrThrow({
+        where: {
+          adminId: admin.id,
+          action: 'SUPPORT_BOOKING_CHAT_ACCESSED',
+          entityId: supportTicket.id,
+        },
+      }),
+    ).resolves.toMatchObject({
+      capability: AdminCapability.SUPPORT,
+      requestId: 'support-booking-chat-request',
+      metadata: { bookingId: supportBooking.id, messageCount: 1 },
+    });
+    await request(httpServer())
       .get(
         `/api/v1/admin/support/tickets/${supportTicket.id}/attachments/${supportAttachment.id}/download-url`,
       )
@@ -764,6 +825,38 @@ describe('Admin session (e2e)', () => {
       .get('/api/v1/admin/reports')
       .set('Cookie', adminSession.cookie)
       .expect(200);
+    await request(httpServer())
+      .get(`/api/v1/admin/reports/${messageReport.id}/message-context`)
+      .set('Cookie', adminSession.cookie)
+      .set('X-Request-Id', 'reported-message-context-request')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          data: {
+            id: reportedMessage.id,
+            bookingId: supportBooking.id,
+            authorRole: BookingMessageAuthorRole.LENDER,
+            body: reportedMessage.body,
+          },
+        });
+      });
+    await expect(
+      prisma.adminAuditLog.findFirstOrThrow({
+        where: {
+          adminId: admin.id,
+          action: 'REPORTED_BOOKING_MESSAGE_ACCESSED',
+          entityId: reportedMessage.id,
+        },
+      }),
+    ).resolves.toMatchObject({
+      capability: AdminCapability.MODERATION,
+      requestId: 'reported-message-context-request',
+      metadata: { reportId: messageReport.id, bookingId: supportBooking.id },
+    });
+    await request(httpServer())
+      .get(`/api/v1/admin/support/tickets/${supportTicket.id}/booking-chat`)
+      .set('Cookie', adminSession.cookie)
+      .expect(403);
     await request(httpServer())
       .patch(`/api/v1/admin/reports/${userReport.id}/decision`)
       .set('Cookie', adminSession.cookie)

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/domain/auth_controller.dart';
@@ -6,6 +8,7 @@ import '../../features/booking/data/booking_service.dart';
 import '../../features/booking/domain/booking_action_controller.dart';
 import '../../features/booking/domain/booking_availability_controller.dart';
 import '../../features/item/data/owned_items_service.dart';
+import '../../features/item/data/create_item_draft_storage.dart';
 import '../../features/item/domain/create_item_controller.dart';
 import '../../features/item/domain/edit_item_controller.dart';
 import '../../features/notifications/data/inbox_service.dart';
@@ -25,6 +28,7 @@ import '../../features/support/domain/support_message_create_controller.dart';
 final privateStateCleanupProvider = Provider<void>((ref) {
   ref.listen<AuthState>(authControllerProvider, (previous, next) {
     if (previous is AuthAuthenticated && next is! AuthAuthenticated) {
+      unawaited(ref.read(createItemDraftStorageProvider).clear());
       ref.invalidate(profileProvider);
       ref.invalidate(sessionsProvider);
       ref.invalidate(ownedItemsProvider);

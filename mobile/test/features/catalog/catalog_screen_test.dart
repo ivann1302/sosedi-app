@@ -43,6 +43,32 @@ void main() {
     expect(find.textContaining('улица'), findsNothing);
   });
 
+  testWidgets('switches the loaded catalog to the local demo map', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        _FakeCatalogService([
+          _page([item]),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Карта (демо)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Приблизительное расположение'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('demo-map-marker-item-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Точные адреса не показываются'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('shows an empty catalog', (tester) async {
     await tester.pumpWidget(_app(_FakeCatalogService([_page([])])));
     await tester.pumpAndSettle();
@@ -82,6 +108,11 @@ void main() {
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Показать ещё'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Показать ещё'));
     await tester.pumpAndSettle();
 
@@ -116,9 +147,7 @@ void main() {
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Все категории'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Инструменты').last);
+    await tester.tap(find.text('Инструменты'));
     await tester.pumpAndSettle();
 
     expect(service.categoryIds, [null, 'category-1']);
@@ -133,7 +162,8 @@ void main() {
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Цена за день'));
+    expect(find.text('Цена за день'), findsNothing);
+    await tester.tap(find.text('Фильтры'));
     await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, 'От'), '100');
     await tester.enterText(find.widgetWithText(TextField, 'До'), '500');
@@ -161,6 +191,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Фильтры'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Без ограничения'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('До 5 км').last);
@@ -170,6 +202,22 @@ void main() {
     expect(service.longitudes, [null, 37.62]);
     expect(service.radii, [null, 5]);
     expect(service.offsets, [0, 0]);
+  });
+
+  testWidgets('keeps dates in the compact filter row', (tester) async {
+    final service = _FakeCatalogService([
+      _page([item]),
+    ]);
+    await tester.pumpWidget(_app(service));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Даты'), findsOneWidget);
+    expect(find.text('Цена за день'), findsNothing);
+
+    await tester.tap(find.text('Даты'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DateRangePickerDialog), findsOneWidget);
   });
 
   testWidgets('opens an item and returns to the same catalog', (tester) async {
@@ -198,6 +246,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.drag(find.byType(ListView).last, const Offset(0, -400));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Перфоратор'));
     await tester.pumpAndSettle();
     expect(find.text('Карточка item-1'), findsOneWidget);
@@ -286,6 +336,8 @@ class _FakeCatalogService extends CatalogService {
     String? categoryId,
     double? minPrice,
     double? maxPrice,
+    String? availableFrom,
+    String? availableTo,
     double? latitude,
     double? longitude,
     double? radiusKm,

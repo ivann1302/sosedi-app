@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile/core/permissions/app_permissions.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/catalog/data/catalog_service.dart';
+import 'package:mobile/features/item/data/create_item_draft_storage.dart';
 import 'package:mobile/features/item/data/create_item_models.dart';
 import 'package:mobile/features/item/data/create_item_service.dart';
 import 'package:mobile/features/item/presentation/create_item_screen.dart';
@@ -18,10 +19,18 @@ void main() {
   testWidgets('rejects an invalid create item form', (tester) async {
     _useTallSurface(tester);
     final service = _FakeCreateItemService();
-    await tester.pumpWidget(_app(service));
+    await tester.pumpWidget(_app(service, picker: _FakePhotoPicker()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Отправить на модерацию'));
+    await tester.tap(find.text('Далее'));
+    await tester.pump();
+    expect(find.text('Добавьте хотя бы одно фото'), findsOneWidget);
+
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Далее'));
     await tester.pump();
 
     expect(service.calls, 0);
@@ -33,7 +42,13 @@ void main() {
   ) async {
     _useTallSurface(tester);
     final service = _FakeCreateItemService();
-    await tester.pumpWidget(_app(service));
+    await tester.pumpWidget(_app(service, picker: _FakePhotoPicker()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Шаг 1 из 3 · Фото'), findsOneWidget);
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Далее'));
     await tester.pumpAndSettle();
 
     final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
@@ -55,7 +70,10 @@ void main() {
       'safetyAndMarketplaceRulesAccepted': true,
     });
     await tester.pump();
-    await tester.tap(find.text('Отправить на модерацию'));
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+    expect(find.text('Шаг 3 из 3 · Место и доступность'), findsOneWidget);
+    await tester.tap(find.text('На модерацию'));
     await tester.pumpAndSettle();
 
     expect(service.calls, 1);
@@ -74,6 +92,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Выбрано фото: 1'), findsOneWidget);
+    expect(find.byIcon(Icons.star), findsOneWidget);
   });
 
   testWidgets('does not open the picker after photo permission is denied', (
@@ -148,11 +167,60 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('restores only safe draft fields after recreating the screen', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final storage = _FakeDraftStorage();
+    await tester.pumpWidget(
+      _app(_FakeCreateItemService(), draftStorage: storage),
+    );
+    await tester.pumpAndSettle();
+
+    final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
+    form.fields['title']!.didChange('Дрель из черновика');
+    form.fields['address']!.didChange('Москва, секретный адрес');
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(
+      _app(_FakeCreateItemService(), draftStorage: storage),
+    );
+    await tester.pumpAndSettle();
+
+    final restored = tester.state<FormBuilderState>(find.byType(FormBuilder));
+    expect(restored.instantValue['title'], 'Дрель из черновика');
+    expect(restored.instantValue['address'], isNull);
+    expect(storage.draft?.title, 'Дрель из черновика');
+  });
+
+  testWidgets('moves back between the three publication steps', (tester) async {
+    _useTallSurface(tester);
+    await tester.pumpWidget(
+      _app(_FakeCreateItemService(), picker: _FakePhotoPicker()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+    expect(find.text('Шаг 2 из 3 · Описание и цена'), findsOneWidget);
+
+    await tester.tap(find.text('Назад'));
+    await tester.pumpAndSettle();
+    expect(find.text('Шаг 1 из 3 · Фото'), findsOneWidget);
+  });
+
   testWidgets('asks before system back discards an unfinished draft', (
     tester,
   ) async {
     _useTallSurface(tester);
-    await tester.pumpWidget(_app(_FakeCreateItemService()));
+    final storage = _FakeDraftStorage();
+    await tester.pumpWidget(
+      _app(_FakeCreateItemService(), draftStorage: storage),
+    );
     await tester.pumpAndSettle();
 
     final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
@@ -166,6 +234,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(form.fields['title']!.value, 'Дрель из черновика');
     expect(find.byType(CreateItemScreen), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Отменить изменения'));
+    await tester.pumpAndSettle();
+    expect(storage.draft, isNull);
   });
 
   testWidgets('keeps a focused field visible above keyboard and safe areas', (
@@ -175,7 +249,12 @@ void main() {
     tester.view.physicalSize = const Size(500, 900);
     tester.view.padding = const FakeViewPadding(top: 44, bottom: 34);
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(_app(_FakeCreateItemService()));
+    await tester.pumpWidget(
+      _app(
+        _FakeCreateItemService(),
+        draftStorage: _FakeDraftStorage(const LocalCreateItemDraft(step: 2)),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
@@ -197,11 +276,15 @@ Widget _app(
   CreateItemService service, {
   ItemPhotoPicker? picker,
   AppPermissionGateway? permissions,
+  CreateItemDraftStorage? draftStorage,
 }) {
   return ProviderScope(
     overrides: [
       catalogServiceProvider.overrideWithValue(_FakeCatalogService()),
       createItemServiceProvider.overrideWithValue(service),
+      createItemDraftStorageProvider.overrideWithValue(
+        draftStorage ?? _FakeDraftStorage(),
+      ),
       appPermissionGatewayProvider.overrideWithValue(
         permissions ?? _FakePermissionGateway(PermissionStatus.granted),
       ),
@@ -256,6 +339,25 @@ class _FakePhotoPicker extends ItemPhotoPicker {
         mimeType: 'image/jpeg',
       ),
     ];
+  }
+}
+
+class _FakeDraftStorage extends CreateItemDraftStorage {
+  _FakeDraftStorage([this.draft]);
+
+  LocalCreateItemDraft? draft;
+
+  @override
+  Future<LocalCreateItemDraft?> load() async => draft;
+
+  @override
+  Future<void> save(LocalCreateItemDraft value) async {
+    draft = value;
+  }
+
+  @override
+  Future<void> clear() async {
+    draft = null;
   }
 }
 

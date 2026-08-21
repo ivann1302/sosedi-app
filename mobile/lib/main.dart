@@ -14,6 +14,7 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/domain/auth_controller.dart';
 import 'features/booking/data/booking_service.dart';
 import 'features/notifications/domain/notification_navigation_controller.dart';
+import 'features/notifications/data/inbox_service.dart';
 import 'features/profile/domain/data_export_controller.dart';
 
 Future<void> main() async {
@@ -53,6 +54,8 @@ class _SosediAppState extends ConsumerState<SosediApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(authControllerProvider.notifier).validateSessionOnResume();
+      ref.invalidate(bookingMessagesProvider);
+      ref.invalidate(inboxEventsProvider);
       return;
     }
     if (state == AppLifecycleState.inactive ||

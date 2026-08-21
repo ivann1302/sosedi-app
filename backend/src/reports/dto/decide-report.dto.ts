@@ -4,6 +4,7 @@ import { IsEnum, IsString, Length } from 'class-validator';
 export enum ReportDecision {
   DISMISS = 'DISMISS',
   HIDE_LISTING = 'HIDE_LISTING',
+  HIDE_REVIEW = 'HIDE_REVIEW',
   BLOCK_USER = 'BLOCK_USER',
 }
 
