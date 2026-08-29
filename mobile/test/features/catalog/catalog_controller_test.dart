@@ -111,6 +111,30 @@ void main() {
     expect(service.availableFrom, [null, '2026-08-12', '2026-08-12']);
     expect(service.availableTo, [null, '2026-08-14', '2026-08-14']);
   });
+
+  test('keeps the selected sort for refresh and pagination', () async {
+    final service = _ControlledCatalogService();
+    final container = ProviderContainer(
+      overrides: [catalogServiceProvider.overrideWithValue(service)],
+    );
+    addTearDown(container.dispose);
+
+    final initial = container.read(catalogProvider.future);
+    service.calls[0].complete(_state('initial'));
+    await initial;
+
+    final sort = container
+        .read(catalogProvider.notifier)
+        .setSort(CatalogSort.priceAsc);
+    await Future<void>.delayed(Duration.zero);
+    service.calls[1].complete(_state('sorted', hasMore: true));
+    await sort;
+    final loadMore = container.read(catalogProvider.notifier).loadMore();
+    service.calls[2].complete(_state('next'));
+    await loadMore;
+
+    expect(service.sorts, ['newest', 'price_asc', 'price_asc']);
+  });
 }
 
 class _FakeLocationService extends LocationService {
@@ -131,6 +155,7 @@ class _ControlledCatalogService extends CatalogService {
   final List<double?> radii = [];
   final List<String?> availableFrom = [];
   final List<String?> availableTo = [];
+  final List<String> sorts = [];
 
   @override
   Future<CatalogState> fetchItems({
@@ -145,6 +170,7 @@ class _ControlledCatalogService extends CatalogService {
     double? latitude,
     double? longitude,
     double? radiusKm,
+    String sort = 'newest',
   }) {
     offsets.add(offset);
     latitudes.add(latitude);
@@ -152,6 +178,7 @@ class _ControlledCatalogService extends CatalogService {
     radii.add(radiusKm);
     this.availableFrom.add(availableFrom);
     this.availableTo.add(availableTo);
+    sorts.add(sort);
     final completer = Completer<CatalogState>();
     calls.add(completer);
     return completer.future;

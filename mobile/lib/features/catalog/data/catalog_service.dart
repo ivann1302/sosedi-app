@@ -28,6 +28,7 @@ class CatalogService {
     double? latitude,
     double? longitude,
     double? radiusKm,
+    String sort = 'newest',
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -35,7 +36,7 @@ class CatalogService {
         queryParameters: <String, Object>{
           'limit': limit + 1,
           'offset': offset,
-          'sort': 'newest',
+          'sort': sort,
           if (search.isNotEmpty) 'search': search,
           'categoryId': ?categoryId,
           'minPrice': ?minPrice,

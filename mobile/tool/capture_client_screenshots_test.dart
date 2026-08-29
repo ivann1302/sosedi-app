@@ -424,6 +424,7 @@ class _ScreenshotCatalogService extends CatalogService {
     double? latitude,
     double? longitude,
     double? radiusKm,
+    String sort = 'newest',
   }) async {
     return CatalogState(
       items: _catalogItems,

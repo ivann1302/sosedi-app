@@ -110,6 +110,25 @@ void main() {
     expect(service.searches, hasLength(3));
   });
 
+  testWidgets('selects server-backed catalog sort order', (tester) async {
+    final service = _FakeCatalogService([
+      _page([item]),
+      _page([item]),
+    ]);
+    await tester.pumpWidget(_app(service));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView).first, const Offset(-400, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Сначала новые'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Сначала дешевле').last);
+    await tester.pumpAndSettle();
+
+    expect(service.sorts, ['newest', 'price_asc']);
+    expect(find.text('Сначала дешевле'), findsOneWidget);
+  });
+
   testWidgets('keeps the selected map item after returning from the list', (
     tester,
   ) async {
@@ -502,6 +521,7 @@ class _FakeCatalogService extends CatalogService {
   final List<double?> latitudes = [];
   final List<double?> longitudes = [];
   final List<double?> radii = [];
+  final List<String> sorts = [];
   int _index = 0;
 
   @override
@@ -517,6 +537,7 @@ class _FakeCatalogService extends CatalogService {
     double? latitude,
     double? longitude,
     double? radiusKm,
+    String sort = 'newest',
   }) {
     offsets.add(offset);
     searches.add(search);
@@ -526,6 +547,7 @@ class _FakeCatalogService extends CatalogService {
     latitudes.add(latitude);
     longitudes.add(longitude);
     radii.add(radiusKm);
+    sorts.add(sort);
     return responses[_index++]();
   }
 

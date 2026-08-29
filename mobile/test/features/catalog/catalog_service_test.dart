@@ -51,6 +51,20 @@ void main() {
     expect(page.items.single.photos.single.isCover, isTrue);
   });
 
+  test('sends the selected server sort order', () async {
+    final adapter = CallbackAdapter((options) {
+      expect(options.queryParameters['sort'], 'price_asc');
+      return jsonResponse({
+        'success': true,
+        'data': <Object>[],
+        'error': null,
+      });
+    });
+    final service = CatalogService(Dio()..httpClientAdapter = adapter);
+
+    await service.fetchItems(sort: 'price_asc');
+  });
+
   test('loads only public listing categories', () async {
     final adapter = CallbackAdapter((options) {
       expect(options.method, 'GET');

@@ -200,6 +200,8 @@ class _QuickFilters extends StatelessWidget {
             label: const Text('Фильтры'),
             onPressed: () => _showFilters(context),
           ),
+          const SizedBox(width: 8),
+          const _SortChip(),
         ],
       ),
     );
@@ -212,6 +214,52 @@ class _QuickFilters extends StatelessWidget {
       builder: (context) => const _FilterSheet(),
     );
   }
+}
+
+class _SortChip extends ConsumerStatefulWidget {
+  const _SortChip();
+
+  @override
+  ConsumerState<_SortChip> createState() => _SortChipState();
+}
+
+class _SortChipState extends ConsumerState<_SortChip> {
+  CatalogSort _sort = CatalogSort.newest;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<CatalogSort>(
+      initialValue: _sort,
+      tooltip: 'Сортировка',
+      onSelected: _select,
+      itemBuilder: (context) => CatalogSort.values
+          .map(
+            (sort) => PopupMenuItem(
+              value: sort,
+              child: Text(_label(sort)),
+            ),
+          )
+          .toList(growable: false),
+      child: Chip(
+        avatar: const Icon(Icons.sort, size: 18),
+        label: Text(_label(_sort)),
+      ),
+    );
+  }
+
+  Future<void> _select(CatalogSort sort) async {
+    if (sort == _sort) {
+      return;
+    }
+    setState(() => _sort = sort);
+    await ref.read(catalogProvider.notifier).setSort(sort);
+  }
+
+  String _label(CatalogSort sort) => switch (sort) {
+    CatalogSort.newest => 'Сначала новые',
+    CatalogSort.priceAsc => 'Сначала дешевле',
+    CatalogSort.priceDesc => 'Сначала дороже',
+  };
 }
 
 class _CategoryChips extends ConsumerStatefulWidget {

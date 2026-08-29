@@ -15,6 +15,16 @@ final catalogCategoriesProvider = FutureProvider<List<CatalogCategory>>(
   retry: (_, _) => null,
 );
 
+enum CatalogSort {
+  newest('newest'),
+  priceAsc('price_asc'),
+  priceDesc('price_desc');
+
+  const CatalogSort(this.apiValue);
+
+  final String apiValue;
+}
+
 class CatalogController extends AsyncNotifier<CatalogState> {
   int _requestId = 0;
   String _search = '';
@@ -26,6 +36,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
   double? _latitude;
   double? _longitude;
   double? _radiusKm;
+  CatalogSort _sort = CatalogSort.newest;
 
   @override
   Future<CatalogState> build() {
@@ -42,6 +53,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
           latitude: _latitude,
           longitude: _longitude,
           radiusKm: _radiusKm,
+          sort: _sort.apiValue,
         );
   }
 
@@ -65,6 +77,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
             latitude: _latitude,
             longitude: _longitude,
             radiusKm: _radiusKm,
+            sort: _sort.apiValue,
           ),
     );
     if (requestId == _requestId) {
@@ -106,6 +119,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
             latitude: _latitude,
             longitude: _longitude,
             radiusKm: _radiusKm,
+            sort: _sort.apiValue,
           ),
     );
     if (requestId != _requestId) {
@@ -165,6 +179,14 @@ class CatalogController extends AsyncNotifier<CatalogState> {
     }
     _availableFrom = availableFrom;
     _availableTo = availableTo;
+    await refreshCatalog(preserveCurrent: false);
+  }
+
+  Future<void> setSort(CatalogSort sort) async {
+    if (sort == _sort) {
+      return;
+    }
+    _sort = sort;
     await refreshCatalog(preserveCurrent: false);
   }
 
