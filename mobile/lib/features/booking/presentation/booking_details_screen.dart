@@ -16,6 +16,7 @@ import '../../safety/presentation/report_dialog.dart';
 import '../data/booking_models.dart';
 import '../data/booking_service.dart';
 import '../domain/booking_action_controller.dart';
+import '../domain/demo_payment_controller.dart';
 import 'booking_list_screen.dart';
 
 final bookingEvidencePickerProvider = Provider<BookingEvidencePicker>((ref) {
@@ -566,7 +567,11 @@ class _Content extends StatelessWidget {
             booking.status == 'CONFIRMED' &&
             terms != null) ...[
           const SizedBox(height: 16),
-          _DemoPaymentCard(total: terms.total, currency: terms.currency),
+          _DemoPaymentCard(
+            bookingId: booking.id,
+            total: terms.total,
+            currency: terms.currency,
+          ),
         ],
         if (booking.handover != null) ...[
           const SizedBox(height: 16),
@@ -679,29 +684,29 @@ class _Content extends StatelessWidget {
   }
 }
 
-enum _DemoPaymentResult { idle, succeeded, declined }
+class _DemoPaymentCard extends ConsumerWidget {
+  const _DemoPaymentCard({
+    required this.bookingId,
+    required this.total,
+    required this.currency,
+  });
 
-class _DemoPaymentCard extends StatefulWidget {
-  const _DemoPaymentCard({required this.total, required this.currency});
-
+  final String bookingId;
   final double total;
   final String currency;
 
   @override
-  State<_DemoPaymentCard> createState() => _DemoPaymentCardState();
-}
-
-class _DemoPaymentCardState extends State<_DemoPaymentCard> {
-  _DemoPaymentResult _result = _DemoPaymentResult.idle;
-
-  @override
-  Widget build(BuildContext context) {
-    final status = switch (_result) {
-      _DemoPaymentResult.idle => null,
-      _DemoPaymentResult.succeeded => 'Тестовая оплата успешна',
-      _DemoPaymentResult.declined => 'Тестовый отказ оплаты',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final payment = demoPaymentProvider(bookingId);
+    final result = ref.watch(payment);
+    final status = switch (result) {
+      DemoPaymentResult.idle => null,
+      DemoPaymentResult.processing => 'Обработка тестовой оплаты…',
+      DemoPaymentResult.succeeded => 'Тестовая оплата успешна',
+      DemoPaymentResult.declined => 'Тестовый отказ оплаты',
     };
-    final statusIcon = _result == _DemoPaymentResult.succeeded
+    final isProcessing = result == DemoPaymentResult.processing;
+    final statusIcon = result == DemoPaymentResult.succeeded
         ? Icons.check_circle_outline
         : Icons.error_outline;
 
@@ -723,14 +728,20 @@ class _DemoPaymentCardState extends State<_DemoPaymentCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Сумма: ${_money(widget.total)} ${widget.currency}',
+              'Сумма: ${_money(total)} $currency',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             if (status != null) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(statusIcon),
+                  if (isProcessing)
+                    const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(statusIcon),
                   const SizedBox(width: 8),
                   Expanded(child: Text(status)),
                 ],
@@ -738,13 +749,15 @@ class _DemoPaymentCardState extends State<_DemoPaymentCard> {
             ],
             const SizedBox(height: 12),
             FilledButton(
-              onPressed: () =>
-                  setState(() => _result = _DemoPaymentResult.succeeded),
-              child: const Text('Успешная оплата'),
+              onPressed: isProcessing
+                  ? null
+                  : () => ref.read(payment.notifier).succeed(),
+              child: Text(isProcessing ? 'Обработка…' : 'Успешная оплата'),
             ),
             OutlinedButton(
-              onPressed: () =>
-                  setState(() => _result = _DemoPaymentResult.declined),
+              onPressed: isProcessing
+                  ? null
+                  : () => ref.read(payment.notifier).decline(),
               child: const Text('Отказ оплаты'),
             ),
           ],

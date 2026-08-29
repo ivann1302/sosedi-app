@@ -22,24 +22,38 @@ class CatalogScreen extends ConsumerStatefulWidget {
 
 class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   bool _showDemoMap = false;
+  String? _selectedDemoItemId;
 
   @override
   Widget build(BuildContext context) {
     final catalog = ref.watch(catalogProvider);
     final categories = ref.watch(catalogCategoriesProvider);
+    final compactMapAction =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.5;
+    final mapActionIcon = Icon(
+      _showDemoMap ? Icons.view_list_outlined : Icons.map_outlined,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Найти'),
         actions: [
           if (AppConfig.demoStubsEnabled)
-            TextButton.icon(
-              onPressed: () => setState(() => _showDemoMap = !_showDemoMap),
-              icon: Icon(
-                _showDemoMap ? Icons.view_list_outlined : Icons.map_outlined,
+            if (compactMapAction)
+              IconButton(
+                onPressed: _toggleDemoMap,
+                tooltip: _showDemoMap
+                    ? 'Показать список'
+                    : 'Показать демо-карту',
+                icon: mapActionIcon,
+              )
+            else
+              TextButton.icon(
+                onPressed: _toggleDemoMap,
+                icon: mapActionIcon,
+                label: Text(_showDemoMap ? 'Список' : 'Карта (демо)'),
               ),
-              label: Text(_showDemoMap ? 'Список' : 'Карта (демо)'),
-            ),
         ],
       ),
       body: SafeArea(
@@ -96,7 +110,13 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                             ),
                           Expanded(
                             child: _showDemoMap
-                                ? CatalogMapStub(items: value.items)
+                                ? CatalogMapStub(
+                                    items: value.items,
+                                    selectedItemId: _selectedDemoItemId,
+                                    onItemSelected: (itemId) => setState(
+                                      () => _selectedDemoItemId = itemId,
+                                    ),
+                                  )
                                 : RefreshIndicator(
                                     onRefresh: () => ref
                                         .read(catalogProvider.notifier)
@@ -141,6 +161,10 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         ),
       ),
     );
+  }
+
+  void _toggleDemoMap() {
+    setState(() => _showDemoMap = !_showDemoMap);
   }
 }
 

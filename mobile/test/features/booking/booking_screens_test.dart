@@ -11,6 +11,7 @@ import 'package:mobile/features/auth/domain/auth_controller.dart';
 import 'package:mobile/features/auth/domain/auth_state.dart';
 import 'package:mobile/features/booking/data/booking_models.dart';
 import 'package:mobile/features/booking/data/booking_service.dart';
+import 'package:mobile/features/booking/domain/demo_payment_controller.dart';
 import 'package:mobile/features/booking/presentation/booking_create_screen.dart';
 import 'package:mobile/features/booking/presentation/booking_details_screen.dart';
 import 'package:mobile/features/booking/presentation/booking_list_screen.dart';
@@ -23,6 +24,30 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../support/network_fakes.dart';
 
 void main() {
+  test('keeps demo payment outcomes isolated and idempotent', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final firstPayment = demoPaymentProvider('booking-1');
+    final subscription = container.listen(firstPayment, (_, _) {});
+    addTearDown(subscription.close);
+
+    expect(container.read(firstPayment), DemoPaymentResult.idle);
+
+    final decline = container.read(firstPayment.notifier).decline();
+    final ignoredSuccess = container.read(firstPayment.notifier).succeed();
+    expect(container.read(firstPayment), DemoPaymentResult.processing);
+    await Future.wait([decline, ignoredSuccess]);
+    expect(container.read(firstPayment), DemoPaymentResult.declined);
+
+    await container.read(firstPayment.notifier).succeed();
+    await container.read(firstPayment.notifier).succeed();
+    expect(container.read(firstPayment), DemoPaymentResult.succeeded);
+    expect(
+      container.read(demoPaymentProvider('booking-2')),
+      DemoPaymentResult.idle,
+    );
+  });
+
   testWidgets('shows date rules and keeps public submit behind legal gate', (
     tester,
   ) async {
@@ -241,7 +266,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Тестовая оплата'),
+      find.widgetWithText(OutlinedButton, 'Отказ оплаты'),
       300,
       scrollable: find.byType(Scrollable).first,
     );
@@ -249,12 +274,93 @@ void main() {
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Отказ оплаты'));
     await tester.pump();
+    expect(find.text('Обработка тестовой оплаты…'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Обработка…'))
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'Отказ оплаты'),
+          )
+          .onPressed,
+      isNull,
+    );
+    await tester.pump(demoPaymentDelay);
     expect(find.text('Тестовый отказ оплаты'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Успешная оплата'));
-    await tester.pump();
+    await tester.pump(demoPaymentDelay);
     expect(find.text('Тестовая оплата успешна'), findsOneWidget);
     expect(find.text('Подготовьтесь к передаче'), findsOneWidget);
+  });
+
+  testWidgets('keeps demo payment usable on a small screen at 200% text', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+    addTearDown(tester.view.reset);
+    final confirmed = booking.copyWith(
+      status: 'CONFIRMED',
+      expiresAt: null,
+      nextAction: const BookingNextAction(
+        code: 'PREPARE_HANDOVER',
+        title: 'Подготовьтесь к передаче',
+        description: 'Согласуйте время в чате.',
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingDetailsProvider(
+            booking.id,
+          ).overrideWith((ref) async => confirmed),
+          bookingActsProvider(
+            booking.id,
+          ).overrideWith((ref) async => <BookingAct>[]),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: BookingDetailsScreen(bookingId: booking.id),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final declineButton = find.widgetWithText(OutlinedButton, 'Отказ оплаты');
+    final scrollable = find.descendant(
+      of: find.byType(ListView),
+      matching: find.byType(Scrollable),
+    );
+    final position = tester.state<ScrollableState>(scrollable).position;
+    for (var index = 0; index < 20; index += 1) {
+      if (declineButton.hitTestable().evaluate().isNotEmpty) break;
+      final nextOffset = position.pixels + 300;
+      position.jumpTo(
+        nextOffset < position.maxScrollExtent
+            ? nextOffset
+            : position.maxScrollExtent,
+      );
+      await tester.pump();
+    }
+    expect(declineButton.hitTestable(), findsOneWidget);
+    await tester.tap(declineButton);
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Обработка тестовой оплаты…'), findsOneWidget);
+    await tester.pump(demoPaymentDelay);
+    expect(find.text('Тестовый отказ оплаты'), findsOneWidget);
   });
 
   testWidgets('keeps the next action usable on a small safe screen at 200%', (

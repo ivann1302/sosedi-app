@@ -168,7 +168,7 @@ void main() {
       await tester.drag(find.byType(ListView).first, const Offset(0, -650));
       await tester.pump(const Duration(milliseconds: 200));
       await tester.tap(find.widgetWithText(FilledButton, 'Успешная оплата'));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
     },
   );
   _screenshot(

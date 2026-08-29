@@ -6,22 +6,22 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../catalog/data/catalog_models.dart';
 
-class CatalogMapStub extends StatefulWidget {
-  const CatalogMapStub({required this.items, super.key});
+class CatalogMapStub extends StatelessWidget {
+  const CatalogMapStub({
+    required this.items,
+    required this.selectedItemId,
+    required this.onItemSelected,
+    super.key,
+  });
 
   final List<CatalogItem> items;
-
-  @override
-  State<CatalogMapStub> createState() => _CatalogMapStubState();
-}
-
-class _CatalogMapStubState extends State<CatalogMapStub> {
-  String? _selectedId;
+  final String? selectedItemId;
+  final ValueChanged<String> onItemSelected;
 
   @override
   Widget build(BuildContext context) {
-    final selected = widget.items.where((item) => item.id == _selectedId);
-    final selectedItem = selected.firstOrNull ?? widget.items.first;
+    final selected = items.where((item) => item.id == selectedItemId);
+    final selectedItem = selected.firstOrNull ?? items.first;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -34,7 +34,7 @@ class _CatalogMapStubState extends State<CatalogMapStub> {
               return Stack(
                 children: [
                   const Positioned.fill(child: _DemoMapBackground()),
-                  for (final entry in widget.items.indexed)
+                  for (final entry in items.indexed)
                     _marker(
                       constraints: constraints,
                       item: entry.$2,
@@ -44,13 +44,16 @@ class _CatalogMapStubState extends State<CatalogMapStub> {
                     left: 12,
                     right: 12,
                     top: 12,
-                    child: _Notice(itemCount: widget.items.length),
+                    child: _Notice(itemCount: items.length),
                   ),
                   Positioned(
                     left: 12,
                     right: 12,
                     bottom: 12,
-                    child: _SelectedItemCard(item: selectedItem),
+                    child: _SelectedItemCard(
+                      key: ValueKey('demo-map-selected-${selectedItem.id}'),
+                      item: selectedItem,
+                    ),
                   ),
                 ],
               );
@@ -69,10 +72,10 @@ class _CatalogMapStubState extends State<CatalogMapStub> {
     const horizontalPadding = 32.0;
     const topReserved = 112.0;
     const bottomReserved = 156.0;
-    final latitudes = widget.items
+    final latitudes = items
         .map((value) => value.approximateLocation.latitude)
         .toList();
-    final longitudes = widget.items
+    final longitudes = items
         .map((value) => value.approximateLocation.longitude)
         .toList();
     final minLat = latitudes.reduce(math.min);
@@ -107,7 +110,7 @@ class _CatalogMapStubState extends State<CatalogMapStub> {
         label: 'Выбрать ${item.title} на демо-карте',
         child: IconButton.filled(
           key: ValueKey('demo-map-marker-${item.id}'),
-          onPressed: () => setState(() => _selectedId = item.id),
+          onPressed: () => onItemSelected(item.id),
           tooltip: item.title,
           icon: const Icon(Icons.location_on),
         ),
@@ -191,42 +194,59 @@ class _Notice extends StatelessWidget {
 }
 
 class _SelectedItemCard extends StatelessWidget {
-  const _SelectedItemCard({required this.item});
+  const _SelectedItemCard({required this.item, super.key});
 
   final CatalogItem item;
 
   @override
   Widget build(BuildContext context) {
+    final compact =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.5;
+    final summary = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(item.title, style: Theme.of(context).textTheme.titleSmall),
+        Text(
+          '${_price(item.pricePerDay)} ₽ / день · ${item.area}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+    final openButton = TextButton(
+      onPressed: () => context.push('/items/${item.id}'),
+      child: const Text('Открыть'),
+    );
+
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            const Icon(Icons.inventory_2_outlined),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: compact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    item.title,
-                    style: Theme.of(context).textTheme.titleSmall,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.inventory_2_outlined),
+                      const SizedBox(width: 10),
+                      Expanded(child: summary),
+                    ],
                   ),
-                  Text(
-                    '${_price(item.pricePerDay)} ₽ / день · ${item.area}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                  Align(alignment: Alignment.centerRight, child: openButton),
+                ],
+              )
+            : Row(
+                children: [
+                  const Icon(Icons.inventory_2_outlined),
+                  const SizedBox(width: 10),
+                  Expanded(child: summary),
+                  openButton,
                 ],
               ),
-            ),
-            TextButton(
-              onPressed: () => context.push('/items/${item.id}'),
-              child: const Text('Открыть'),
-            ),
-          ],
-        ),
       ),
     );
   }

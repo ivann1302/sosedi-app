@@ -69,6 +69,182 @@ void main() {
     );
   });
 
+  testWidgets('keeps search and category while switching list and map', (
+    tester,
+  ) async {
+    final drill = item.copyWith(id: 'item-2', title: 'Дрель');
+    final service = _FakeCatalogService([
+      _page([item]),
+      _page([drill]),
+      _page([drill]),
+    ]);
+    await tester.pumpWidget(_app(service));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'дрель');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Инструменты'));
+    await tester.pumpAndSettle();
+
+    expect(service.searches, ['', 'дрель', 'дрель']);
+    expect(service.categoryIds, [null, null, 'category-1']);
+    expect(find.text('Дрель'), findsOneWidget);
+
+    await tester.tap(find.text('Карта (демо)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Приблизительное расположение'), findsOneWidget);
+    expect(find.text('Дрель'), findsOneWidget);
+    expect(service.searches, hasLength(3));
+
+    await tester.tap(find.text('Список'));
+    await tester.pumpAndSettle();
+
+    final category = tester.widget<ChoiceChip>(
+      find.widgetWithText(ChoiceChip, 'Инструменты'),
+    );
+    expect(find.text('дрель'), findsOneWidget);
+    expect(category.selected, isTrue);
+    expect(find.text('Дрель'), findsOneWidget);
+    expect(service.searches, hasLength(3));
+  });
+
+  testWidgets('keeps the selected map item after returning from the list', (
+    tester,
+  ) async {
+    final drill = item.copyWith(
+      id: 'item-2',
+      title: 'Дрель',
+      approximateLocation: const ApproximateLocation(
+        latitude: 55.76,
+        longitude: 37.64,
+        precision: 'SPARSE',
+      ),
+    );
+    final service = _FakeCatalogService([
+      _page([item, drill]),
+    ]);
+    await tester.pumpWidget(_app(service));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Карта (демо)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('demo-map-marker-item-2')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('demo-map-selected-item-2')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Список'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Карта (демо)'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('demo-map-selected-item-2')),
+      findsOneWidget,
+    );
+    expect(service.searches, hasLength(1));
+  });
+
+  testWidgets('opens the selected map item and restores the map on back', (
+    tester,
+  ) async {
+    final drill = item.copyWith(
+      id: 'item-2',
+      title: 'Дрель',
+      approximateLocation: const ApproximateLocation(
+        latitude: 55.76,
+        longitude: 37.64,
+        precision: 'SPARSE',
+      ),
+    );
+    final service = _FakeCatalogService([
+      _page([item, drill]),
+    ]);
+    final router = GoRouter(
+      initialLocation: '/catalog',
+      routes: [
+        GoRoute(path: '/catalog', builder: (_, _) => const CatalogScreen()),
+        GoRoute(
+          path: '/items/:id',
+          builder: (_, state) => Scaffold(
+            appBar: AppBar(),
+            body: Text('Карточка ${state.pathParameters['id']}'),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [catalogServiceProvider.overrideWithValue(service)],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Карта (демо)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('demo-map-marker-item-2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Открыть'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Карточка item-2'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Приблизительное расположение'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('demo-map-selected-item-2')),
+      findsOneWidget,
+    );
+    expect(service.searches, hasLength(1));
+  });
+
+  testWidgets('keeps the demo map usable on a small screen at 200% text', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+    addTearDown(tester.view.reset);
+    final service = _FakeCatalogService([
+      _page([item]),
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [catalogServiceProvider.overrideWithValue(service)],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const CatalogScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Показать демо-карту'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Приблизительное расположение'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('demo-map-marker-item-1')),
+      findsOneWidget,
+    );
+    expect(find.text('Открыть'), findsOneWidget);
+  });
+
   testWidgets('shows an empty catalog', (tester) async {
     await tester.pumpWidget(_app(_FakeCatalogService([_page([])])));
     await tester.pumpAndSettle();
