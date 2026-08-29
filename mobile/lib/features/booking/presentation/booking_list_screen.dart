@@ -8,11 +8,24 @@ import '../../notifications/data/inbox_service.dart';
 import '../data/booking_models.dart';
 import '../data/booking_service.dart';
 
-class BookingListScreen extends ConsumerWidget {
+class BookingListScreen extends ConsumerStatefulWidget {
   const BookingListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BookingListScreen> createState() =>
+      _BookingListScreenState();
+}
+
+enum _BookingLifecycleFilter { current, history }
+
+enum _BookingRoleFilter { all, borrower, lender }
+
+class _BookingListScreenState extends ConsumerState<BookingListScreen> {
+  _BookingLifecycleFilter _lifecycle = _BookingLifecycleFilter.current;
+  _BookingRoleFilter _role = _BookingRoleFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
     final bookings = ref.watch(myBookingsProvider);
     final unreadByBooking = <String, int>{};
     for (final event
@@ -47,22 +60,117 @@ class BookingListScreen extends ConsumerWidget {
               ],
             ),
           ),
-          data: (values) => values.isEmpty
-              ? const Center(child: Text('Бронирований пока нет'))
-              : RefreshIndicator(
-                  onRefresh: () => ref.refresh(myBookingsProvider.future),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: values.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) =>
-                        _BookingCard(
-                          booking: values[index],
-                          unreadCount: unreadByBooking[values[index].id] ?? 0,
-                        ),
-                  ),
+          data: (values) {
+            final filtered = values.where(_matchesFilters).toList();
+            return Column(
+              children: [
+                _BookingFilters(
+                  lifecycle: _lifecycle,
+                  role: _role,
+                  onLifecycleChanged: (value) =>
+                      setState(() => _lifecycle = value),
+                  onRoleChanged: (value) => setState(() => _role = value),
                 ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? Center(
+                          child: Text(
+                            values.isEmpty
+                                ? 'Бронирований пока нет'
+                                : 'Нет бронирований по выбранным фильтрам',
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () =>
+                              ref.refresh(myBookingsProvider.future),
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filtered.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) => _BookingCard(
+                              booking: filtered[index],
+                              unreadCount:
+                                  unreadByBooking[filtered[index].id] ?? 0,
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  bool _matchesFilters(ParticipantBooking booking) {
+    final isHistory = booking.status == 'COMPLETED' ||
+        booking.status == 'CANCELLED';
+    if ((_lifecycle == _BookingLifecycleFilter.history) != isHistory) {
+      return false;
+    }
+    return switch (_role) {
+      _BookingRoleFilter.all => true,
+      _BookingRoleFilter.borrower => booking.actorRole == 'BORROWER',
+      _BookingRoleFilter.lender => booking.actorRole == 'LENDER',
+    };
+  }
+}
+
+class _BookingFilters extends StatelessWidget {
+  const _BookingFilters({
+    required this.lifecycle,
+    required this.role,
+    required this.onLifecycleChanged,
+    required this.onRoleChanged,
+  });
+
+  final _BookingLifecycleFilter lifecycle;
+  final _BookingRoleFilter role;
+  final ValueChanged<_BookingLifecycleFilter> onLifecycleChanged;
+  final ValueChanged<_BookingRoleFilter> onRoleChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 52,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+        children: [
+          ChoiceChip(
+            label: const Text('Текущие'),
+            selected: lifecycle == _BookingLifecycleFilter.current,
+            onSelected: (_) =>
+                onLifecycleChanged(_BookingLifecycleFilter.current),
+          ),
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: const Text('История'),
+            selected: lifecycle == _BookingLifecycleFilter.history,
+            onSelected: (_) =>
+                onLifecycleChanged(_BookingLifecycleFilter.history),
+          ),
+          const SizedBox(width: 16),
+          ChoiceChip(
+            label: const Text('Все роли'),
+            selected: role == _BookingRoleFilter.all,
+            onSelected: (_) => onRoleChanged(_BookingRoleFilter.all),
+          ),
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: const Text('Беру'),
+            selected: role == _BookingRoleFilter.borrower,
+            onSelected: (_) => onRoleChanged(_BookingRoleFilter.borrower),
+          ),
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: const Text('Сдаю'),
+            selected: role == _BookingRoleFilter.lender,
+            onSelected: (_) => onRoleChanged(_BookingRoleFilter.lender),
+          ),
+        ],
       ),
     );
   }

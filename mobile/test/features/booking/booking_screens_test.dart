@@ -194,6 +194,62 @@ void main() {
     expect(find.textContaining('Вы арендуете'), findsOneWidget);
   });
 
+  testWidgets('filters bookings by lifecycle and participant role', (
+    tester,
+  ) async {
+    final currentBorrowing = booking.copyWith(
+      id: 'current-borrowing',
+      terms: booking.terms!.copyWith(itemTitle: 'Беру сейчас'),
+    );
+    final currentLending = booking.copyWith(
+      id: 'current-lending',
+      actorRole: 'LENDER',
+      terms: booking.terms!.copyWith(itemTitle: 'Сдаю сейчас'),
+    );
+    final completedBorrowing = booking.copyWith(
+      id: 'completed-borrowing',
+      status: 'COMPLETED',
+      terms: booking.terms!.copyWith(itemTitle: 'Брал раньше'),
+    );
+    final cancelledLending = booking.copyWith(
+      id: 'cancelled-lending',
+      actorRole: 'LENDER',
+      status: 'CANCELLED',
+      terms: booking.terms!.copyWith(itemTitle: 'Сдавал раньше'),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          myBookingsProvider.overrideWith(
+            (ref) async => [
+              currentBorrowing,
+              currentLending,
+              completedBorrowing,
+              cancelledLending,
+            ],
+          ),
+        ],
+        child: const MaterialApp(home: BookingListScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Беру сейчас'), findsOneWidget);
+    expect(find.text('Сдаю сейчас'), findsOneWidget);
+    expect(find.text('Брал раньше'), findsNothing);
+
+    await tester.tap(find.text('История'));
+    await tester.pumpAndSettle();
+    expect(find.text('Брал раньше'), findsOneWidget);
+    expect(find.text('Сдавал раньше'), findsOneWidget);
+    expect(find.text('Беру сейчас'), findsNothing);
+
+    await tester.tap(find.text('Сдаю'));
+    await tester.pumpAndSettle();
+    expect(find.text('Сдавал раньше'), findsOneWidget);
+    expect(find.text('Брал раньше'), findsNothing);
+  });
+
   testWidgets('details show full price and no contact before confirmation', (
     tester,
   ) async {
