@@ -67,6 +67,23 @@ export class ItemsController {
   }
 
   @ApiOkResponse({
+    description: 'Районы из доступных публичных объявлений',
+    schema: {
+      type: 'object',
+      required: ['success', 'data', 'error'],
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: { type: 'array', items: { type: 'string' } },
+        error: { type: 'object', nullable: true, example: null },
+      },
+    },
+  })
+  @Get('areas')
+  async listAreas(): Promise<ApiResponse<string[]>> {
+    return ok(await this.items.listPublicAreas());
+  }
+
+  @ApiOkResponse({
     description:
       'Все собственные объявления actor, включая непубличные статусы',
     type: [PrivateItemResponseDto],

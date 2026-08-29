@@ -135,6 +135,40 @@ void main() {
 
     expect(service.sorts, ['newest', 'price_asc', 'price_asc']);
   });
+
+  test('keeps the manual area for refresh and pagination', () async {
+    final service = _ControlledCatalogService();
+    final container = ProviderContainer(
+      overrides: [
+        catalogServiceProvider.overrideWithValue(service),
+        locationServiceProvider.overrideWithValue(const _FakeLocationService()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final initial = container.read(catalogProvider.future);
+    service.calls[0].complete(_state('initial'));
+    await initial;
+
+    final radius = container.read(catalogProvider.notifier).setRadius(5);
+    await Future<void>.delayed(Duration.zero);
+    service.calls[1].complete(_state('nearby'));
+    await radius;
+    final area = container
+        .read(catalogProvider.notifier)
+        .setArea('Хамовники');
+    await Future<void>.delayed(Duration.zero);
+    service.calls[2].complete(_state('area', hasMore: true));
+    await area;
+    final loadMore = container.read(catalogProvider.notifier).loadMore();
+    service.calls[3].complete(_state('next'));
+    await loadMore;
+
+    expect(service.areas, [null, null, 'Хамовники', 'Хамовники']);
+    expect(service.latitudes, [null, 55.75, null, null]);
+    expect(service.longitudes, [null, 37.62, null, null]);
+    expect(service.radii, [null, 5, null, null]);
+  });
 }
 
 class _FakeLocationService extends LocationService {
@@ -156,6 +190,7 @@ class _ControlledCatalogService extends CatalogService {
   final List<String?> availableFrom = [];
   final List<String?> availableTo = [];
   final List<String> sorts = [];
+  final List<String?> areas = [];
 
   @override
   Future<CatalogState> fetchItems({
@@ -171,6 +206,7 @@ class _ControlledCatalogService extends CatalogService {
     double? longitude,
     double? radiusKm,
     String sort = 'newest',
+    String? area,
   }) {
     offsets.add(offset);
     latitudes.add(latitude);
@@ -179,6 +215,7 @@ class _ControlledCatalogService extends CatalogService {
     this.availableFrom.add(availableFrom);
     this.availableTo.add(availableTo);
     sorts.add(sort);
+    areas.add(area);
     final completer = Completer<CatalogState>();
     calls.add(completer);
     return completer.future;

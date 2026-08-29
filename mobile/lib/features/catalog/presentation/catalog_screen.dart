@@ -407,6 +407,8 @@ class _FilterSheet extends StatelessWidget {
                 ),
               ],
             ),
+            const _AreaFilter(),
+            const SizedBox(height: 12),
             const _PriceFilter(),
             const SizedBox(height: 12),
             const _RadiusFilter(),
@@ -419,6 +421,52 @@ class _FilterSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _AreaFilter extends ConsumerStatefulWidget {
+  const _AreaFilter();
+
+  @override
+  ConsumerState<_AreaFilter> createState() => _AreaFilterState();
+}
+
+class _AreaFilterState extends ConsumerState<_AreaFilter> {
+  String? _area;
+
+  @override
+  Widget build(BuildContext context) {
+    final areas = ref.watch(catalogAreasProvider);
+    return areas.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (_, _) => OutlinedButton.icon(
+        onPressed: () => ref.invalidate(catalogAreasProvider),
+        icon: const Icon(Icons.refresh),
+        label: const Text('Повторить загрузку районов'),
+      ),
+      data: (values) => DropdownButtonFormField<String>(
+        initialValue: _area,
+        decoration: const InputDecoration(
+          labelText: 'Район',
+          helperText: 'Ручной выбор не использует геолокацию',
+        ),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('Любой район')),
+          ...values.map(
+            (area) => DropdownMenuItem(value: area, child: Text(area)),
+          ),
+        ],
+        onChanged: _apply,
+      ),
+    );
+  }
+
+  Future<void> _apply(String? area) async {
+    setState(() => _area = area);
+    await ref.read(catalogProvider.notifier).setArea(area);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 }
 

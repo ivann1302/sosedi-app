@@ -29,6 +29,7 @@ class CatalogService {
     double? longitude,
     double? radiusKm,
     String sort = 'newest',
+    String? area,
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -37,6 +38,7 @@ class CatalogService {
           'limit': limit + 1,
           'offset': offset,
           'sort': sort,
+          'area': ?area,
           if (search.isNotEmpty) 'search': search,
           'categoryId': ?categoryId,
           'minPrice': ?minPrice,
@@ -130,6 +132,46 @@ class CatalogService {
       throw const ApiException(
         code: 'INVALID_RESPONSE',
         message: 'Не удалось прочитать категории',
+      );
+    }
+  }
+
+  Future<List<String>> fetchAreas() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/items/areas');
+      final body = response.data;
+      if (body == null) {
+        throw const ApiException(
+          code: 'INVALID_RESPONSE',
+          message: 'Не удалось прочитать районы',
+        );
+      }
+
+      final envelope = ApiEnvelope<List<String>>.fromJson(
+        body,
+        (json) => (json! as List<dynamic>)
+            .map((area) => area! as String)
+            .toList(growable: false),
+      );
+      final data = envelope.data;
+      if (envelope.success && data != null) {
+        return data;
+      }
+      throw ApiException(
+        code: envelope.error?.code ?? 'API_ERROR',
+        message: envelope.error?.message ?? 'Не удалось загрузить районы',
+      );
+    } on ApiException {
+      rethrow;
+    } on DioException catch (error) {
+      throw apiExceptionFromDio(
+        error,
+        fallback: 'Не удалось загрузить районы',
+      );
+    } catch (_) {
+      throw const ApiException(
+        code: 'INVALID_RESPONSE',
+        message: 'Не удалось прочитать районы',
       );
     }
   }

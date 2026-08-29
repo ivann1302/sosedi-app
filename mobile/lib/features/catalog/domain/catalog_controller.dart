@@ -15,6 +15,11 @@ final catalogCategoriesProvider = FutureProvider<List<CatalogCategory>>(
   retry: (_, _) => null,
 );
 
+final catalogAreasProvider = FutureProvider<List<String>>(
+  (ref) => ref.watch(catalogServiceProvider).fetchAreas(),
+  retry: (_, _) => null,
+);
+
 enum CatalogSort {
   newest('newest'),
   priceAsc('price_asc'),
@@ -37,6 +42,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
   double? _longitude;
   double? _radiusKm;
   CatalogSort _sort = CatalogSort.newest;
+  String? _area;
 
   @override
   Future<CatalogState> build() {
@@ -54,6 +60,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
           longitude: _longitude,
           radiusKm: _radiusKm,
           sort: _sort.apiValue,
+          area: _area,
         );
   }
 
@@ -78,6 +85,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
             longitude: _longitude,
             radiusKm: _radiusKm,
             sort: _sort.apiValue,
+            area: _area,
           ),
     );
     if (requestId == _requestId) {
@@ -120,6 +128,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
             longitude: _longitude,
             radiusKm: _radiusKm,
             sort: _sort.apiValue,
+            area: _area,
           ),
     );
     if (requestId != _requestId) {
@@ -190,6 +199,19 @@ class CatalogController extends AsyncNotifier<CatalogState> {
     await refreshCatalog(preserveCurrent: false);
   }
 
+  Future<void> setArea(String? value) async {
+    final trimmed = value?.trim() ?? '';
+    final area = trimmed.isEmpty ? null : trimmed;
+    if (area == _area && _radiusKm == null) {
+      return;
+    }
+    _area = area;
+    _latitude = null;
+    _longitude = null;
+    _radiusKm = null;
+    await refreshCatalog(preserveCurrent: false);
+  }
+
   Future<void> setRadius(double? radiusKm) async {
     if (radiusKm == null) {
       if (_radiusKm == null) {
@@ -208,6 +230,7 @@ class CatalogController extends AsyncNotifier<CatalogState> {
       _latitude = position.latitude;
       _longitude = position.longitude;
       _radiusKm = radiusKm;
+      _area = null;
     }
     await refreshCatalog(preserveCurrent: false);
   }

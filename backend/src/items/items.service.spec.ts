@@ -84,6 +84,7 @@ type TestItemWhere = {
   ownerId?: string;
   status?: ItemStatus;
   categoryId?: string;
+  publicArea?: string;
   category?: {
     isActive?: boolean;
     isAllowedForListings?: boolean;
@@ -304,6 +305,10 @@ function createService() {
       return false;
     }
 
+    if (where.publicArea && item.publicArea !== where.publicArea) {
+      return false;
+    }
+
     if (where.ownerId && item.ownerId !== where.ownerId) {
       return false;
     }
@@ -475,6 +480,14 @@ function createService() {
           );
         },
       ),
+      groupBy: jest.fn(({ where }: { where: TestItemWhere }) => {
+        const areas = Array.from(items.values())
+          .filter((item) => matchesPublicWhere(item, where))
+          .map((item) => item.publicArea)
+          .filter((area, index, values) => values.indexOf(area) === index)
+          .sort((left, right) => left.localeCompare(right, 'ru'));
+        return Promise.resolve(areas.map((publicArea) => ({ publicArea })));
+      }),
       update: jest.fn(
         ({
           where,
@@ -785,6 +798,38 @@ describe('ItemsService', () => {
         availableTo: '2026-06-11',
       }),
     ).resolves.toMatchObject([{ id: available.id }]);
+  });
+
+  it('filters public items by an exact public area', async () => {
+    const { service, storeItem } = createService();
+    storeItem({ id: 'item-khamovniki', publicArea: 'Хамовники' });
+    storeItem({ id: 'item-arbat', publicArea: 'Арбат' });
+
+    await expect(
+      service.listPublic({ area: 'Хамовники' }),
+    ).resolves.toMatchObject([{ id: 'item-khamovniki' }]);
+  });
+
+  it('lists distinct public areas only from visible items', async () => {
+    const { service, storeItem } = createService();
+    storeItem({ id: 'item-khamovniki-1', publicArea: 'Хамовники' });
+    storeItem({ id: 'item-khamovniki-2', publicArea: 'Хамовники' });
+    storeItem({ id: 'item-arbat', publicArea: 'Арбат' });
+    storeItem({
+      id: 'item-hidden',
+      publicArea: 'Тверской',
+      status: ItemStatus.PENDING,
+    });
+    storeItem({
+      id: 'item-blocked-owner',
+      publicArea: 'Якиманка',
+      ownerId: 'blocked-owner',
+    });
+
+    await expect(service.listPublicAreas()).resolves.toEqual([
+      'Арбат',
+      'Хамовники',
+    ]);
   });
 
   it('limits a page and uses a unique stable sort tie-breaker', async () => {

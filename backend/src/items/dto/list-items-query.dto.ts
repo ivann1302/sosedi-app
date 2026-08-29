@@ -9,6 +9,7 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  MinLength,
   Matches,
   Max,
   Min,
@@ -46,6 +47,18 @@ export class ListItemsQueryDto {
   @IsOptional()
   @IsUUID('4')
   categoryId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Публичный район или округ без точного адреса',
+    maxLength: 120,
+    minLength: 2,
+  })
+  @Transform(trimmedStringFromInput)
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  area?: string;
 
   @ApiPropertyOptional({ minimum: 0 })
   @Transform(numberFromInput)

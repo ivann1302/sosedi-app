@@ -425,6 +425,7 @@ class _ScreenshotCatalogService extends CatalogService {
     double? longitude,
     double? radiusKm,
     String sort = 'newest',
+    String? area,
   }) async {
     return CatalogState(
       items: _catalogItems,
@@ -435,6 +436,9 @@ class _ScreenshotCatalogService extends CatalogService {
 
   @override
   Future<List<CatalogCategory>> fetchCategories() async => [_category];
+
+  @override
+  Future<List<String>> fetchAreas() async => ['Арбат', 'Хамовники'];
 }
 
 class _ScreenshotBookingService extends BookingService {

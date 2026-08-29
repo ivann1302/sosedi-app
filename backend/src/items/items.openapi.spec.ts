@@ -52,6 +52,7 @@ describe('Items OpenAPI contract', () => {
         expect.objectContaining({ in: 'query', name: 'longitude' }),
         expect.objectContaining({ in: 'query', name: 'radiusKm' }),
         expect.objectContaining({ in: 'query', name: 'sort' }),
+        expect.objectContaining({ in: 'query', name: 'area' }),
       ]),
     );
     expect(cardOperation?.parameters).toEqual(
@@ -83,6 +84,12 @@ describe('Items OpenAPI contract', () => {
         type: 'integer',
       });
     }
+  });
+
+  it('documents the public area choices endpoint', () => {
+    const areasOperation = document.paths['/api/v1/items/areas']?.get;
+
+    expect(areasOperation?.responses['200']).toBeDefined();
   });
 
   it('keeps exact location and original photos out of the public schema', () => {

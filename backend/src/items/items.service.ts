@@ -284,6 +284,16 @@ export class ItemsService {
     return items.map((item) => this.toPublicItemResponse(item));
   }
 
+  async listPublicAreas(): Promise<string[]> {
+    const areas = await this.prisma.item.groupBy({
+      by: ['publicArea'],
+      where: this.buildPublicWhere({}, null),
+      orderBy: { publicArea: 'asc' },
+    });
+
+    return areas.map((area) => area.publicArea);
+  }
+
   async listOwn(ownerId: string): Promise<PrivateItemResponseDto[]> {
     const items = await this.prisma.item.findMany({
       where: { ownerId },
@@ -382,6 +392,10 @@ export class ItemsService {
       where.categoryId = query.categoryId;
     }
 
+    if (query.area) {
+      where.publicArea = query.area;
+    }
+
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
@@ -425,6 +439,10 @@ export class ItemsService {
 
     if (query.categoryId) {
       conditions.push(Prisma.sql`t."categoryId" = ${query.categoryId}`);
+    }
+
+    if (query.area) {
+      conditions.push(Prisma.sql`t."publicArea" = ${query.area}`);
     }
 
     if (search) {

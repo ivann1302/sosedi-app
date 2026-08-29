@@ -65,6 +65,22 @@ void main() {
     await service.fetchItems(sort: 'price_asc');
   });
 
+  test('sends the selected public area without coordinates', () async {
+    final adapter = CallbackAdapter((options) {
+      expect(options.queryParameters['area'], 'Хамовники');
+      expect(options.queryParameters, isNot(contains('latitude')));
+      expect(options.queryParameters, isNot(contains('longitude')));
+      return jsonResponse({
+        'success': true,
+        'data': <Object>[],
+        'error': null,
+      });
+    });
+    final service = CatalogService(Dio()..httpClientAdapter = adapter);
+
+    await service.fetchItems(area: 'Хамовники');
+  });
+
   test('loads only public listing categories', () async {
     final adapter = CallbackAdapter((options) {
       expect(options.method, 'GET');
@@ -90,6 +106,24 @@ void main() {
     final categories = await service.fetchCategories();
 
     expect(categories.single.name, 'Инструменты');
+  });
+
+  test('loads public area choices from the catalog API', () async {
+    final adapter = CallbackAdapter((options) {
+      expect(options.method, 'GET');
+      expect(options.path, '/items/areas');
+      return jsonResponse({
+        'success': true,
+        'data': ['Арбат', 'Хамовники'],
+        'error': null,
+      });
+    });
+    final service = CatalogService(Dio()..httpClientAdapter = adapter);
+
+    await expectLater(
+      service.fetchAreas(),
+      completion(['Арбат', 'Хамовники']),
+    );
   });
 }
 

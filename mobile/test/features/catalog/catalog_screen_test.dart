@@ -399,6 +399,28 @@ void main() {
     expect(service.offsets, [0, 0]);
   });
 
+  testWidgets('filters by a server-provided area without coordinates', (
+    tester,
+  ) async {
+    final service = _FakeCatalogService([
+      _page([item]),
+      _page([item]),
+    ]);
+    await tester.pumpWidget(_app(service));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Фильтры'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Любой район'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Хамовники').last);
+    await tester.pumpAndSettle();
+
+    expect(service.areas, [null, 'Хамовники']);
+    expect(service.latitudes, [null, null]);
+    expect(service.longitudes, [null, null]);
+  });
+
   testWidgets('keeps dates in the compact filter row', (tester) async {
     final service = _FakeCatalogService([
       _page([item]),
@@ -522,6 +544,7 @@ class _FakeCatalogService extends CatalogService {
   final List<double?> longitudes = [];
   final List<double?> radii = [];
   final List<String> sorts = [];
+  final List<String?> areas = [];
   int _index = 0;
 
   @override
@@ -538,6 +561,7 @@ class _FakeCatalogService extends CatalogService {
     double? longitude,
     double? radiusKm,
     String sort = 'newest',
+    String? area,
   }) {
     offsets.add(offset);
     searches.add(search);
@@ -548,11 +572,15 @@ class _FakeCatalogService extends CatalogService {
     longitudes.add(longitude);
     radii.add(radiusKm);
     sorts.add(sort);
+    areas.add(area);
     return responses[_index++]();
   }
 
   @override
   Future<List<CatalogCategory>> fetchCategories() async => [item.category];
+
+  @override
+  Future<List<String>> fetchAreas() async => ['Арбат', 'Хамовники'];
 }
 
 final item = CatalogItem(
