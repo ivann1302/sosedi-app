@@ -5,7 +5,7 @@ TEST_REDIS_URL ?= redis://localhost:$(TEST_REDIS_PORT)/15
 MOBILE_LINE_COVERAGE_MIN ?= 80
 TEST_COMPOSE = docker compose -f docker-compose.test.yml
 
-.PHONY: help infra-up infra-down pilot-seed container-mirror production-images production-boundary production-boundary-test release-gates release-gates-test production-smoke production-release production-rollback production-release-test backend-image-build backend-image-smoke backend-image-rollback-smoke glitchtip-config glitchtip-event-smoke environment-isolation environment-isolation-test time-sync time-sync-test alerts-verify alerts-test backup-scheduler-verify backup-scheduler-test git-backup-verify git-backup-test postgres-backup postgres-restore-drill s3-restore-sample test-infra-up test-infra-down backend-dev backend-build backend-lint backend-lint-check backend-test backend-test-coverage backend-test-e2e backend-test-db-migrate backend-prisma-generate backend-prisma-migrate backend-admin-bootstrap operator-dev operator-build public-web-dev public-web-check mobile-release-config mobile-release-config-test mobile-release-artifact-verify mobile-android-release mobile-ios-release mobile-analyze mobile-test mobile-test-coverage mobile-coverage-check mobile-screenshots mobile-ios-smoke mobile-gen security-scan check ci hooks-install hooks-run
+.PHONY: help infra-up infra-down pilot-seed app-user-paths-check container-mirror production-images production-boundary production-boundary-test release-gates release-gates-test production-smoke production-release production-rollback production-release-test backend-image-build backend-image-smoke backend-image-rollback-smoke glitchtip-config glitchtip-event-smoke environment-isolation environment-isolation-test time-sync time-sync-test alerts-verify alerts-test backup-scheduler-verify backup-scheduler-test git-backup-verify git-backup-test postgres-backup postgres-restore-drill s3-restore-sample test-infra-up test-infra-down backend-dev backend-build backend-lint backend-lint-check backend-test backend-test-coverage backend-test-e2e backend-test-db-migrate backend-prisma-generate backend-prisma-migrate backend-admin-bootstrap operator-dev operator-build public-web-dev public-web-check mobile-release-config mobile-release-config-test mobile-release-artifact-verify mobile-android-release mobile-ios-release mobile-analyze mobile-test mobile-test-coverage mobile-coverage-check mobile-screenshots mobile-ios-smoke mobile-gen security-scan check ci hooks-install hooks-run
 
 help:
 	@printf '%s\n' \
@@ -13,6 +13,7 @@ help:
 		'  make infra-up                 Start PostgreSQL/PostGIS and Redis' \
 		'  make infra-down               Stop infrastructure containers' \
 		'  make pilot-seed               Seed guarded local pilot fixtures' \
+		'  make app-user-paths-check      Verify screenshot journey map' \
 		'  make container-mirror         Mirror pinned images to OCI_REGISTRY_PREFIX' \
 		'  make production-images        Validate production image references' \
 		'  make production-boundary      Verify closed DB/Redis production boundary' \
@@ -77,6 +78,9 @@ pilot-seed: infra-up
 	cd backend && npx prisma migrate deploy
 	cd backend && npm run prisma:seed
 	cd backend && NODE_ENV=development ALLOW_LOCAL_PILOT_SEED=true npm run pilot:seed
+
+app-user-paths-check:
+	node ./scripts/verify-app-user-paths.mjs
 
 container-mirror:
 	./scripts/mirror-container-images.sh
