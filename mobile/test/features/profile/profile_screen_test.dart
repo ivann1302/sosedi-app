@@ -1,28 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile/features/profile/data/profile_models.dart';
 import 'package:mobile/features/profile/data/profile_service.dart';
 import 'package:mobile/features/profile/presentation/profile_screen.dart';
 
 void main() {
-  testWidgets('shows only the authenticated user profile and statuses', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [profileProvider.overrideWith((ref) async => profile)],
-        child: const MaterialApp(home: ProfileScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'shows only the authenticated profile and opens grouped destinations',
+    (tester) async {
+      final router = GoRouter(
+        initialLocation: '/profile',
+        routes: [
+          GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+          GoRoute(
+            path: '/profile/favorites',
+            builder: (_, _) =>
+                const Scaffold(body: Text('Избранное назначение')),
+          ),
+          GoRoute(
+            path: '/support',
+            builder: (_, _) =>
+                const Scaffold(body: Text('Поддержка назначение')),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
 
-    expect(find.text('Анна'), findsOneWidget);
-    expect(find.text('Москва'), findsOneWidget);
-    expect(find.text('Аккаунт активен'), findsOneWidget);
-    expect(find.text('Личность подтверждена'), findsOneWidget);
-    expect(find.text('Поддержка'), findsOneWidget);
-  });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [profileProvider.overrideWith((ref) async => profile)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Анна'), findsOneWidget);
+      expect(find.text('Москва'), findsOneWidget);
+      expect(find.text('Аккаунт активен'), findsOneWidget);
+      expect(find.text('Личность подтверждена'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('profile-navigation-group')),
+        findsOneWidget,
+      );
+      expect(find.text('Избранное'), findsOneWidget);
+      expect(find.text('Устройства и сессии'), findsOneWidget);
+      expect(find.text('Правила и документы'), findsOneWidget);
+      expect(find.text('Поддержка'), findsOneWidget);
+      expect(find.text('Экспортировать мои данные'), findsOneWidget);
+      expect(find.text('Заблокированные пользователи'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Избранное'));
+      await tester.tap(find.text('Избранное'));
+      await tester.pumpAndSettle();
+      expect(find.text('Избранное назначение'), findsOneWidget);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Поддержка'));
+      await tester.tap(find.text('Поддержка'));
+      await tester.pumpAndSettle();
+      expect(find.text('Поддержка назначение'), findsOneWidget);
+    },
+  );
 
   testWidgets('retries profile loading after an error', (tester) async {
     var attempts = 0;

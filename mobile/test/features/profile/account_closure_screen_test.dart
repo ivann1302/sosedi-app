@@ -13,15 +13,13 @@ void main() {
     final service = _FakeProfileService();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          profileServiceProvider.overrideWithValue(service),
-        ],
+        overrides: [profileServiceProvider.overrideWithValue(service)],
         child: const MaterialApp(home: AccountClosureScreen()),
       ),
     );
 
-    final submit = find.widgetWithText(FilledButton, 'Закрыть аккаунт');
-    expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+    final submit = find.widgetWithText(TextButton, 'Закрыть аккаунт');
+    expect(tester.widget<TextButton>(submit).onPressed, isNull);
 
     await tester.tap(find.byType(Checkbox));
     await tester.pump();

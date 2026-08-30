@@ -22,7 +22,7 @@ class DocumentsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Правила и документы')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           children: [
             if (documents.isPublishedSetReady) ...[
               const Text(
@@ -33,14 +33,14 @@ class DocumentsScreen extends ConsumerWidget {
                 label: 'Оферта · ${documents.offerVersion}',
                 onPressed: () => _open(context, ref, documents.offerUri!),
               ),
-              const SizedBox(height: 12),
+              const Divider(height: 1, indent: 56),
               _DocumentButton(
                 label:
                     'Правила аренды и отмены · '
                     '${documents.cancellationPolicyVersion}',
                 onPressed: () => _open(context, ref, documents.rentalRulesUri!),
               ),
-              const SizedBox(height: 12),
+              const Divider(height: 1, indent: 56),
               _DocumentButton(
                 label:
                     'Политика конфиденциальности · '
@@ -48,26 +48,31 @@ class DocumentsScreen extends ConsumerWidget {
                 onPressed: () => _open(context, ref, documents.privacyUri!),
               ),
             ] else
-              const Card(
-                child: ListTile(
-                  leading: Icon(Icons.policy_outlined),
-                  title: Text('Документы готовятся к публикации'),
-                  subtitle: Text(
-                    'Черновики не показываются как действующие условия.',
-                  ),
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.policy_outlined),
+                title: Text('Документы готовятся к публикации'),
+                subtitle: Text(
+                  'Черновики не показываются как действующие условия.',
                 ),
               ),
             const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: () => context.push('/support'),
-              icon: const Icon(Icons.support_agent_outlined),
-              label: const Text('Поддержка'),
+            Text('Ещё', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              onTap: () => context.push('/support'),
+              leading: const Icon(Icons.support_agent_outlined),
+              title: const Text('Поддержка'),
+              trailing: const Icon(Icons.chevron_right),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => context.push('/profile/data-export'),
-              icon: const Icon(Icons.download_outlined),
-              label: const Text('Экспортировать мои данные'),
+            const Divider(height: 1, indent: 56),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              onTap: () => context.push('/profile/data-export'),
+              leading: const Icon(Icons.download_outlined),
+              title: const Text('Экспортировать мои данные'),
+              trailing: const Icon(Icons.chevron_right),
             ),
           ],
         ),
@@ -99,10 +104,13 @@ class _DocumentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.open_in_new),
-      label: Text(label),
+    return ListTile(
+      minTileHeight: 56,
+      contentPadding: EdgeInsets.zero,
+      onTap: onPressed,
+      leading: const Icon(Icons.description_outlined),
+      title: Text(label),
+      trailing: const Icon(Icons.open_in_new),
     );
   }
 }

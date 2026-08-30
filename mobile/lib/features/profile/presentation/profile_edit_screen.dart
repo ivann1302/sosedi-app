@@ -44,45 +44,60 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 'city': value.city ?? '',
               },
               onChanged: _markDirty,
-              child: ListView(
-                padding: const EdgeInsets.all(20),
+              child: Column(
                 children: [
-                  _Avatar(profile: value),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: isSaving ? null : _pickAvatar,
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: const Text('Заменить фото'),
-                  ),
-                  const SizedBox(height: 20),
-                  FormBuilderTextField(
-                    key: const ValueKey('profile-name-field'),
-                    name: 'name',
-                    decoration: const InputDecoration(labelText: 'Имя'),
-                    textInputAction: TextInputAction.next,
-                    validator: FormBuilderValidators.maxLength(80),
-                  ),
-                  const SizedBox(height: 16),
-                  FormBuilderTextField(
-                    key: const ValueKey('profile-city-field'),
-                    name: 'city',
-                    decoration: const InputDecoration(labelText: 'Город'),
-                    textInputAction: TextInputAction.done,
-                    validator: FormBuilderValidators.maxLength(80),
-                  ),
-                  if (error != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      error,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        _Avatar(profile: value),
+                        const SizedBox(height: 8),
+                        Align(
+                          child: TextButton.icon(
+                            onPressed: isSaving ? null : _pickAvatar,
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: const Text('Заменить фото'),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Основная информация',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 12),
+                        FormBuilderTextField(
+                          key: const ValueKey('profile-name-field'),
+                          name: 'name',
+                          decoration: const InputDecoration(labelText: 'Имя'),
+                          textInputAction: TextInputAction.next,
+                          validator: FormBuilderValidators.maxLength(80),
+                        ),
+                        const SizedBox(height: 16),
+                        FormBuilderTextField(
+                          key: const ValueKey('profile-city-field'),
+                          name: 'city',
+                          decoration: const InputDecoration(labelText: 'Город'),
+                          textInputAction: TextInputAction.done,
+                          validator: FormBuilderValidators.maxLength(80),
+                        ),
+                        if (error != null) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            error,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: isSaving ? null : _save,
-                    child: const Text('Сохранить'),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: FilledButton(
+                      onPressed: isSaving ? null : _save,
+                      child: const Text('Сохранить'),
+                    ),
                   ),
                 ],
               ),

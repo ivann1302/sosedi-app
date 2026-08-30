@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../data/profile_models.dart';
 import '../domain/account_closure_controller.dart';
@@ -36,9 +37,8 @@ class _AccountClosureScreenState extends ConsumerState<AccountClosureScreen> {
               )
             : _Result(
                 result: result,
-                onFinish: () => ref
-                    .read(authControllerProvider.notifier)
-                    .logout(),
+                onFinish: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
               ),
       ),
     );
@@ -63,12 +63,9 @@ class _Confirmation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          'Что произойдёт',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        Text('Что произойдёт', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 16),
         const Text('• Все сессии будут отозваны, профиль и объявления скрыты.'),
         const SizedBox(height: 8),
@@ -80,15 +77,13 @@ class _Confirmation extends StatelessWidget {
         const Text(
           '• Финансовый и audit след хранится только в обязательном объёме.',
         ),
-        const SizedBox(height: 16),
+        const Divider(height: 32),
         const Text('После отправки отменить запрос нельзя.'),
         const SizedBox(height: 12),
         CheckboxListTile(
           contentPadding: EdgeInsets.zero,
           value: accepted,
-          onChanged: loading
-              ? null
-              : (value) => onChanged(value ?? false),
+          onChanged: loading ? null : (value) => onChanged(value ?? false),
           title: const Text('Я понимаю последствия'),
           controlAffinity: ListTileControlAffinity.leading,
         ),
@@ -100,8 +95,12 @@ class _Confirmation extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 16),
-        FilledButton(
+        TextButton(
           onPressed: accepted && !loading ? onSubmit : null,
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.error,
+            disabledForegroundColor: const Color(0x80B42318),
+          ),
           child: const Text('Закрыть аккаунт'),
         ),
       ],
@@ -135,10 +134,7 @@ class _Result extends StatelessWidget {
                 : 'Персональные данные анонимизированы.',
           ),
           const Spacer(),
-          FilledButton(
-            onPressed: onFinish,
-            child: const Text('Завершить'),
-          ),
+          FilledButton(onPressed: onFinish, child: const Text('Завершить')),
         ],
       ),
     );

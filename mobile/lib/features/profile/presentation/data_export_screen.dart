@@ -85,11 +85,11 @@ class _RequestForm extends StatelessWidget {
     return FormBuilder(
       key: formKey,
       child: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         children: [
           Text(
             'Получите копию своих данных',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
           const Text(
@@ -97,7 +97,7 @@ class _RequestForm extends StatelessWidget {
             'персональные данные — не пересылайте его посторонним.',
           ),
           const SizedBox(height: 24),
-          OutlinedButton.icon(
+          FilledButton.icon(
             onPressed: loading ? null : onRequestCode,
             icon: const Icon(Icons.sms_outlined),
             label: Text(
@@ -145,16 +145,19 @@ class _RequestForm extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
-          const SizedBox(height: 20),
+          const Divider(height: 32),
           const Text(
             'Если SMS недоступно, обратитесь в поддержку — там проверят '
             'владельца аккаунта без запроса лишних документов.',
           ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: loading ? null : () => context.push('/support/export'),
-            icon: const Icon(Icons.support_agent_outlined),
-            label: const Text('Обратиться в поддержку'),
+          const SizedBox(height: 4),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            enabled: !loading,
+            onTap: loading ? null : () => context.push('/support/export'),
+            leading: const Icon(Icons.support_agent_outlined),
+            title: const Text('Обратиться в поддержку'),
+            trailing: const Icon(Icons.chevron_right),
           ),
         ],
       ),
@@ -181,22 +184,21 @@ class _ExportResult extends StatelessWidget {
     ].length;
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       children: [
-        Text('Экспорт готов', style: Theme.of(context).textTheme.headlineSmall),
+        Text('Экспорт готов', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
         Text('Схема ${export.schemaVersion} · записей $records'),
         const SizedBox(height: 12),
-        const Card(
-          child: ListTile(
-            leading: Icon(Icons.lock_outline),
-            title: Text('Конфиденциальные данные'),
-            subtitle: Text(
-              'JSON показан только на этом экране и не сохраняется приложением.',
-            ),
+        const ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.lock_outline),
+          title: Text('Конфиденциальные данные'),
+          subtitle: Text(
+            'JSON показан только на этом экране и не сохраняется приложением.',
           ),
         ),
-        const SizedBox(height: 16),
+        const Divider(height: 24),
         SelectableText(
           json,
           key: const ValueKey('data-export-json'),

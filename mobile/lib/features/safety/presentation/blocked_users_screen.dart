@@ -30,7 +30,8 @@ class BlockedUsersScreen extends ConsumerWidget {
               : ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: values.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) =>
+                      const Divider(height: 1, indent: 56),
                   itemBuilder: (context, index) => _BlockedUserTile(
                     user: values[index],
                     enabled: !action.isLoading,
@@ -86,14 +87,14 @@ class _BlockedUserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.person_off_outlined),
-        title: Text(user.blocked.name ?? 'Пользователь'),
-        trailing: TextButton(
-          onPressed: enabled ? onUnblock : null,
-          child: const Text('Разблокировать'),
-        ),
+    return ListTile(
+      minTileHeight: 64,
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.person_off_outlined),
+      title: Text(user.blocked.name ?? 'Пользователь'),
+      trailing: TextButton(
+        onPressed: enabled ? onUnblock : null,
+        child: const Text('Разблокировать'),
       ),
     );
   }

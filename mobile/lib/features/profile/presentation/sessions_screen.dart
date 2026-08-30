@@ -18,36 +18,38 @@ class SessionsScreen extends ConsumerWidget {
       body: SafeArea(
         child: sessions.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => _LoadError(
-            onRetry: () => ref.invalidate(sessionsProvider),
-          ),
+          error: (_, _) =>
+              _LoadError(onRetry: () => ref.invalidate(sessionsProvider)),
           data: (items) => ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             children: [
-              for (final session in items)
-                _SessionCard(
-                  session: session,
+              Text(
+                'Активные сессии',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              for (var index = 0; index < items.length; index++) ...[
+                if (index > 0) const Divider(height: 1, indent: 56),
+                _SessionRow(
+                  session: items[index],
                   disabled: action.isLoading,
                   onRevoke: () => ref
                       .read(sessionControllerProvider.notifier)
-                      .revoke(session.sessionId),
+                      .revoke(items[index].sessionId),
                 ),
+              ],
               if (action.hasError) ...[
                 const SizedBox(height: 8),
                 Text(
                   action.error.toString(),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ],
-              const SizedBox(height: 12),
-              OutlinedButton(
+              const Divider(height: 32),
+              TextButton(
                 onPressed: action.isLoading
                     ? null
-                    : () => ref
-                          .read(authControllerProvider.notifier)
-                          .logout(),
+                    : () => ref.read(authControllerProvider.notifier).logout(),
                 child: const Text('Выйти на этом устройстве'),
               ),
               const SizedBox(height: 12),
@@ -67,8 +69,8 @@ class SessionsScreen extends ConsumerWidget {
   }
 }
 
-class _SessionCard extends StatelessWidget {
-  const _SessionCard({
+class _SessionRow extends StatelessWidget {
+  const _SessionRow({
     required this.session,
     required this.disabled,
     required this.onRevoke,
@@ -80,23 +82,19 @@ class _SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: Icon(
-          session.isCurrent ? Icons.smartphone : Icons.devices_other,
-        ),
-        title: Text(
-          session.isCurrent ? 'Это устройство' : 'Другое устройство',
-        ),
-        subtitle: Text('Активность: ${_date(session.lastSeenAt)}'),
-        trailing: session.isCurrent
-            ? const Chip(label: Text('Текущая'))
-            : IconButton(
-                onPressed: disabled ? null : onRevoke,
-                tooltip: 'Завершить сессию',
-                icon: const Icon(Icons.logout),
-              ),
-      ),
+    return ListTile(
+      minTileHeight: 64,
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(session.isCurrent ? Icons.smartphone : Icons.devices_other),
+      title: Text(session.isCurrent ? 'Это устройство' : 'Другое устройство'),
+      subtitle: Text('Активность: ${_date(session.lastSeenAt)}'),
+      trailing: session.isCurrent
+          ? Text('Текущая', style: Theme.of(context).textTheme.bodySmall)
+          : IconButton(
+              onPressed: disabled ? null : onRevoke,
+              tooltip: 'Завершить сессию',
+              icon: const Icon(Icons.logout),
+            ),
     );
   }
 
@@ -115,10 +113,7 @@ class _LoadError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: FilledButton(
-        onPressed: onRetry,
-        child: const Text('Повторить'),
-      ),
+      child: FilledButton(onPressed: onRetry, child: const Text('Повторить')),
     );
   }
 }

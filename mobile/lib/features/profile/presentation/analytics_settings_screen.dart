@@ -17,11 +17,11 @@ class AnalyticsSettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Аналитика')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           children: [
             Text(
               'Помогать улучшать приложение',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
             const Text(
@@ -34,7 +34,7 @@ class AnalyticsSettingsScreen extends ConsumerWidget {
               'Согласие добровольное. Его можно отозвать в любой момент; '
               'после отзыва новые события не отправляются.',
             ),
-            const SizedBox(height: 24),
+            const Divider(height: 32),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Отправлять обезличенную аналитику'),
