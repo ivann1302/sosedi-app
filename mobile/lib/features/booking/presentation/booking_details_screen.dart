@@ -484,8 +484,11 @@ class _Content extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),
-        Chip(label: Text(bookingStatusLabel(booking.status))),
-        const SizedBox(height: 8),
+        Text(
+          bookingStatusLabel(booking.status),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const Divider(height: 32),
         _NextActionCard(
           booking: booking,
           isLoading: action.isLoading,
@@ -494,7 +497,9 @@ class _Content extends StatelessWidget {
           onOpenReview: onOpenReview,
           onReportIssue: onReportIssue,
         ),
-        const SizedBox(height: 16),
+        const Divider(height: 32),
+        Text('Даты', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
         _Row(
           label: 'Период',
           value:
@@ -513,7 +518,7 @@ class _Content extends StatelessWidget {
             value: _cancellationReason(booking.cancellationReason!),
           ),
         if (terms != null) ...[
-          const SizedBox(height: 16),
+          const Divider(height: 32),
           Text('Цена и условия', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           _Row(
@@ -577,14 +582,14 @@ class _Content extends StatelessWidget {
           ),
         ],
         if (booking.handover != null) ...[
-          const SizedBox(height: 16),
+          const Divider(height: 32),
           Text('Передача', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           _Row(label: 'Адрес', value: booking.handover!.address),
           if (booking.counterpartyContact != null)
             _Row(label: 'Контакт', value: booking.counterpartyContact!),
         ],
-        const SizedBox(height: 16),
+        const Divider(height: 32),
         Text(
           'Акты передачи и возврата',
           style: Theme.of(context).textTheme.titleLarge,
@@ -616,7 +621,9 @@ class _Content extends StatelessWidget {
           ),
         ),
         if (booking.status == 'COMPLETED') ...[
-          const SizedBox(height: 16),
+          const Divider(height: 32),
+          Text('Отзыв', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
           reviews.when(
             loading: () => const LinearProgressIndicator(),
             error: (error, _) => Row(
@@ -653,8 +660,10 @@ class _Content extends StatelessWidget {
             },
           ),
         ],
+        const Divider(height: 32),
+        Text('Поддержка', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
         if (actionError != null) ...[
-          const SizedBox(height: 12),
           Text(
             userFacingError(
               actionError,
@@ -713,21 +722,24 @@ class _DemoPaymentCard extends ConsumerWidget {
         ? Icons.check_circle_outline
         : Icons.error_outline;
 
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Тестовая оплата',
+              'Демонстрация оплаты',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 6),
             const Text(
-              'Демо-заглушка. Деньги не списываются, серверное состояние '
-              'брони не меняется.',
+              'Демонстрация. Деньги не списываются, серверное состояние '
+              'брони не меняется и гарантий оплаты нет.',
             ),
             const SizedBox(height: 8),
             Text(
@@ -755,6 +767,10 @@ class _DemoPaymentCard extends ConsumerWidget {
               onPressed: isProcessing
                   ? null
                   : () => ref.read(payment.notifier).succeed(),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.outlineVariant,
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
+              ),
               child: Text(isProcessing ? 'Обработка…' : 'Успешная оплата'),
             ),
             OutlinedButton(
@@ -810,8 +826,9 @@ class _NextActionCard extends StatelessWidget {
       _ => 'Открыть чат',
     };
 
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
+    return Container(
+      key: const ValueKey('booking-next-action'),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -828,9 +845,6 @@ class _NextActionCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(nextAction.description),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(value: step / 5),
-            const SizedBox(height: 6),
             Text(
               booking.status == 'CANCELLED'
                   ? 'Заявка отменена'
@@ -906,7 +920,10 @@ class _Acts extends StatelessWidget {
       children: [
         if (values.isEmpty) const Text('Актов пока нет'),
         for (final act in values)
-          Card(
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFFE4E8EB))),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -934,7 +951,6 @@ class _Acts extends StatelessWidget {
                         color: Theme.of(
                           context,
                         ).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(12),

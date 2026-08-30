@@ -12,8 +12,7 @@ class BookingListScreen extends ConsumerStatefulWidget {
   const BookingListScreen({super.key});
 
   @override
-  ConsumerState<BookingListScreen> createState() =>
-      _BookingListScreenState();
+  ConsumerState<BookingListScreen> createState() => _BookingListScreenState();
 }
 
 enum _BookingLifecycleFilter { current, history }
@@ -34,7 +33,11 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
       if (bookingId != null &&
           event.eventType == 'BOOKING_MESSAGE_CREATED' &&
           event.readAt == null) {
-        unreadByBooking.update(bookingId, (value) => value + 1, ifAbsent: () => 1);
+        unreadByBooking.update(
+          bookingId,
+          (value) => value + 1,
+          ifAbsent: () => 1,
+        );
       }
     }
     return Scaffold(
@@ -87,7 +90,7 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
                             padding: const EdgeInsets.all(16),
                             itemCount: filtered.length,
                             separatorBuilder: (_, _) =>
-                                const SizedBox(height: 12),
+                                const Divider(height: 1),
                             itemBuilder: (context, index) => _BookingCard(
                               booking: filtered[index],
                               unreadCount:
@@ -105,8 +108,8 @@ class _BookingListScreenState extends ConsumerState<BookingListScreen> {
   }
 
   bool _matchesFilters(ParticipantBooking booking) {
-    final isHistory = booking.status == 'COMPLETED' ||
-        booking.status == 'CANCELLED';
+    final isHistory =
+        booking.status == 'COMPLETED' || booking.status == 'CANCELLED';
     if ((_lifecycle == _BookingLifecycleFilter.history) != isHistory) {
       return false;
     }
@@ -133,11 +136,10 @@ class _BookingFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Row(
         children: [
           ChoiceChip(
             label: const Text('Текущие'),
@@ -184,32 +186,74 @@ class _BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        onTap: () => context.push('/bookings/${booking.id}'),
-        leading: Icon(
-          booking.actorRole == 'LENDER'
+    return InkWell(
+      onTap: () => context.push('/bookings/${booking.id}'),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _BookingThumbnail(actorRole: booking.actorRole),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    booking.terms?.itemTitle ?? 'Бронирование',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(_status(booking.status)),
+                  const SizedBox(height: 2),
+                  Text('${_date(booking.startDate)}–${_date(booking.endDate)}'),
+                  const SizedBox(height: 2),
+                  Text(
+                    booking.actorRole == 'LENDER' ? 'Сдаю' : 'Беру',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              children: [
+                if (unreadCount > 0)
+                  Badge.count(
+                    count: unreadCount,
+                    child: const Icon(Icons.chat_bubble_outline),
+                  ),
+                const SizedBox(height: 12),
+                const Icon(Icons.chevron_right),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingThumbnail extends StatelessWidget {
+  const _BookingThumbnail({required this.actorRole});
+
+  final String actorRole;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: SizedBox.square(
+        dimension: 64,
+        child: Icon(
+          actorRole == 'LENDER'
               ? Icons.inventory_2_outlined
               : Icons.shopping_bag_outlined,
-        ),
-        title: Text(booking.terms?.itemTitle ?? 'Бронирование'),
-        subtitle: Text(
-          '${_status(booking.status)} · '
-          '${_date(booking.startDate)}–${_date(booking.endDate)}\n'
-          '${booking.actorRole == 'LENDER' ? 'Вы сдаёте' : 'Вы арендуете'}',
-        ),
-        isThreeLine: true,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (unreadCount > 0)
-              Badge.count(
-                count: unreadCount,
-                child: const Icon(Icons.chat_bubble_outline),
-              ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right),
-          ],
         ),
       ),
     );

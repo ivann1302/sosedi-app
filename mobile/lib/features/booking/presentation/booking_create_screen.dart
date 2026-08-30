@@ -99,109 +99,53 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
                   const SizedBox(height: 16),
                   availability.when(
                     loading: () => const LinearProgressIndicator(),
-                    error: (error, _) => Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.cloud_off_outlined),
-                        title: Text(
-                          userFacingError(
-                            error,
-                            fallback: 'Не удалось проверить доступность',
-                          ),
-                        ),
-                        trailing: TextButton(
-                          onPressed: _checkAvailability,
-                          child: const Text('Повторить'),
-                        ),
+                    error: (error, _) => _Notice(
+                      icon: Icons.cloud_off_outlined,
+                      title: userFacingError(
+                        error,
+                        fallback: 'Не удалось проверить доступность',
+                      ),
+                      action: TextButton(
+                        onPressed: _checkAvailability,
+                        child: const Text('Повторить'),
                       ),
                     ),
                     data: (result) => result == null
                         ? const SizedBox.shrink()
-                        : Card(
-                            child: ListTile(
-                              leading: Icon(
-                                result.available
-                                    ? Icons.event_available_outlined
-                                    : Icons.event_busy_outlined,
-                              ),
-                              title: Text(
-                                result.available
-                                    ? 'Выбранные даты свободны'
-                                    : 'На выбранные даты вещь недоступна',
-                              ),
-                            ),
+                        : _Notice(
+                            icon: result.available
+                                ? Icons.event_available_outlined
+                                : Icons.event_busy_outlined,
+                            title: result.available
+                                ? 'Выбранные даты свободны'
+                                : 'На выбранные даты вещь недоступна',
                           ),
                   ),
                 ],
                 if (days != null && total != null) ...[
                   const SizedBox(height: 24),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Предварительный расчёт',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          _PriceLine(
-                            label: '${_money(value.pricePerDay)} ₽ × $days дн.',
-                            value: '${_money(total)} ₽',
-                          ),
-                          _PriceLine(
-                            label: 'Залог',
-                            value:
-                                value.depositAmount == null ||
-                                    value.depositAmount == 0
-                                ? 'Нет'
-                                : '${_money(value.depositAmount!)} ₽',
-                          ),
-                          const _PriceLine(
-                            label: 'Комиссия Sosedi (офлайн-пилот)',
-                            value: '0 ₽',
-                          ),
-                          _PriceLine(
-                            label: 'Выплата владельцу',
-                            value: '${_money(total)} ₽',
-                          ),
-                          const _PriceLine(
-                            label: 'Оплата',
-                            value: 'При передаче вещи',
-                          ),
-                          const _PriceLine(label: 'Валюта', value: 'RUB'),
-                          const Divider(),
-                          _PriceLine(
-                            label: 'Итого',
-                            value: '${_money(total)} ₽',
-                            strong: true,
-                          ),
-                        ],
-                      ),
-                    ),
+                  _PriceBreakdown(
+                    pricePerDay: value.pricePerDay,
+                    days: days,
+                    total: total,
+                    depositAmount: value.depositAmount,
                   ),
                 ],
                 const SizedBox(height: 20),
-                const Card(
-                  child: ListTile(
-                    leading: Icon(Icons.schedule_outlined),
-                    title: Text('Владелец ответит в течение 12 часов'),
-                    subtitle: Text(
+                const _Notice(
+                  icon: Icons.schedule_outlined,
+                  title: 'Владелец ответит в течение 12 часов',
+                  description:
                       'До подтверждения даты не зарезервированы. Если владелец '
                       'примет другую пересекающуюся заявку, эта заявка отменится.',
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 12),
-                const Card(
-                  child: ListTile(
-                    leading: Icon(Icons.payments_outlined),
-                    title: Text('Оплата при передаче вещи'),
-                    subtitle: Text(
+                const _Notice(
+                  icon: Icons.payments_outlined,
+                  title: 'Оплата при передаче вещи',
+                  description:
                       'Офлайн-пилот: комиссия Sosedi 0 ₽. '
                       'Приложение не принимает оплату и не переводит деньги.',
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 12),
                 if (marketplaceTerms.isBookingReady)
@@ -219,15 +163,12 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
                         _openDocument(marketplaceTerms.rentalRulesUri!),
                   )
                 else
-                  const Card(
-                    child: ListTile(
-                      leading: Icon(Icons.gavel_outlined),
-                      title: Text('Запуск бронирования готовится'),
-                      subtitle: Text(
+                  const _Notice(
+                    icon: Icons.gavel_outlined,
+                    title: 'Запуск бронирования готовится',
+                    description:
                         'Отправка заявки откроется после публикации оферты, '
                         'правил отмены и страниц поддержки.',
-                      ),
-                    ),
                   ),
                 if (creation.hasError) ...[
                   const SizedBox(height: 12),
@@ -375,45 +316,41 @@ class _MarketplaceTermsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const ListTile(
-              leading: Icon(Icons.gavel_outlined),
-              title: Text('Условия бронирования'),
-              subtitle: Text(
-                'Перед отправкой проверьте обе опубликованные версии.',
-              ),
-            ),
-            TextButton(
-              onPressed: onOpenOffer,
-              child: Text('Открыть оферту · ${terms.offerVersion}'),
-            ),
-            CheckboxListTile(
-              value: offerAccepted,
-              onChanged: (value) => onOfferAccepted(value ?? false),
-              title: const Text('Принимаю оферту'),
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-            TextButton(
-              onPressed: onOpenRentalRules,
-              child: Text(
-                'Открыть правила аренды и отмены · '
-                '${terms.cancellationPolicyVersion}',
-              ),
-            ),
-            CheckboxListTile(
-              value: rentalRulesAccepted,
-              onChanged: (value) => onRentalRulesAccepted(value ?? false),
-              title: const Text('Принимаю правила аренды и отмены'),
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.gavel_outlined),
+          title: Text('Условия бронирования'),
+          subtitle: Text(
+            'Перед отправкой проверьте обе опубликованные версии.',
+          ),
         ),
-      ),
+        TextButton(
+          onPressed: onOpenOffer,
+          child: Text('Открыть оферту · ${terms.offerVersion}'),
+        ),
+        CheckboxListTile(
+          value: offerAccepted,
+          onChanged: (value) => onOfferAccepted(value ?? false),
+          title: const Text('Принимаю оферту'),
+          controlAffinity: ListTileControlAffinity.leading,
+        ),
+        TextButton(
+          onPressed: onOpenRentalRules,
+          child: Text(
+            'Открыть правила аренды и отмены · '
+            '${terms.cancellationPolicyVersion}',
+          ),
+        ),
+        CheckboxListTile(
+          value: rentalRulesAccepted,
+          onChanged: (value) => onRentalRulesAccepted(value ?? false),
+          title: const Text('Принимаю правила аренды и отмены'),
+          controlAffinity: ListTileControlAffinity.leading,
+        ),
+      ],
     );
   }
 }
@@ -448,6 +385,93 @@ class _DateTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PriceBreakdown extends StatelessWidget {
+  const _PriceBreakdown({
+    required this.pricePerDay,
+    required this.days,
+    required this.total,
+    required this.depositAmount,
+  });
+
+  final double pricePerDay;
+  final int days;
+  final double total;
+  final double? depositAmount;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = [
+      _PriceLine(
+        label: '${_money(pricePerDay)} ₽ × $days дн.',
+        value: '${_money(total)} ₽',
+      ),
+      _PriceLine(
+        label: 'Залог',
+        value: depositAmount == null || depositAmount == 0
+            ? 'Нет'
+            : '${_money(depositAmount!)} ₽',
+      ),
+      const _PriceLine(label: 'Комиссия Sosedi (офлайн-пилот)', value: '0 ₽'),
+      _PriceLine(label: 'Выплата владельцу', value: '${_money(total)} ₽'),
+      const _PriceLine(label: 'Оплата', value: 'При передаче вещи'),
+      const _PriceLine(label: 'Валюта', value: 'RUB'),
+      _PriceLine(label: 'Итого', value: '${_money(total)} ₽', strong: true),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Предварительный расчёт',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        for (var index = 0; index < rows.length; index += 1) ...[
+          if (index > 0) const Divider(height: 1),
+          rows[index],
+        ],
+      ],
+    );
+  }
+}
+
+class _Notice extends StatelessWidget {
+  const _Notice({
+    required this.icon,
+    required this.title,
+    this.description,
+    this.action,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? description;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(padding: const EdgeInsets.only(top: 2), child: Icon(icon)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleSmall),
+              if (description != null) ...[
+                const SizedBox(height: 4),
+                Text(description!),
+              ],
+              ...?(action == null ? null : <Widget>[action!]),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

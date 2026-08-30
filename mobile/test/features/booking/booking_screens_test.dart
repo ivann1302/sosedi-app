@@ -191,7 +191,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Перфоратор'), findsOneWidget);
-    expect(find.textContaining('Вы арендуете'), findsOneWidget);
+    expect(find.text('Беру'), findsAtLeastNWidgets(2));
   });
 
   testWidgets('filters bookings by lifecycle and participant role', (
@@ -244,7 +244,7 @@ void main() {
     expect(find.text('Сдавал раньше'), findsOneWidget);
     expect(find.text('Беру сейчас'), findsNothing);
 
-    await tester.tap(find.text('Сдаю'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Сдаю'));
     await tester.pumpAndSettle();
     expect(find.text('Сдавал раньше'), findsOneWidget);
     expect(find.text('Брал раньше'), findsNothing);
@@ -352,6 +352,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Демонстрация оплаты'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.widgetWithText(OutlinedButton, 'Отказ оплаты'),
       300,
@@ -454,8 +455,8 @@ void main() {
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(430, 932);
-    tester.view.padding = const FakeViewPadding(top: 44, bottom: 34);
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
     addTearDown(tester.view.reset);
     final activeBooking = booking.copyWith(
       status: 'ACTIVE',
@@ -490,9 +491,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final nextAction = find.byKey(const ValueKey('booking-next-action'));
+    expect(nextAction, findsOneWidget);
     expect(find.text('Следующее действие'), findsOneWidget);
-    expect(find.text('Пользуйтесь вещью'), findsOneWidget);
-    expect(find.text('Открыть чат'), findsOneWidget);
+    final title = find.text('Пользуйтесь вещью');
+    await tester.ensureVisible(title);
+    expect(title.hitTestable(), findsOneWidget);
+    final chat = find.widgetWithText(FilledButton, 'Открыть чат');
+    await tester.ensureVisible(chat);
+    await tester.pump();
+    expect(chat.hitTestable(), findsOneWidget);
+    expect(tester.widget<FilledButton>(chat).onPressed, isNotNull);
     expect(find.text('Есть проблема'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
