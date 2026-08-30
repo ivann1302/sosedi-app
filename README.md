@@ -88,6 +88,27 @@ Makefile              Единые команды разработки
 
 Backend остается монолитом. До MVP 1.0 не используются microservices, CQRS, GraphQL, Kafka, Kubernetes, Elasticsearch и другие сложные паттерны без прямой необходимости.
 
+## Локальный закрытый пилот
+
+Идемпотентные синтетические объявления и два локальных аккаунта создаются только
+для loopback development-БД:
+
+```bash
+make pilot-seed
+```
+
+Полная автономная проверка local MVP запускается одной командой:
+
+```bash
+make pilot-smoke
+```
+
+Она выполняет основные проверки, все backend e2e, обновляет route screenshots,
+проверяет карту пользовательских путей и всегда останавливает изолированные
+test-контейнеры. Команда не открывает production booking/payment/provider gates.
+Ручной запуск, два golden path и usability/operator checklist описаны в
+[playbook закрытого пилота](docs/closed-pilot-playbook.md).
+
 Практические правила реализации, безопасности, тестирования и эксплуатации:
 [DEVELOPMENT_BEST_PRACTICES.md](DEVELOPMENT_BEST_PRACTICES.md).
 

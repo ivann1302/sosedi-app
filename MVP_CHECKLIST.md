@@ -785,6 +785,8 @@ TDD не является отдельной фазой перед разраб�
   до расширенных фильтров, даты/категории вынесены в chips, а
   цена/радиус — в bottom sheet. Local/debug карта делит с каталогом фильтры и
   выбранную карточку; карта и демо-оплата проверены на 320×720 при 200% текста.
+  Первый шаг публикации показывает реальные thumbnails выбранных файлов, даёт
+  сменить обложку и удалить фото до upload; route screenshot обновлён.
   Все 229 mobile tests и analyzer проходят; закрытие ждёт MapKit и ручной visual
   smoke на iPhone/Android.
 
@@ -956,7 +958,9 @@ MapKit, геолокацию или точный адрес и всегда ск
   back/validation/submit и encrypted resume без фото, file path, точного
   адреса, координат и legal checkbox. Черновик очищается после submit/logout;
   замена временных latitude/longitude на общий MapKit control осталась
-  открытой.
+  открытой. **DOING 30.08.2026:** выбранные фото теперь имеют видимые thumbnails,
+  cover/delete actions и widget regression test; финальный location picker всё
+  ещё зависит от раздела 9.
 
 ## 13. Booking
 
@@ -1824,6 +1828,12 @@ Fake provider и доменные TDD-тесты не блокируются.
 
 ## 18. Финальная проверка MVP
 
+**LOCAL HARNESS 30.08.2026:** `make pilot-seed` идемпотентно создаёт только
+синтетические fixtures после opt-in и loopback guard. `make pilot-smoke`
+выполняет `make check`, все backend e2e, 29 Flutter screenshot-тестов, проверку
+карты user paths и всегда очищает test-инфраструктуру. Это не закрывает реальные
+store/provider/device проверки ниже.
+
 - [x] Выполнить `make ci` из чистого состояния.
   **DONE 29.07.2026:** точный candidate source собран во временный чистый Git
   commit без изменения рабочей ветки; `make ci` прошёл: backend 175 unit/52 e2e,
@@ -1950,6 +1960,10 @@ Fake provider и доменные TDD-тесты не блокируются.
   до 12 часов, payment/dispute/reconciliation owner, incident channel, тестовые
   устройства/номера, launch-day runbook и ежедневная проверка safety/privacy,
   supply density и stuck bookings/payments.
+  **DOING 30.08.2026:** `docs/closed-pilot-playbook.md` фиксирует безопасный
+  local seed/smoke, operator/daily checklist и два golden path. Назначение людей,
+  incident channel, реальные номера/устройства и launch-day execution остаются
+  внешней работой владельца.
 - [ ] Перед приглашением пилота провести moderated usability smoke минимум с пятью
   новыми пользователями на двух golden paths: `открыть без SMS → найти вещь →
   начать бронь` и `Сдать → опубликовать объявление`. Рабочая гипотеза: каждый
@@ -1958,6 +1972,9 @@ Fake provider и доменные TDD-тесты не блокируются.
   отказа и менять пороги только явным product decision; privacy-safe aggregate
   ratios `catalog_opened→booking_started` и `listing_started→listing_created`
   считать существующими allowlisted events, без user-level export.
+  **DOING 30.08.2026:** playbook содержит privacy-safe observation card и точные
+  шаги обоих сценариев; фактическое прохождение минимум с пятью новыми людьми и
+  утверждение порогов остаются незакрытым human gate.
 - [ ] За первые 8 недель измерить privacy-safe funnel агрегатами канонических
   User/Booking/Payment/Review состояний и consented client events только там, где
   серверного факта нет; не строить user-level marketing export. Провести go/no-go

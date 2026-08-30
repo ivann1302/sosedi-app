@@ -35,7 +35,7 @@
 - Produces: `seedLocalPilotData(prisma: PrismaClient): Promise<{ users: number; items: number; favorites: number }>`.
 - Produces: `make pilot-seed`, which runs migrations, canonical category seed and the guarded local fixture seed.
 
-- [ ] **Step 1: Write the failing guard unit tests**
+- [x] **Step 1: Write the failing guard unit tests**
 
 ```ts
 expect(() => assertLocalPilotSeedAllowed({
@@ -51,37 +51,40 @@ expect(() => assertLocalPilotSeedAllowed({
 })).toThrow('loopback');
 ```
 
-- [ ] **Step 2: Run unit test and confirm RED**
+- [x] **Step 2: Run unit test and confirm RED**
 
 Run: `cd backend && npm test -- --runInBand src/operations/local-pilot-seed.spec.ts`
 
 Expected: FAIL because `local-pilot-seed` does not exist.
 
-- [ ] **Step 3: Implement the minimal guard and fixture upserts**
+- [x] **Step 3: Implement the minimal guard and fixture upserts**
 
 Use two deterministic local users, six approved listings across the already seeded launch-category slugs, one pending owned listing and two favorites. Resolve categories by slug and fail with a readable error if `npm run prisma:seed` was not run. Use `ownerId_clientRequestId` for idempotent item upserts; do not delete unrelated rows.
 
-- [ ] **Step 4: Run guard unit test and confirm GREEN**
+- [x] **Step 4: Run guard unit test and confirm GREEN**
 
 Run: `cd backend && npm test -- --runInBand src/operations/local-pilot-seed.spec.ts`
 
 Expected: PASS.
 
-- [ ] **Step 5: Write the failing real-DB idempotency test**
+- [x] **Step 5: Write the failing real-DB idempotency test**
 
 The e2e test creates the six required categories, calls `seedLocalPilotData` twice, then checks literal counts and verifies that the public items endpoint returns only approved fixtures without `address`, `latitude` or `longitude`.
 
-- [ ] **Step 6: Run e2e test and confirm RED, then complete the minimal seed implementation**
+- [x] **Step 6: Run e2e test and confirm RED, then complete the minimal seed implementation**
 
 Run: `make test-infra-up && make backend-test-db-migrate && cd backend && NODE_ENV=test TEST_DATABASE_URL="$TEST_DATABASE_URL" TEST_REDIS_URL="$TEST_REDIS_URL" npm run test:e2e -- --runInBand test/local-pilot-seed.e2e-spec.ts`
 
 Expected before completion: FAIL on missing fixture behavior. Expected after completion: PASS with unchanged counts after the second seed.
 
-- [ ] **Step 7: Add guarded CLI and Make command**
+- [x] **Step 7: Add guarded CLI and Make command**
 
 `backend/scripts/seed-local-pilot.ts` loads `dotenv/config`, runs the guard before constructing Prisma, calls `seedLocalPilotData`, prints only counts and disconnects. Add `pilot:seed` to `backend/package.json` and `pilot-seed` to `Makefile`.
 
-- [ ] **Step 8: Verify and commit**
+`infra-up` также ждёт healthcheck PostgreSQL/Redis, чтобы первый seed не зависел
+от скорости холодного старта контейнеров.
+
+- [x] **Step 8: Verify and commit**
 
 Run: `make backend-lint-check && make backend-test && make backend-build`
 
@@ -98,27 +101,30 @@ Commit: `feat(pilot): add guarded local fixture seed`
 - Produces: `verifyAppUserPaths({ htmlPath, screenshotsDir }): { references: number; files: number }`.
 - Produces: `make app-user-paths-check`.
 
-- [ ] **Step 1: Write failing behavior tests**
+- [x] **Step 1: Write failing behavior tests**
 
-Use temporary directories and real HTML/files. One test accepts two unique relative PNG references whose files exist. Separate tests reject a missing referenced PNG, a duplicate reference, path traversal/absolute URL and an unreferenced PNG in the screenshots directory.
+Use temporary directories and real HTML/files. One test accepts safe relative PNG
+references and legitimate reuse of one screen in several journeys. Separate tests
+reject a missing referenced PNG, path traversal/absolute URL and an unreferenced
+PNG in the screenshots directory.
 
-- [ ] **Step 2: Run and confirm RED**
+- [x] **Step 2: Run and confirm RED**
 
 Run: `node --test scripts/verify-app-user-paths.test.mjs`
 
 Expected: FAIL because verifier does not exist.
 
-- [ ] **Step 3: Implement minimal verifier**
+- [x] **Step 3: Implement minimal verifier**
 
 Extract only `src="screenshots/<safe-name>.png"`, require at least one image, compare unique references with the actual `.png` basenames and return counts. CLI defaults to `docs/app-user-paths.html` and `docs/screenshots`.
 
-- [ ] **Step 4: Run and confirm GREEN**
+- [x] **Step 4: Run and confirm GREEN**
 
 Run: `node --test scripts/verify-app-user-paths.test.mjs && node scripts/verify-app-user-paths.mjs`
 
-Expected: tests pass and current 29 screenshot references/files match.
+Expected: tests pass; every reference resolves and all 29 PNG files are used.
 
-- [ ] **Step 5: Add Make target and commit**
+- [x] **Step 5: Add Make target and commit**
 
 Commit: `test(app): verify screenshot user-path map`
 
@@ -133,27 +139,27 @@ Commit: `test(app): verify screenshot user-path map`
 - Produces: `runLocalPilotSmoke(run): Promise<void>`.
 - Produces: `make pilot-smoke`.
 
-- [ ] **Step 1: Write failing runner tests**
+- [x] **Step 1: Write failing runner tests**
 
 Assert literal stage order: `make check`, `make backend-test-e2e`, `make mobile-screenshots`, `make app-user-paths-check`. Assert `make test-infra-down` is called after success and after a stage failure; original failure wins unless only cleanup fails.
 
-- [ ] **Step 2: Run and confirm RED**
+- [x] **Step 2: Run and confirm RED**
 
 Run: `node --test scripts/run-local-pilot-smoke.test.mjs`
 
 Expected: FAIL because runner does not exist.
 
-- [ ] **Step 3: Implement sequential runner with `finally` cleanup**
+- [x] **Step 3: Implement sequential runner with `finally` cleanup**
 
 Use `node:child_process.spawn` with inherited stdio for the CLI path. Do not accept arbitrary user commands and do not print environment variables.
 
-- [ ] **Step 4: Run and confirm GREEN**
+- [x] **Step 4: Run and confirm GREEN**
 
 Run: `node --test scripts/run-local-pilot-smoke.test.mjs`
 
 Expected: PASS.
 
-- [ ] **Step 5: Add Make target and commit**
+- [x] **Step 5: Add Make target and commit**
 
 Commit: `test(pilot): add isolated golden-path smoke`
 
@@ -169,27 +175,27 @@ Commit: `test(pilot): add isolated golden-path smoke`
 - Existing `ItemPhotoPicker.pick(): Future<List<XFile>>` stays unchanged.
 - Produces: selected-photo cards with thumbnail/fallback, one visible `Главное`, tap-to-cover and delete actions.
 
-- [ ] **Step 1: Write failing widget behavior test**
+- [x] **Step 1: Write failing widget behavior test**
 
 Return two valid in-memory PNG `XFile` values. After picking, assert two photo semantics/cards, exactly one `Главное`, tap the second card and assert its filename is marked main, then delete it and assert one card remains.
 
-- [ ] **Step 2: Run and confirm RED**
+- [x] **Step 2: Run and confirm RED**
 
 Run: `cd mobile && flutter test test/features/item/create_item_screen_test.dart`
 
 Expected: FAIL because visual photo cards do not exist.
 
-- [ ] **Step 3: Implement minimal preview cards**
+- [x] **Step 3: Implement minimal preview cards**
 
 Replace filename-only `InputChip` wrap with a horizontal list. Each card reads its own `XFile` bytes in a `FutureBuilder`, uses `Image.memory(..., fit: BoxFit.cover)` and a code-native fallback, exposes explicit cover/delete semantics and reuses `_makeCover`/`_removePhoto`.
 
-- [ ] **Step 4: Run focused test and analyzer**
+- [x] **Step 4: Run focused test and analyzer**
 
 Run: `cd mobile && flutter test test/features/item/create_item_screen_test.dart && flutter analyze`
 
 Expected: PASS, no analyzer issues.
 
-- [ ] **Step 5: Regenerate screenshot 11 and commit**
+- [x] **Step 5: Regenerate screenshot 11 and commit**
 
 Override the picker in the screenshot fixture, tap `Добавить фото` before capture and run `make mobile-screenshots`.
 
@@ -207,15 +213,15 @@ Commit: `feat(mobile): preview listing photos before submit`
 **Interfaces:**
 - Documents exact `make pilot-seed`, backend/mobile start, `make pilot-smoke`, two golden paths, operator checklist, evidence fields and blockers.
 
-- [ ] **Step 1: Write the concise playbook**
+- [x] **Step 1: Write the concise playbook**
 
 Include: prerequisites, safe local seed contract, borrower/lender paths, operator/support path, start/stop commands, console OTP limitation, no real payments/MapKit/push/KYC, usability observation table and deletion of test artifacts. Do not include secrets or approved legal claims.
 
-- [ ] **Step 2: Synchronize tracked sources**
+- [x] **Step 2: Synchronize tracked sources**
 
 Add `DOING` evidence to checklist section 19 without marking human/device/external gates complete. Mirror the same state in the roadmap pilot card. Add commands to README and update handoff to the next open checklist item. Progress stays `339/488 = 69.5%` unless an existing counted checkbox is actually closed.
 
-- [ ] **Step 3: Verify documentation behavior**
+- [x] **Step 3: Verify documentation behavior**
 
 Run: `make app-user-paths-check`, `make public-web-check`, and `rg -n "TBD|TODO|implement later|fill in" docs/closed-pilot-playbook.md` (expected no matches).
 
