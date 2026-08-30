@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/router/app_shell.dart';
+import 'package:mobile/core/theme/app_theme.dart';
 
 void main() {
   testWidgets('shows the five product destinations in the expected order', (
@@ -10,6 +11,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.light(),
         home: AppShell(
           currentIndex: 0,
           onDestinationSelected: (index) => selectedIndex = index,
@@ -25,8 +27,16 @@ void main() {
     expect(find.text('Входящие'), findsOneWidget);
     expect(find.text('Профиль'), findsOneWidget);
 
-    await tester.tap(find.text('Брони'));
+    for (final destination in <(String, int)>[
+      ('Найти', 0),
+      ('Брони', 1),
+      ('Сдать', 2),
+      ('Входящие', 3),
+      ('Профиль', 4),
+    ]) {
+      await tester.tap(find.text(destination.$1));
 
-    expect(selectedIndex, 1);
+      expect(selectedIndex, destination.$2);
+    }
   });
 }

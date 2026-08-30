@@ -89,12 +89,12 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/fonts/OFL.txt
+    - assets/fonts/ONEST-OFL.txt
 
   fonts:
-    - family: Manrope
+    - family: Onest
       fonts:
-        - asset: assets/fonts/Manrope-Variable.ttf
+        - asset: assets/fonts/Onest-Variable.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

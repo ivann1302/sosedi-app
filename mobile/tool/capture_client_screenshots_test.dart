@@ -69,11 +69,11 @@ late final Uint8List _projectorDemoBytes;
 
 void main() {
   setUpAll(() async {
-    final manrope = FontLoader('Manrope')
-      ..addFont(rootBundle.load('assets/fonts/Manrope-Variable.ttf'));
+    final onest = FontLoader('Onest')
+      ..addFont(rootBundle.load('assets/fonts/Onest-Variable.ttf'));
     final materialIcons = FontLoader('MaterialIcons')
       ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
-    await Future.wait([manrope.load(), materialIcons.load()]);
+    await Future.wait([onest.load(), materialIcons.load()]);
     _projectorDemoBytes = File(
       'tool/fixtures/projector-demo.png',
     ).readAsBytesSync();

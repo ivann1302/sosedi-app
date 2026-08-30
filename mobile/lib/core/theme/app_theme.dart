@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 
 abstract final class AppColors {
   static const brand500 = Color(0xFFFEA319);
-  static const brand600 = Color(0xFFFF8A00);
+  static const brandPressed = Color(0xFFFF8A00);
+  static const brand600 = brandPressed;
   static const brand700 = Color(0xFFFF6A00);
   static const ink900 = Color(0xFF17202B);
   static const slate500 = Color(0xFF5F7487);
   static const slate700 = Color(0xFF465B6E);
   static const slate800 = Color(0xFF35485A);
+  static const canvas = Color(0xFFFFFFFF);
   static const cloud = Color(0xFFF7F8F9);
   static const warmSand = Color(0xFFFFF2D9);
-  static const surface = Color(0xFFFFFFFF);
+  static const surface = canvas;
   static const line = Color(0xFFE4E8EB);
   static const textMuted = Color(0xFF65727C);
   static const success = Color(0xFF1C7C54);
@@ -18,9 +20,9 @@ abstract final class AppColors {
 }
 
 abstract final class AppRadii {
-  static const small = 12.0;
-  static const medium = 16.0;
-  static const large = 24.0;
+  static const small = 10.0;
+  static const medium = 12.0;
+  static const large = 16.0;
 }
 
 class AppTheme {
@@ -34,7 +36,7 @@ class AppTheme {
       onSecondary: AppColors.surface,
       secondaryContainer: AppColors.slate800,
       onSecondaryContainer: AppColors.surface,
-      surface: AppColors.cloud,
+      surface: AppColors.canvas,
       onSurface: AppColors.ink900,
       error: AppColors.error,
       onError: AppColors.surface,
@@ -45,34 +47,33 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'Manrope',
-      fontFamilyFallback: const ['Inter'],
+      fontFamily: 'Onest',
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.cloud,
+      scaffoldBackgroundColor: AppColors.canvas,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: AppColors.cloud,
+        backgroundColor: AppColors.canvas,
         foregroundColor: AppColors.ink900,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: textTheme.titleLarge,
       ),
       cardTheme: CardThemeData(
-        elevation: 1,
+        elevation: 0,
         margin: EdgeInsets.zero,
         color: AppColors.surface,
         surfaceTintColor: Colors.transparent,
-        shadowColor: AppColors.ink900.withValues(alpha: 0.08),
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.medium),
-          side: const BorderSide(color: AppColors.line),
+          side: BorderSide.none,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.cloud,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 15,
@@ -82,7 +83,7 @@ class AppTheme {
         helperStyle: textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
         border: _inputBorder(AppColors.line),
         enabledBorder: _inputBorder(AppColors.line),
-        focusedBorder: _inputBorder(AppColors.slate700, width: 2),
+        focusedBorder: _inputBorder(AppColors.brandPressed, width: 2),
         errorBorder: _inputBorder(AppColors.error),
         focusedErrorBorder: _inputBorder(AppColors.error, width: 2),
       ),
@@ -149,19 +150,19 @@ class AppTheme {
         height: 72,
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: AppColors.warmSand,
+        indicatorColor: Colors.transparent,
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
             color: states.contains(WidgetState.selected)
-                ? AppColors.ink900
-                : AppColors.slate500,
+                ? AppColors.brand500
+                : AppColors.textMuted,
           ),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => textTheme.labelSmall?.copyWith(
             color: states.contains(WidgetState.selected)
-                ? AppColors.ink900
-                : AppColors.slate500,
+                ? AppColors.brand500
+                : AppColors.textMuted,
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w700
                 : FontWeight.w500,
@@ -199,68 +200,60 @@ class AppTheme {
   }
 
   static TextTheme _textTheme() {
-    const base = TextStyle(
-      color: AppColors.ink900,
-      fontFamily: 'Manrope',
-      fontFamilyFallback: ['Inter'],
-    );
+    const base = TextStyle(color: AppColors.ink900, fontFamily: 'Onest');
 
     return TextTheme(
       displaySmall: base.copyWith(
-        fontSize: 28,
-        height: 34 / 28,
+        fontSize: 24,
+        height: 30 / 24,
         fontWeight: FontWeight.w800,
-        letterSpacing: -0.6,
       ),
       headlineMedium: base.copyWith(
         fontSize: 24,
         height: 30 / 24,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.4,
+        fontWeight: FontWeight.w700,
       ),
       headlineSmall: base.copyWith(
-        fontSize: 20,
-        height: 26 / 20,
+        fontSize: 22,
+        height: 28 / 22,
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.2,
       ),
       titleLarge: base.copyWith(
-        fontSize: 20,
-        height: 26 / 20,
+        fontSize: 18,
+        height: 24 / 18,
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.2,
       ),
       titleMedium: base.copyWith(
-        fontSize: 16,
-        height: 24 / 16,
-        fontWeight: FontWeight.w700,
+        fontSize: 15,
+        height: 20 / 15,
+        fontWeight: FontWeight.w600,
       ),
       titleSmall: base.copyWith(
-        fontSize: 14,
-        height: 20 / 14,
+        fontSize: 17,
+        height: 22 / 17,
         fontWeight: FontWeight.w700,
       ),
-      bodyLarge: base.copyWith(fontSize: 16, height: 24 / 16),
-      bodyMedium: base.copyWith(fontSize: 16, height: 24 / 16),
+      bodyLarge: base.copyWith(fontSize: 16, height: 23 / 16),
+      bodyMedium: base.copyWith(fontSize: 16, height: 23 / 16),
       bodySmall: base.copyWith(
         color: AppColors.textMuted,
         fontSize: 14,
         height: 20 / 14,
       ),
       labelLarge: base.copyWith(
-        fontSize: 16,
-        height: 20 / 16,
-        fontWeight: FontWeight.w700,
+        fontSize: 13,
+        height: 18 / 13,
+        fontWeight: FontWeight.w600,
       ),
       labelMedium: base.copyWith(
-        fontSize: 14,
-        height: 20 / 14,
-        fontWeight: FontWeight.w700,
+        fontSize: 13,
+        height: 18 / 13,
+        fontWeight: FontWeight.w600,
       ),
       labelSmall: base.copyWith(
         color: AppColors.textMuted,
-        fontSize: 12,
-        height: 16 / 12,
+        fontSize: 13,
+        height: 18 / 13,
         fontWeight: FontWeight.w500,
       ),
     );
