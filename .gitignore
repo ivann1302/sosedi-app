@@ -15,3 +15,4 @@ APP_MAP_LOCAL.md
 /public-web/dist/
 /public-web/.astro/
 /public-web/*.tsbuildinfo
+/.worktrees/
