@@ -14,6 +14,7 @@
     "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "prisma:seed": "prisma db seed",
+    "pilot:seed": "ts-node scripts/seed-local-pilot.ts",
     "admin:bootstrap": "ts-node scripts/bootstrap-first-admin.ts",
     "backup:postgres": "node dist/src/operations/postgres-backup.js",
     "restore:postgres": "node dist/src/operations/postgres-restore.js",
