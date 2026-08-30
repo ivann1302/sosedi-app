@@ -14,7 +14,6 @@
         --line: #dfe5e8;
         --orange: #ff9f0a;
         --blue: #526d82;
-        --green: #35665a;
         --amber: #9a6410;
       }
 
@@ -203,16 +202,11 @@
       }
 
       .branch {
-        position: relative;
         min-height: 118px;
         padding: 16px;
         border: 1px solid var(--line);
         border-radius: 10px;
         background: var(--surface);
-      }
-
-      .branch::before {
-        content: none;
       }
 
       .branch b,
@@ -243,11 +237,6 @@
 
       .pill {
         color: var(--muted);
-      }
-
-      .pill.ready,
-      .kind.ready {
-        color: var(--green);
       }
 
       .pill.demo,
@@ -286,12 +275,7 @@
       }
 
       .screen {
-        position: relative;
         scroll-snap-align: start;
-      }
-
-      .screen:not(:last-child)::after {
-        content: none;
       }
 
       .screen-card {
@@ -385,8 +369,7 @@
           padding-top: 16px;
         }
 
-        .topbar,
-        .hero {
+        .topbar {
           align-items: flex-start;
           flex-direction: column;
         }
@@ -401,10 +384,6 @@
 
         .branches {
           grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .branch::before {
-          display: none;
         }
 
         .overview,
@@ -489,7 +468,6 @@
           </div>
         </div>
         <div class="legend" aria-label="Статусы экранов">
-          <span class="pill ready">Основной сценарий</span>
           <span class="pill demo">Демонстрация</span>
           <span class="pill system">Системный экран</span>
         </div>
