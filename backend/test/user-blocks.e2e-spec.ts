@@ -17,10 +17,14 @@ import { S3StorageService } from './../src/upload/s3-storage.service';
 import { resetTestState } from './support/test-state';
 
 function acceptedBookingPayload(itemId: string) {
+  const startDate = new Date();
+  startDate.setUTCDate(startDate.getUTCDate() + 14);
+  const endDate = new Date(startDate);
+  endDate.setUTCDate(endDate.getUTCDate() + 1);
   return {
     itemId,
-    startDate: '2026-08-10',
-    endDate: '2026-08-11',
+    startDate: startDate.toISOString().slice(0, 10),
+    endDate: endDate.toISOString().slice(0, 10),
     offerVersion: 'e2e-approved-offer-1',
     cancellationPolicyVersion: 'e2e-approved-cancellation-1',
     offerAccepted: true,
