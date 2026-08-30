@@ -40,7 +40,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Скрыть объявление'));
+    await tester.tap(find.byTooltip('Действия с объявлением'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Скрыть объявление'));
     await tester.pumpAndSettle();
     expect(service.hiddenItemId, isNull);
 
@@ -66,7 +68,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Скрыть объявление'));
+    await tester.tap(find.byTooltip('Действия с объявлением'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Скрыть объявление'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Скрыть'));
     await tester.pumpAndSettle();

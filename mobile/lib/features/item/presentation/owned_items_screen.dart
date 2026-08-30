@@ -58,107 +58,94 @@ class _OwnedItemCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hide = ref.watch(hideOwnedItemProvider);
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          InkWell(
-            onTap: item.status == 'APPROVED'
-                ? () => context.push('/items/${item.id}')
-                : null,
+    return Column(
+      children: [
+        InkWell(
+          onTap: item.status == 'APPROVED'
+              ? () => context.push('/items/${item.id}')
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
                   width: 112,
-                  height: 128,
-                  child: _OwnedItemPhoto(item: item),
+                  height: 112,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _OwnedItemPhoto(item: item),
+                  ),
                 ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_price(item.pricePerDay)} ₽ / день',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _status(item.status),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: item.status == 'REJECTED'
+                              ? AppColors.error
+                              : AppColors.slate700,
                         ),
+                      ),
+                      if (item.rejectReason != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          '${_price(item.pricePerDay)} ₽ / день',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          item.rejectReason!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.error),
                         ),
-                        const SizedBox(height: 8),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: _statusColor(item.status),
-                            borderRadius: BorderRadius.circular(AppRadii.small),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 5,
-                            ),
-                            child: Text(
-                              _status(item.status),
-                              style: Theme.of(context).textTheme.labelSmall,
-                            ),
-                          ),
-                        ),
-                        if (item.rejectReason != null) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            item.rejectReason!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.error),
-                          ),
-                        ],
                       ],
+                    ],
+                  ),
+                ),
+                PopupMenuButton<_OwnedItemAction>(
+                  tooltip: 'Действия с объявлением',
+                  onSelected: (action) {
+                    switch (action) {
+                      case _OwnedItemAction.edit:
+                        context.push('/items/${item.id}/edit');
+                      case _OwnedItemAction.hide:
+                        if (!hide.isLoading) {
+                          _hide(context, ref);
+                        }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: _OwnedItemAction.edit,
+                      child: Text('Редактировать'),
                     ),
-                  ),
+                    if (item.status != 'HIDDEN')
+                      const PopupMenuItem(
+                        value: _OwnedItemAction.hide,
+                        child: Text('Скрыть объявление'),
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (item.status != 'HIDDEN')
-                  IconButton(
-                    onPressed: hide.isLoading
-                        ? null
-                        : () => _hide(context, ref),
-                    tooltip: 'Скрыть объявление',
-                    icon: const Icon(Icons.visibility_off_outlined),
-                  ),
-                IconButton(
-                  onPressed: () => context.push('/items/${item.id}/edit'),
-                  tooltip: 'Редактировать',
-                  icon: const Icon(Icons.edit_outlined),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+        const Divider(height: 1),
+      ],
     );
-  }
-
-  Color _statusColor(String status) {
-    return switch (status) {
-      'APPROVED' => AppColors.success.withValues(alpha: 0.12),
-      'REJECTED' => AppColors.error.withValues(alpha: 0.10),
-      'PENDING' => AppColors.warmSand,
-      _ => AppColors.cloud,
-    };
   }
 
   Future<void> _hide(BuildContext context, WidgetRef ref) async {
@@ -217,6 +204,8 @@ class _OwnedItemCard extends ConsumerWidget {
       ? value.toInt().toString()
       : value.toStringAsFixed(2);
 }
+
+enum _OwnedItemAction { edit, hide }
 
 class _OwnedItemPhoto extends StatelessWidget {
   const _OwnedItemPhoto({required this.item});

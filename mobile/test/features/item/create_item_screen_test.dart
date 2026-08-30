@@ -46,7 +46,7 @@ void main() {
     await tester.pumpWidget(_app(service, picker: _FakePhotoPicker()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Шаг 1 из 3 · Фото'), findsOneWidget);
+    expect(find.text('Шаг 1 из 3'), findsOneWidget);
     await tester.tap(find.text('Добавить фото'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Далее'));
@@ -73,7 +73,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Далее'));
     await tester.pumpAndSettle();
-    expect(find.text('Шаг 3 из 3 · Место и доступность'), findsOneWidget);
+    expect(find.text('Шаг 3 из 3'), findsOneWidget);
     await tester.tap(find.text('На модерацию'));
     await tester.pumpAndSettle();
 
@@ -121,6 +121,18 @@ void main() {
 
     await tester.tap(second);
     await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: second, matching: find.text('Главное')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+    expect(find.text('Шаг 2 из 3'), findsOneWidget);
+
+    await tester.tap(find.text('Назад'));
+    await tester.pumpAndSettle();
+    expect(find.text('Шаг 1 из 3'), findsOneWidget);
     expect(
       find.descendant(of: second, matching: find.text('Главное')),
       findsOneWidget,
@@ -270,11 +282,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Далее'));
     await tester.pumpAndSettle();
-    expect(find.text('Шаг 2 из 3 · Описание и цена'), findsOneWidget);
+    expect(find.text('Шаг 2 из 3'), findsOneWidget);
 
     await tester.tap(find.text('Назад'));
     await tester.pumpAndSettle();
-    expect(find.text('Шаг 1 из 3 · Фото'), findsOneWidget);
+    expect(find.text('Шаг 1 из 3'), findsOneWidget);
   });
 
   testWidgets('asks before system back discards an unfinished draft', (

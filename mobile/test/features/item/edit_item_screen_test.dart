@@ -20,6 +20,9 @@ void main() {
   testWidgets('edits an owned item and shows moderation status', (
     tester,
   ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1000, 4000);
+    addTearDown(tester.view.reset);
     final service = _FakeOwnedItemsService();
     await tester.pumpWidget(
       ProviderScope(
@@ -46,10 +49,6 @@ void main() {
       'longitude': '37.6',
     });
     await tester.pump();
-    await tester.drag(find.byType(ListView), const Offset(0, -800));
-    await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView), const Offset(0, -800));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Сохранить и отправить на модерацию'));
     await tester.pumpAndSettle();
 

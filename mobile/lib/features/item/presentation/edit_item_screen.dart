@@ -103,153 +103,198 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                     'longitude': _coordinate(item.longitude),
                   },
                   onChanged: _markDirty,
-                  child: ListView(
-                    padding: const EdgeInsets.all(20),
+                  child: Column(
                     children: [
-                      _text(
-                        name: 'title',
-                        label: 'Название',
-                        validators: [
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.minLength(3),
-                          FormBuilderValidators.maxLength(120),
-                        ],
-                      ),
-                      _text(
-                        name: 'description',
-                        label: 'Описание',
-                        maxLines: 4,
-                        validators: [
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.minLength(10),
-                          FormBuilderValidators.maxLength(4000),
-                        ],
-                      ),
-                      FormBuilderDropdown<String>(
-                        name: 'categoryId',
-                        decoration: const InputDecoration(
-                          labelText: 'Категория',
-                        ),
-                        items: values
-                            .map(
-                              (category) => DropdownMenuItem(
-                                value: category.id,
-                                child: Text(category.name),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                          children: [
+                            _PhotoEditor(
+                              item: item,
+                              isLoading: photoUpload.isLoading,
+                              error: photoUpload.error,
+                              onAdd: () => _appendPhotos(item),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Объявление',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 12),
+                            _text(
+                              name: 'title',
+                              label: 'Название',
+                              validators: [
+                                FormBuilderValidators.required(),
+                                FormBuilderValidators.minLength(3),
+                                FormBuilderValidators.maxLength(120),
+                              ],
+                            ),
+                            _text(
+                              name: 'description',
+                              label: 'Описание',
+                              maxLines: 4,
+                              validators: [
+                                FormBuilderValidators.required(),
+                                FormBuilderValidators.minLength(10),
+                                FormBuilderValidators.maxLength(4000),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Состояние и комплектация',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 12),
+                            FormBuilderDropdown<String>(
+                              name: 'categoryId',
+                              decoration: const InputDecoration(
+                                labelText: 'Категория',
                               ),
-                            )
-                            .toList(growable: false),
-                        validator: FormBuilderValidators.required(),
-                      ),
-                      const SizedBox(height: 12),
-                      FormBuilderDropdown<String>(
-                        name: 'condition',
-                        decoration: const InputDecoration(
-                          labelText: 'Состояние',
+                              items: values
+                                  .map(
+                                    (category) => DropdownMenuItem(
+                                      value: category.id,
+                                      child: Text(category.name),
+                                    ),
+                                  )
+                                  .toList(growable: false),
+                              validator: FormBuilderValidators.required(),
+                            ),
+                            const SizedBox(height: 12),
+                            FormBuilderDropdown<String>(
+                              name: 'condition',
+                              decoration: const InputDecoration(
+                                labelText: 'Состояние',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'NEW',
+                                  child: Text('Новое'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'LIKE_NEW',
+                                  child: Text('Как новое'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'GOOD',
+                                  child: Text('Хорошее'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'FAIR',
+                                  child: Text('Удовлетворительное'),
+                                ),
+                              ],
+                              validator: FormBuilderValidators.required(),
+                            ),
+                            const SizedBox(height: 12),
+                            _text(
+                              name: 'completeness',
+                              label: 'Комплектация',
+                              maxLines: 2,
+                              validators: [
+                                FormBuilderValidators.required(),
+                                FormBuilderValidators.minLength(3),
+                                FormBuilderValidators.maxLength(1000),
+                              ],
+                            ),
+                            _text(
+                              name: 'handoverTerms',
+                              label: 'Передача и безопасность',
+                              maxLines: 3,
+                              validators: [
+                                FormBuilderValidators.required(),
+                                FormBuilderValidators.minLength(3),
+                                FormBuilderValidators.maxLength(1000),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Цена и место передачи',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 12),
+                            _number(
+                              name: 'pricePerDay',
+                              label: 'Цена за день, ₽',
+                              min: 1,
+                              max: 1000000,
+                            ),
+                            _text(
+                              name: 'publicArea',
+                              label: 'Район для публичной карточки',
+                              validators: [
+                                FormBuilderValidators.required(),
+                                FormBuilderValidators.minLength(2),
+                                FormBuilderValidators.maxLength(120),
+                              ],
+                            ),
+                            _text(
+                              name: 'address',
+                              label: 'Точный адрес передачи (приватно)',
+                              validators: [
+                                FormBuilderValidators.required(),
+                                FormBuilderValidators.minLength(5),
+                                FormBuilderValidators.maxLength(300),
+                              ],
+                            ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: _number(
+                                    name: 'latitude',
+                                    label: 'Широта',
+                                    min: -90,
+                                    max: 90,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _number(
+                                    name: 'longitude',
+                                    label: 'Долгота',
+                                    min: -180,
+                                    max: 180,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Text(
+                              'Координаты вводятся вручную — временно, до подключения карты.',
+                            ),
+                            const SizedBox(height: 24),
+                            _AvailabilityEditor(itemId: item.id),
+                            if (update.hasError) ...[
+                              const SizedBox(height: 16),
+                              const Text('Не удалось сохранить изменения'),
+                            ],
+                          ],
                         ),
-                        items: const [
-                          DropdownMenuItem(value: 'NEW', child: Text('Новое')),
-                          DropdownMenuItem(
-                            value: 'LIKE_NEW',
-                            child: Text('Как новое'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'GOOD',
-                            child: Text('Хорошее'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'FAIR',
-                            child: Text('Удовлетворительное'),
-                          ),
-                        ],
-                        validator: FormBuilderValidators.required(),
                       ),
-                      const SizedBox(height: 12),
-                      _text(
-                        name: 'completeness',
-                        label: 'Комплектация',
-                        maxLines: 2,
-                        validators: [
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.minLength(3),
-                          FormBuilderValidators.maxLength(1000),
-                        ],
-                      ),
-                      _text(
-                        name: 'handoverTerms',
-                        label: 'Передача и безопасность',
-                        maxLines: 3,
-                        validators: [
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.minLength(3),
-                          FormBuilderValidators.maxLength(1000),
-                        ],
-                      ),
-                      _number(
-                        name: 'pricePerDay',
-                        label: 'Цена за день, ₽',
-                        min: 1,
-                        max: 1000000,
-                      ),
-                      _text(
-                        name: 'publicArea',
-                        label: 'Район для публичной карточки',
-                        validators: [
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.minLength(2),
-                          FormBuilderValidators.maxLength(120),
-                        ],
-                      ),
-                      _text(
-                        name: 'address',
-                        label: 'Точный адрес передачи (приватно)',
-                        validators: [
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.minLength(5),
-                          FormBuilderValidators.maxLength(300),
-                        ],
-                      ),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _number(
-                              name: 'latitude',
-                              label: 'Широта',
-                              min: -90,
-                              max: 90,
+                      SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: FilledButton(
+                              onPressed: update.isLoading
+                                  ? null
+                                  : () => _submit(item),
+                              child: update.isLoading
+                                  ? const SizedBox.square(
+                                      dimension: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Сохранить и отправить на модерацию',
+                                    ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _number(
-                              name: 'longitude',
-                              label: 'Долгота',
-                              min: -180,
-                              max: 180,
-                            ),
-                          ),
-                        ],
-                      ),
-                      _PhotoEditor(
-                        item: item,
-                        isLoading: photoUpload.isLoading,
-                        error: photoUpload.error,
-                        onAdd: () => _appendPhotos(item),
-                      ),
-                      const SizedBox(height: 24),
-                      _AvailabilityEditor(itemId: item.id),
-                      if (update.hasError) ...[
-                        const SizedBox(height: 16),
-                        const Text('Не удалось сохранить изменения'),
-                      ],
-                      const SizedBox(height: 24),
-                      FilledButton(
-                        onPressed: update.isLoading
-                            ? null
-                            : () => _submit(item),
-                        child: update.isLoading
-                            ? const CircularProgressIndicator()
-                            : const Text('Сохранить и отправить на модерацию'),
+                        ),
                       ),
                     ],
                   ),

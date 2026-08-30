@@ -113,16 +113,19 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Шаг ${_step + 1} из 3 · ${_stepTitle(_step)}',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  'Шаг ${_step + 1} из 3',
+                  style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
-                LinearProgressIndicator(value: (_step + 1) / 3),
+                SizedBox(
+                  height: 2,
+                  child: LinearProgressIndicator(value: (_step + 1) / 3),
+                ),
               ],
             ),
           ),
@@ -143,6 +146,40 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
               ],
             ),
           ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(
+                children: [
+                  if (_step > 0) ...[
+                    TextButton(
+                      onPressed: isSubmitting ? null : _previousStep,
+                      child: const Text('Назад'),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : switch (_step) {
+                              0 => _nextFromPhotos,
+                              1 => _nextFromDescription,
+                              _ => _submit,
+                            },
+                      child: isSubmitting && _step == 2
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(_step == 2 ? 'На модерацию' : 'Далее'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -151,7 +188,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   Widget _photoStep(bool isSubmitting) {
     return ListView(
       key: const ValueKey('create-item-photo-step'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         Text('Покажите вещь', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
@@ -196,8 +233,6 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
             ),
           ),
         ],
-        const SizedBox(height: 24),
-        FilledButton(onPressed: _nextFromPhotos, child: const Text('Далее')),
       ],
     );
   }
@@ -205,10 +240,10 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   Widget _descriptionStep(List<CatalogCategory> categories, bool isSubmitting) {
     return ListView(
       key: const ValueKey('create-item-description-step'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         Text(
-          'Опишите вещь и цену',
+          'Расскажите о вещи',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 16),
@@ -231,6 +266,12 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
             FormBuilderValidators.maxLength(4000),
           ],
         ),
+        const SizedBox(height: 12),
+        Text(
+          'Состояние и комплектация',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: FormBuilderDropdown<String>(
@@ -288,30 +329,6 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
             FormBuilderValidators.maxLength(1000),
           ],
         ),
-        _number(
-          name: 'pricePerDay',
-          label: 'Цена за день, ₽',
-          min: 1,
-          max: 1000000,
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: isSubmitting ? null : _previousStep,
-                child: const Text('Назад'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton(
-                onPressed: isSubmitting ? null : _nextFromDescription,
-                child: const Text('Далее'),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -319,10 +336,10 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   Widget _locationStep(bool isSubmitting) {
     return ListView(
       key: const ValueKey('create-item-location-step'),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         Text(
-          'Место и доступность',
+          'Цена и место передачи',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),
@@ -330,6 +347,15 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
           'Точный адрес видят только участники подтверждённой аренды.',
         ),
         const SizedBox(height: 16),
+        _number(
+          name: 'pricePerDay',
+          label: 'Цена за день, ₽',
+          min: 1,
+          max: 1000000,
+        ),
+        const SizedBox(height: 12),
+        Text('Место передачи', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
         _text(
           name: 'publicArea',
           label: 'Район для публичной карточки',
@@ -370,7 +396,12 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
             ),
           ],
         ),
+        const Text(
+          'Координаты вводятся вручную — временно, до подключения карты.',
+        ),
         const SizedBox(height: 12),
+        Text('Подтверждение', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
         _confirmation(
           'ownershipConfirmed',
           'Я вправе распоряжаться этой вещью',
@@ -383,29 +414,6 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
         _confirmation(
           'safetyAndMarketplaceRulesAccepted',
           'Я принимаю правила публикации $_listingRulesVersion и требования безопасности категории',
-        ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: isSubmitting ? null : _previousStep,
-                child: const Text('Назад'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton(
-                onPressed: isSubmitting ? null : _submit,
-                child: isSubmitting
-                    ? const SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('На модерацию'),
-              ),
-            ),
-          ],
         ),
       ],
     );
@@ -708,98 +716,101 @@ class _SelectedPhotoCardState extends State<_SelectedPhotoCard> {
           : 'Сделать главным фото ${widget.photo.name}',
       child: SizedBox(
         width: 136,
-        child: Card(
-          clipBehavior: Clip.antiAlias,
-          margin: EdgeInsets.zero,
-          child: InkWell(
-            key: ValueKey('selected-photo-${widget.photo.name}'),
-            onTap: widget.enabled ? widget.onMakeCover : null,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                FutureBuilder<Uint8List>(
-                  future: _bytes,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return const _PhotoPreviewFallback();
-                    }
-                    if (!snapshot.hasData) {
-                      return const ColoredBox(
-                        color: Color(0xFFFFF0D6),
-                        child: Center(child: CircularProgressIndicator()),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Material(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: InkWell(
+              key: ValueKey('selected-photo-${widget.photo.name}'),
+              onTap: widget.enabled ? widget.onMakeCover : null,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  FutureBuilder<Uint8List>(
+                    future: _bytes,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return const _PhotoPreviewFallback();
+                      }
+                      if (!snapshot.hasData) {
+                        return const ColoredBox(
+                          color: Color(0xFFFFF0D6),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      return Image.memory(
+                        snapshot.data!,
+                        fit: BoxFit.cover,
+                        excludeFromSemantics: true,
+                        errorBuilder: (_, _, _) =>
+                            const _PhotoPreviewFallback(),
                       );
-                    }
-                    return Image.memory(
-                      snapshot.data!,
-                      fit: BoxFit.cover,
-                      excludeFromSemantics: true,
-                      errorBuilder: (_, _, _) => const _PhotoPreviewFallback(),
-                    );
-                  },
-                ),
-                if (widget.isCover)
+                    },
+                  ),
+                  if (widget.isCover)
+                    Positioned(
+                      left: 8,
+                      top: 8,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star, size: 15),
+                              SizedBox(width: 4),
+                              Text('Главное', style: TextStyle(fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   Positioned(
-                    left: 8,
-                    top: 8,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(999),
+                    right: 4,
+                    top: 4,
+                    child: IconButton.filledTonal(
+                      key: ValueKey(
+                        'delete-selected-photo-${widget.photo.name}',
                       ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 4,
+                      onPressed: widget.enabled ? widget.onDelete : null,
+                      tooltip: 'Удалить фото ${widget.photo.name}',
+                      constraints: const BoxConstraints.tightFor(
+                        width: 48,
+                        height: 48,
+                      ),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.close, size: 18),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: ColoredBox(
+                      color: Colors.black54,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.star, size: 15),
-                            SizedBox(width: 4),
-                            Text('Главное', style: TextStyle(fontSize: 12)),
-                          ],
+                        child: Text(
+                          widget.photo.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                     ),
                   ),
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: IconButton.filledTonal(
-                    key: ValueKey(
-                      'delete-selected-photo-${widget.photo.name}',
-                    ),
-                    onPressed: widget.enabled ? widget.onDelete : null,
-                    tooltip: 'Удалить фото ${widget.photo.name}',
-                    constraints: const BoxConstraints.tightFor(
-                      width: 36,
-                      height: 36,
-                    ),
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.close, size: 18),
-                  ),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: ColoredBox(
-                    color: Colors.black54,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        widget.photo.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -819,12 +830,6 @@ class _PhotoPreviewFallback extends StatelessWidget {
     );
   }
 }
-
-String _stepTitle(int step) => switch (step) {
-  0 => 'Фото',
-  1 => 'Описание и цена',
-  _ => 'Место и доступность',
-};
 
 class _CreatedItem extends StatelessWidget {
   const _CreatedItem({required this.result, required this.onRetryPhotos});
