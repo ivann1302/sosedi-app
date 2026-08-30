@@ -616,7 +616,6 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
       'condition',
       'completeness',
       'handoverTerms',
-      'pricePerDay',
     ])) {
       return;
     }

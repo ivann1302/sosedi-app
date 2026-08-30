@@ -82,6 +82,40 @@ void main() {
     expect(find.text('На модерации'), findsOneWidget);
   });
 
+  testWidgets('collects price after item details and still requires it on submit', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    await tester.pumpWidget(
+      _app(_FakeCreateItemService(), picker: _FakePhotoPicker()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+
+    final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
+    form.patchValue({
+      'title': 'Перфоратор',
+      'description': 'Рабочий перфоратор для домашних работ',
+      'categoryId': category.id,
+      'condition': 'GOOD',
+      'completeness': 'Кейс и два бура',
+      'handoverTerms': 'Проверить при передаче',
+    });
+    await tester.pump();
+
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+    expect(find.text('Шаг 3 из 3'), findsOneWidget);
+
+    await tester.tap(find.text('На модерацию'));
+    await tester.pump();
+    expect(form.fields['pricePerDay']!.errorText, 'Обязательное поле');
+  });
+
   testWidgets('selects item photos before submission', (tester) async {
     _useTallSurface(tester);
     await tester.pumpWidget(
