@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/location/location_service.dart';
 import 'package:mobile/core/permissions/app_permissions.dart';
+import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/catalog/data/catalog_service.dart';
 import 'package:mobile/features/catalog/presentation/catalog_screen.dart';
@@ -41,6 +42,56 @@ void main() {
     expect(find.text('450 ₽ / день'), findsOneWidget);
     expect(find.text('Хамовники'), findsOneWidget);
     expect(find.textContaining('улица'), findsNothing);
+  });
+
+  testWidgets('shows only the unclipped filter trigger by default', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 720);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _app(
+        _FakeCatalogService([
+          _page([item]),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ActionChip, 'Фильтры'), findsOneWidget);
+    expect(find.text('Даты'), findsNothing);
+    expect(find.text('Сначала новые'), findsNothing);
+    expect(find.text('Все категории'), findsNothing);
+    expect(find.text('Инструменты'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uses a 48px cloud search without a resting outline', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        _FakeCatalogService([
+          _page([item]),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final field = find.byType(TextField);
+    final decoration = tester.widget<TextField>(field).decoration!;
+
+    expect(tester.getSize(field).height, 48);
+    expect(decoration.fillColor, AppColors.cloud);
+    expect(
+      decoration.enabledBorder,
+      isA<OutlineInputBorder>().having(
+        (border) => border.borderSide,
+        'borderSide',
+        BorderSide.none,
+      ),
+    );
   });
 
   testWidgets('keeps two catalog results reachable in a grid at 200% text', (
@@ -139,7 +190,13 @@ void main() {
     await tester.enterText(find.byType(TextField), 'дрель');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Инструменты'));
+    await tester.tap(find.text('Фильтры'));
+    await tester.pumpAndSettle();
+    final allCategories = tester.widget<ChoiceChip>(
+      find.widgetWithText(ChoiceChip, 'Все категории'),
+    );
+    expect(allCategories.selected, isFalse);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Инструменты'));
     await tester.pumpAndSettle();
 
     expect(service.searches, ['', 'дрель', 'дрель']);
@@ -156,11 +213,8 @@ void main() {
     await tester.tap(find.text('Список'));
     await tester.pumpAndSettle();
 
-    final category = tester.widget<ChoiceChip>(
-      find.widgetWithText(ChoiceChip, 'Инструменты'),
-    );
     expect(find.text('дрель'), findsOneWidget);
-    expect(category.selected, isTrue);
+    expect(find.widgetWithText(InputChip, 'Инструменты'), findsOneWidget);
     expect(find.text('Дрель'), findsOneWidget);
     expect(service.searches, hasLength(3));
   });
@@ -173,7 +227,7 @@ void main() {
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
 
-    await tester.drag(find.byType(ListView).first, const Offset(-400, 0));
+    await tester.tap(find.text('Фильтры'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Сначала новые'));
     await tester.pumpAndSettle();
@@ -400,7 +454,9 @@ void main() {
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Инструменты'));
+    await tester.tap(find.text('Фильтры'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Инструменты'));
     await tester.pumpAndSettle();
 
     expect(service.categoryIds, [null, 'category-1']);
@@ -446,6 +502,8 @@ void main() {
 
     await tester.tap(find.text('Фильтры'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Без ограничения'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Без ограничения'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('До 5 км').last);
@@ -479,17 +537,19 @@ void main() {
     expect(service.longitudes, [null, null]);
   });
 
-  testWidgets('keeps dates in the compact filter row', (tester) async {
+  testWidgets('opens date controls from the filter sheet', (tester) async {
     final service = _FakeCatalogService([
       _page([item]),
     ]);
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
 
-    expect(find.text('Даты'), findsOneWidget);
+    expect(find.text('Даты'), findsNothing);
     expect(find.text('Цена за день'), findsNothing);
 
-    await tester.tap(find.text('Даты'));
+    await tester.tap(find.text('Фильтры'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(InputChip, 'Даты'));
     await tester.pumpAndSettle();
 
     expect(find.byType(DateRangePickerDialog), findsOneWidget);

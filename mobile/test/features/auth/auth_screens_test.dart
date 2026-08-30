@@ -6,10 +6,47 @@ import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/auth/data/auth_models.dart';
 import 'package:mobile/features/auth/domain/auth_controller.dart';
 import 'package:mobile/features/auth/domain/auth_state.dart';
+import 'package:mobile/features/auth/presentation/onboarding_screen.dart';
 import 'package:mobile/features/auth/presentation/otp_screen.dart';
 import 'package:mobile/features/auth/presentation/phone_screen.dart';
 
 void main() {
+  testWidgets('uses the approved 700 weight for auth and onboarding titles', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const OnboardingScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(
+      tester.widget<Text>(find.text('Всё нужное уже рядом')).style?.fontWeight,
+      FontWeight.w700,
+    );
+
+    await tester.pumpWidget(const SizedBox());
+    final phoneController = _ScreenAuthController(
+      const AuthState.unauthenticated(),
+    );
+    await _pumpThemedScreen(tester, phoneController, const PhoneScreen());
+    expect(
+      tester.widget<Text>(find.text('Рады видеть вас')).style?.fontWeight,
+      FontWeight.w700,
+    );
+
+    await tester.pumpWidget(const SizedBox());
+    final otpController = _ScreenAuthController(codeSentState);
+    await _pumpThemedScreen(tester, otpController, const OtpScreen());
+    expect(
+      tester.widget<Text>(find.text('Введите код')).style?.fontWeight,
+      FontWeight.w700,
+    );
+  });
+
   testWidgets('keeps guest browsing separate from unpublished rules', (
     tester,
   ) async {
@@ -221,6 +258,20 @@ Future<void> _pumpScreen(
     ProviderScope(
       overrides: [authControllerProvider.overrideWith(() => controller)],
       child: MaterialApp(home: screen),
+    ),
+  );
+  await tester.pump();
+}
+
+Future<void> _pumpThemedScreen(
+  WidgetTester tester,
+  _ScreenAuthController controller,
+  Widget screen,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [authControllerProvider.overrideWith(() => controller)],
+      child: MaterialApp(theme: AppTheme.light(), home: screen),
     ),
   );
   await tester.pump();

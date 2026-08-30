@@ -55,7 +55,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               children: [
                 Text(
                   'Введите код',
-                  style: Theme.of(context).textTheme.displaySmall,
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
                 Text(

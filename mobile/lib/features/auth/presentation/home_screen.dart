@@ -39,7 +39,7 @@ class HomeScreen extends ConsumerWidget {
             children: [
               Text(
                 'Здравствуйте, ${authState.user.name ?? 'сосед'}',
-                style: Theme.of(context).textTheme.displaySmall,
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 8),
               Text(

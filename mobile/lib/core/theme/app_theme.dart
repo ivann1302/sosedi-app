@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 abstract final class AppColors {
   static const brand500 = Color(0xFFFEA319);
   static const brandPressed = Color(0xFFFF8A00);
+  static const brandForeground = Color(0xFFB65700);
   static const brand600 = brandPressed;
   static const brand700 = Color(0xFFFF6A00);
   static const ink900 = Color(0xFF17202B);
@@ -83,7 +84,7 @@ class AppTheme {
         helperStyle: textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
         border: _inputBorder(AppColors.line),
         enabledBorder: _inputBorder(AppColors.line),
-        focusedBorder: _inputBorder(AppColors.brandPressed, width: 2),
+        focusedBorder: _inputBorder(AppColors.brandForeground, width: 2),
         errorBorder: _inputBorder(AppColors.error),
         focusedErrorBorder: _inputBorder(AppColors.error, width: 2),
       ),
@@ -132,10 +133,12 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.warmSand,
-        selectedColor: AppColors.brand500,
+        backgroundColor: AppColors.cloud,
+        selectedColor: AppColors.warmSand,
         disabledColor: AppColors.line,
-        labelStyle: textTheme.labelMedium,
+        labelStyle: textTheme.labelMedium?.copyWith(color: AppColors.ink900),
+        iconTheme: const IconThemeData(color: AppColors.ink900),
+        checkmarkColor: AppColors.ink900,
         side: BorderSide.none,
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -154,18 +157,16 @@ class AppTheme {
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
             color: states.contains(WidgetState.selected)
-                ? AppColors.brand500
+                ? AppColors.brandForeground
                 : AppColors.textMuted,
           ),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => textTheme.labelSmall?.copyWith(
             color: states.contains(WidgetState.selected)
-                ? AppColors.brand500
+                ? AppColors.brandForeground
                 : AppColors.textMuted,
-            fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w700
-                : FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -187,7 +188,7 @@ class AppTheme {
         ),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.brand600,
+        color: AppColors.brand500,
         linearTrackColor: AppColors.warmSand,
         circularTrackColor: AppColors.warmSand,
       ),

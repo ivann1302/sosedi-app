@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/permissions/app_permissions.dart';
 import '../../../core/permissions/permission_prompt.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/unsaved_changes_guard.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/domain/catalog_controller.dart';
@@ -210,7 +211,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
             padding: EdgeInsets.only(top: 8),
             child: Text(
               'Добавьте хотя бы одно фото',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         if (_photos.isNotEmpty) ...[
@@ -733,7 +734,7 @@ class _SelectedPhotoCardState extends State<_SelectedPhotoCard> {
                       }
                       if (!snapshot.hasData) {
                         return const ColoredBox(
-                          color: Color(0xFFFFF0D6),
+                          color: AppColors.warmSand,
                           child: Center(child: CircularProgressIndicator()),
                         );
                       }
@@ -824,7 +825,7 @@ class _PhotoPreviewFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ColoredBox(
-      color: Color(0xFFFFF0D6),
+      color: AppColors.warmSand,
       child: Center(child: Icon(Icons.broken_image_outlined, size: 36)),
     );
   }

@@ -70,6 +70,28 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 child: TextField(
                   decoration: const InputDecoration(
                     hintText: 'Что хотите найти?',
+                    fillColor: AppColors.cloud,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(AppRadii.small),
+                      ),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(AppRadii.small),
+                      ),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(AppRadii.small),
+                      ),
+                      borderSide: BorderSide(
+                        color: AppColors.brandForeground,
+                        width: 2,
+                      ),
+                    ),
                     prefixIcon: Icon(
                       Icons.search_rounded,
                       color: AppColors.slate700,
@@ -200,42 +222,92 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   }
 }
 
-class _QuickFilters extends StatelessWidget {
+class _QuickFilters extends ConsumerStatefulWidget {
   const _QuickFilters({required this.categories});
 
   final AsyncValue<List<CatalogCategory>> categories;
 
   @override
+  ConsumerState<_QuickFilters> createState() => _QuickFiltersState();
+}
+
+class _QuickFiltersState extends ConsumerState<_QuickFilters> {
+  DateTimeRange? _range;
+  String? _categoryId;
+  CatalogSort _sort = CatalogSort.newest;
+  String? _area;
+  double? _radiusKm;
+  double? _minPrice;
+  double? _maxPrice;
+
+  @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 600;
-    final categoryControls = categories.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: SizedBox.square(
-          dimension: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-      error: (_, _) => const _CategoryErrorChip(),
-      data: (value) => _CategoryChips(categories: value),
-    );
+    final category = _selectedCategory(widget.categories.value);
     return SizedBox(
       height: 48,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          const _AvailabilityChip(),
-          const SizedBox(width: 8),
-          if (!compact) ...[categoryControls, const SizedBox(width: 8)],
           ActionChip(
             avatar: const Icon(Icons.tune, size: 18),
             label: const Text('Фильтры'),
             onPressed: () => _showFilters(context),
           ),
-          const SizedBox(width: 8),
-          const _SortChip(),
-          if (compact) ...[const SizedBox(width: 8), categoryControls],
+          if (_range case final range?) ...[
+            const SizedBox(width: 8),
+            InputChip(
+              selected: true,
+              label: Text(_dateLabel(context, range)),
+              onPressed: () => _showFilters(context),
+              onDeleted: _clearAvailability,
+            ),
+          ],
+          if (category != null) ...[
+            const SizedBox(width: 8),
+            InputChip(
+              selected: true,
+              label: Text(category.name),
+              onPressed: () => _showFilters(context),
+              onDeleted: () => _selectCategory(null),
+            ),
+          ],
+          if (_sort != CatalogSort.newest) ...[
+            const SizedBox(width: 8),
+            InputChip(
+              selected: true,
+              label: Text(_sortLabel(_sort)),
+              onPressed: () => _showFilters(context),
+              onDeleted: () => _selectSort(CatalogSort.newest),
+            ),
+          ],
+          if (_area case final area?) ...[
+            const SizedBox(width: 8),
+            InputChip(
+              selected: true,
+              label: Text(area),
+              onPressed: () => _showFilters(context),
+              onDeleted: () => _selectArea(null),
+            ),
+          ],
+          if (_radiusKm case final radius?) ...[
+            const SizedBox(width: 8),
+            InputChip(
+              selected: true,
+              label: Text('До ${radius.toInt()} км'),
+              onPressed: () => _showFilters(context),
+              onDeleted: () => _selectRadius(null),
+            ),
+          ],
+          if (_minPrice != null || _maxPrice != null) ...[
+            const SizedBox(width: 8),
+            InputChip(
+              selected: true,
+              label: Text(_priceLabel()),
+              onPressed: () => _showFilters(context),
+              onDeleted: () => _selectPrice(null, null),
+            ),
+          ],
         ],
       ),
     );
@@ -245,91 +317,183 @@ class _QuickFilters extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _FilterSheet(),
-    );
-  }
-}
-
-class _SortChip extends ConsumerStatefulWidget {
-  const _SortChip();
-
-  @override
-  ConsumerState<_SortChip> createState() => _SortChipState();
-}
-
-class _SortChipState extends ConsumerState<_SortChip> {
-  CatalogSort _sort = CatalogSort.newest;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<CatalogSort>(
-      initialValue: _sort,
-      tooltip: 'Сортировка',
-      onSelected: _select,
-      itemBuilder: (context) => CatalogSort.values
-          .map((sort) => PopupMenuItem(value: sort, child: Text(_label(sort))))
-          .toList(growable: false),
-      child: Chip(
-        avatar: const Icon(Icons.sort, size: 18),
-        label: Text(_label(_sort)),
+      builder: (context) => _FilterSheet(
+        categories: widget.categories,
+        range: _range,
+        categoryId: _categoryId,
+        sort: _sort,
+        area: _area,
+        radiusKm: _radiusKm,
+        minPrice: _minPrice,
+        maxPrice: _maxPrice,
+        onAvailabilityChanged: _selectAvailability,
+        onCategoryChanged: _selectCategory,
+        onSortChanged: _selectSort,
+        onAreaChanged: _selectArea,
+        onRadiusChanged: _selectRadius,
+        onPriceChanged: _selectPrice,
       ),
     );
   }
 
-  Future<void> _select(CatalogSort sort) async {
-    if (sort == _sort) {
+  Future<void> _selectAvailability(DateTimeRange? range) async {
+    if (_range == range) {
+      return;
+    }
+    setState(() => _range = range);
+    await ref
+        .read(catalogProvider.notifier)
+        .setAvailability(
+          range == null ? null : _dateOnly(range.start),
+          range == null ? null : _dateOnly(range.end),
+        );
+  }
+
+  Future<void> _clearAvailability() => _selectAvailability(null);
+
+  Future<void> _selectCategory(String? categoryId) async {
+    if (_categoryId == categoryId) {
+      return;
+    }
+    setState(() => _categoryId = categoryId);
+    await ref.read(catalogProvider.notifier).selectCategory(categoryId);
+  }
+
+  Future<void> _selectSort(CatalogSort sort) async {
+    if (_sort == sort) {
       return;
     }
     setState(() => _sort = sort);
     await ref.read(catalogProvider.notifier).setSort(sort);
   }
 
-  String _label(CatalogSort sort) => switch (sort) {
-    CatalogSort.newest => 'Сначала новые',
-    CatalogSort.priceAsc => 'Сначала дешевле',
-    CatalogSort.priceDesc => 'Сначала дороже',
-  };
+  Future<void> _selectArea(String? area) async {
+    if (_area == area && _radiusKm == null) {
+      return;
+    }
+    setState(() {
+      _area = area;
+      _radiusKm = null;
+    });
+    await ref.read(catalogProvider.notifier).setArea(area);
+  }
+
+  Future<void> _selectRadius(double? radiusKm) async {
+    if (_radiusKm == radiusKm) {
+      return;
+    }
+    await ref.read(catalogProvider.notifier).setRadius(radiusKm);
+    if (mounted) {
+      setState(() {
+        _radiusKm = radiusKm;
+        if (radiusKm != null) {
+          _area = null;
+        }
+      });
+    }
+  }
+
+  Future<void> _selectPrice(double? minPrice, double? maxPrice) async {
+    if (_minPrice == minPrice && _maxPrice == maxPrice) {
+      return;
+    }
+    setState(() {
+      _minPrice = minPrice;
+      _maxPrice = maxPrice;
+    });
+    await ref.read(catalogProvider.notifier).setPriceRange(minPrice, maxPrice);
+  }
+
+  CatalogCategory? _selectedCategory(List<CatalogCategory>? categories) {
+    for (final category in categories ?? const <CatalogCategory>[]) {
+      if (category.id == _categoryId) {
+        return category;
+      }
+    }
+    return null;
+  }
+
+  String _priceLabel() {
+    if (_minPrice != null && _maxPrice != null) {
+      return '${_price(_minPrice!)}–${_price(_maxPrice!)} ₽';
+    }
+    return _minPrice != null
+        ? 'От ${_price(_minPrice!)} ₽'
+        : 'До ${_price(_maxPrice!)} ₽';
+  }
 }
 
-class _CategoryChips extends ConsumerStatefulWidget {
-  const _CategoryChips({required this.categories});
+class _SortChip extends StatelessWidget {
+  const _SortChip({required this.sort, required this.onSelected});
 
-  final List<CatalogCategory> categories;
-
-  @override
-  ConsumerState<_CategoryChips> createState() => _CategoryChipsState();
-}
-
-class _CategoryChipsState extends ConsumerState<_CategoryChips> {
-  String? _selectedId;
+  final CatalogSort sort;
+  final Future<void> Function(CatalogSort) onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return PopupMenuButton<CatalogSort>(
+      initialValue: sort,
+      tooltip: 'Сортировка',
+      onSelected: (value) async {
+        await onSelected(value);
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      },
+      itemBuilder: (context) => CatalogSort.values
+          .map(
+            (value) =>
+                PopupMenuItem(value: value, child: Text(_sortLabel(value))),
+          )
+          .toList(growable: false),
+      child: Chip(
+        avatar: const Icon(Icons.sort, size: 18),
+        label: Text(_sortLabel(sort)),
+      ),
+    );
+  }
+}
+
+class _CategoryChips extends StatelessWidget {
+  const _CategoryChips({
+    required this.categories,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<CatalogCategory> categories;
+  final String? selectedId;
+  final Future<void> Function(String?) onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
         ChoiceChip(
           label: const Text('Все категории'),
-          selected: _selectedId == null,
-          onSelected: (_) => _select(null),
+          selected: false,
+          onSelected: (_) => _select(context, null),
         ),
-        for (final category in widget.categories) ...[
-          const SizedBox(width: 8),
+        for (final category in categories)
           ChoiceChip(
             label: Text(category.name),
-            selected: _selectedId == category.id,
-            onSelected: (_) => _select(category.id),
+            selected: selectedId == category.id,
+            onSelected: (_) => _select(context, category.id),
           ),
-        ],
       ],
     );
   }
 
-  void _select(String? categoryId) {
-    if (_selectedId == categoryId) {
+  Future<void> _select(BuildContext context, String? categoryId) async {
+    if (selectedId == categoryId) {
       return;
     }
-    setState(() => _selectedId = categoryId);
-    ref.read(catalogProvider.notifier).selectCategory(categoryId);
+    await onSelected(categoryId);
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
   }
 }
 
@@ -346,67 +510,75 @@ class _CategoryErrorChip extends ConsumerWidget {
   }
 }
 
-class _AvailabilityChip extends ConsumerStatefulWidget {
-  const _AvailabilityChip();
+class _AvailabilityChip extends StatelessWidget {
+  const _AvailabilityChip({required this.range, required this.onChanged});
 
-  @override
-  ConsumerState<_AvailabilityChip> createState() => _AvailabilityChipState();
-}
-
-class _AvailabilityChipState extends ConsumerState<_AvailabilityChip> {
-  DateTimeRange? _range;
+  final DateTimeRange? range;
+  final Future<void> Function(DateTimeRange?) onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final range = _range;
     return InputChip(
       avatar: const Icon(Icons.date_range_outlined, size: 18),
-      label: Text(range == null ? 'Даты' : _label(context, range)),
-      onPressed: _pick,
-      onDeleted: range == null ? null : _clear,
+      label: Text(range == null ? 'Даты' : _dateLabel(context, range!)),
+      onPressed: () => _pick(context),
+      onDeleted: range == null ? null : () => onChanged(null),
     );
   }
 
-  Future<void> _pick() async {
+  Future<void> _pick(BuildContext context) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final range = await showDateRangePicker(
+    final selectedRange = await showDateRangePicker(
       context: context,
       firstDate: today,
       lastDate: today.add(const Duration(days: 90)),
-      initialDateRange: _range,
+      initialDateRange: range,
       helpText: 'Выберите период аренды',
       saveText: 'Применить',
     );
-    if (range == null || !mounted) {
+    if (selectedRange == null || !context.mounted) {
       return;
     }
-    setState(() => _range = range);
-    await ref
-        .read(catalogProvider.notifier)
-        .setAvailability(_dateOnly(range.start), _dateOnly(range.end));
-  }
-
-  Future<void> _clear() async {
-    setState(() => _range = null);
-    await ref.read(catalogProvider.notifier).setAvailability(null, null);
-  }
-
-  String _label(BuildContext context, DateTimeRange range) {
-    final localizations = MaterialLocalizations.of(context);
-    return '${localizations.formatCompactDate(range.start)}–'
-        '${localizations.formatCompactDate(range.end)}';
-  }
-
-  String _dateOnly(DateTime date) {
-    return '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
+    await onChanged(selectedRange);
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
   }
 }
 
 class _FilterSheet extends StatelessWidget {
-  const _FilterSheet();
+  const _FilterSheet({
+    required this.categories,
+    required this.range,
+    required this.categoryId,
+    required this.sort,
+    required this.area,
+    required this.radiusKm,
+    required this.minPrice,
+    required this.maxPrice,
+    required this.onAvailabilityChanged,
+    required this.onCategoryChanged,
+    required this.onSortChanged,
+    required this.onAreaChanged,
+    required this.onRadiusChanged,
+    required this.onPriceChanged,
+  });
+
+  final AsyncValue<List<CatalogCategory>> categories;
+  final DateTimeRange? range;
+  final String? categoryId;
+  final CatalogSort sort;
+  final String? area;
+  final double? radiusKm;
+  final double? minPrice;
+  final double? maxPrice;
+  final Future<void> Function(DateTimeRange?) onAvailabilityChanged;
+  final Future<void> Function(String?) onCategoryChanged;
+  final Future<void> Function(CatalogSort) onSortChanged;
+  final Future<void> Function(String?) onAreaChanged;
+  final Future<void> Function(double?) onRadiusChanged;
+  final Future<void> Function(double?, double?) onPriceChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -436,11 +608,53 @@ class _FilterSheet extends StatelessWidget {
                 ),
               ],
             ),
-            const _AreaFilter(),
+            Text('Даты', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _AvailabilityChip(
+                range: range,
+                onChanged: onAvailabilityChanged,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Категория', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            categories.when(
+              loading: () => const Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox.square(
+                  dimension: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              error: (_, _) => const Align(
+                alignment: Alignment.centerLeft,
+                child: _CategoryErrorChip(),
+              ),
+              data: (value) => _CategoryChips(
+                categories: value,
+                selectedId: categoryId,
+                onSelected: onCategoryChanged,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Сортировка', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _SortChip(sort: sort, onSelected: onSortChanged),
+            ),
+            const SizedBox(height: 16),
+            _AreaFilter(area: area, onChanged: onAreaChanged),
             const SizedBox(height: 12),
-            const _PriceFilter(),
+            _PriceFilter(
+              minPrice: minPrice,
+              maxPrice: maxPrice,
+              onChanged: onPriceChanged,
+            ),
             const SizedBox(height: 12),
-            const _RadiusFilter(),
+            _RadiusFilter(radiusKm: radiusKm, onChanged: onRadiusChanged),
             const SizedBox(height: 20),
             FilledButton(
               onPressed: () => Navigator.pop(context),
@@ -454,15 +668,16 @@ class _FilterSheet extends StatelessWidget {
 }
 
 class _AreaFilter extends ConsumerStatefulWidget {
-  const _AreaFilter();
+  const _AreaFilter({required this.area, required this.onChanged});
+
+  final String? area;
+  final Future<void> Function(String?) onChanged;
 
   @override
   ConsumerState<_AreaFilter> createState() => _AreaFilterState();
 }
 
 class _AreaFilterState extends ConsumerState<_AreaFilter> {
-  String? _area;
-
   @override
   Widget build(BuildContext context) {
     final areas = ref.watch(catalogAreasProvider);
@@ -474,7 +689,7 @@ class _AreaFilterState extends ConsumerState<_AreaFilter> {
         label: const Text('Повторить загрузку районов'),
       ),
       data: (values) => DropdownButtonFormField<String>(
-        initialValue: _area,
+        initialValue: widget.area,
         decoration: const InputDecoration(
           labelText: 'Район',
           helperText: 'Ручной выбор не использует геолокацию',
@@ -491,8 +706,7 @@ class _AreaFilterState extends ConsumerState<_AreaFilter> {
   }
 
   Future<void> _apply(String? area) async {
-    setState(() => _area = area);
-    await ref.read(catalogProvider.notifier).setArea(area);
+    await widget.onChanged(area);
     if (mounted) {
       Navigator.pop(context);
     }
@@ -500,7 +714,10 @@ class _AreaFilterState extends ConsumerState<_AreaFilter> {
 }
 
 class _RadiusFilter extends ConsumerStatefulWidget {
-  const _RadiusFilter();
+  const _RadiusFilter({required this.radiusKm, required this.onChanged});
+
+  final double? radiusKm;
+  final Future<void> Function(double?) onChanged;
 
   @override
   ConsumerState<_RadiusFilter> createState() => _RadiusFilterState();
@@ -509,13 +726,12 @@ class _RadiusFilter extends ConsumerStatefulWidget {
 class _RadiusFilterState extends ConsumerState<_RadiusFilter> {
   static const _radii = [1.0, 3.0, 5.0, 10.0, 25.0, 50.0];
 
-  double? _radiusKm;
   bool _isApplying = false;
 
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<double>(
-      initialValue: _radiusKm,
+      initialValue: widget.radiusKm,
       decoration: InputDecoration(
         labelText: 'Радиус поиска',
         helperText: 'Геопозиция используется только для поиска рядом',
@@ -552,9 +768,9 @@ class _RadiusFilterState extends ConsumerState<_RadiusFilter> {
           return;
         }
       }
-      await ref.read(catalogProvider.notifier).setRadius(radiusKm);
+      await widget.onChanged(radiusKm);
       if (mounted) {
-        setState(() => _radiusKm = radiusKm);
+        Navigator.pop(context);
       }
     } catch (error) {
       if (mounted) {
@@ -578,7 +794,15 @@ class _RadiusFilterState extends ConsumerState<_RadiusFilter> {
 }
 
 class _PriceFilter extends ConsumerStatefulWidget {
-  const _PriceFilter();
+  const _PriceFilter({
+    required this.minPrice,
+    required this.maxPrice,
+    required this.onChanged,
+  });
+
+  final double? minPrice;
+  final double? maxPrice;
+  final Future<void> Function(double?, double?) onChanged;
 
   @override
   ConsumerState<_PriceFilter> createState() => _PriceFilterState();
@@ -600,9 +824,13 @@ class _PriceFilterState extends ConsumerState<_PriceFilter> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _field('minPrice', 'От')),
+              Expanded(
+                child: _field('minPrice', 'От', initialValue: widget.minPrice),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _field('maxPrice', 'До')),
+              Expanded(
+                child: _field('maxPrice', 'До', initialValue: widget.maxPrice),
+              ),
               const SizedBox(width: 8),
               FilledButton(onPressed: _apply, child: const Text('Применить')),
             ],
@@ -612,9 +840,10 @@ class _PriceFilterState extends ConsumerState<_PriceFilter> {
     );
   }
 
-  Widget _field(String name, String label) {
+  Widget _field(String name, String label, {double? initialValue}) {
     return FormBuilderTextField(
       name: name,
+      initialValue: initialValue == null ? null : _price(initialValue),
       decoration: InputDecoration(labelText: label, suffixText: '₽'),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       validator: FormBuilderValidators.compose([
@@ -624,7 +853,7 @@ class _PriceFilterState extends ConsumerState<_PriceFilter> {
     );
   }
 
-  void _apply() {
+  Future<void> _apply() async {
     final form = _formKey.currentState;
     if (form == null || !form.saveAndValidate()) {
       return;
@@ -637,13 +866,40 @@ class _PriceFilterState extends ConsumerState<_PriceFilter> {
       );
       return;
     }
-    ref.read(catalogProvider.notifier).setPriceRange(minPrice, maxPrice);
+    await widget.onChanged(minPrice, maxPrice);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   double? _number(Object? value) {
     final text = value?.toString().trim().replaceFirst(',', '.') ?? '';
     return text.isEmpty ? null : double.parse(text);
   }
+}
+
+String _dateLabel(BuildContext context, DateTimeRange range) {
+  final localizations = MaterialLocalizations.of(context);
+  return '${localizations.formatCompactDate(range.start)}–'
+      '${localizations.formatCompactDate(range.end)}';
+}
+
+String _dateOnly(DateTime date) {
+  return '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+}
+
+String _sortLabel(CatalogSort sort) => switch (sort) {
+  CatalogSort.newest => 'Сначала новые',
+  CatalogSort.priceAsc => 'Сначала дешевле',
+  CatalogSort.priceDesc => 'Сначала дороже',
+};
+
+String _price(double value) {
+  return value == value.roundToDouble()
+      ? value.toInt().toString()
+      : value.toStringAsFixed(2);
 }
 
 class _CatalogCard extends ConsumerWidget {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/router/app_shell.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/auth/data/auth_models.dart';
 import 'package:mobile/features/auth/domain/auth_controller.dart';
@@ -52,7 +53,69 @@ void main() {
           .height,
       greaterThanOrEqualTo(48),
     );
+    expect(
+      tester
+          .widget<Text>(find.textContaining('Здравствуйте,').first)
+          .style
+          ?.fontWeight,
+      FontWeight.w700,
+    );
     semantics.dispose();
+  });
+
+  testWidgets('selected navigation foreground meets normal-text contrast', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: AppShell(
+          currentIndex: 0,
+          onDestinationSelected: (_) {},
+          child: const SizedBox(),
+        ),
+      ),
+    );
+
+    final selectedIcon = find.byIcon(Icons.search);
+    final selectedLabel = find.text('Найти');
+    final iconColor = IconTheme.of(tester.element(selectedIcon)).color!;
+    final labelStyle = DefaultTextStyle.of(tester.element(selectedLabel)).style;
+
+    expect(_contrast(iconColor, AppColors.canvas), greaterThanOrEqualTo(4.5));
+    expect(
+      _contrast(labelStyle.color!, AppColors.canvas),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      NavigationBarTheme.of(
+        tester.element(find.byType(NavigationBar)),
+      ).labelTextStyle?.resolve({WidgetState.selected})?.fontWeight,
+      FontWeight.w600,
+    );
+  });
+
+  testWidgets('focused input boundary meets non-text contrast on its fill', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(body: TextField(autofocus: true)),
+      ),
+    );
+    await tester.pump();
+
+    final decoration = tester
+        .widget<InputDecorator>(find.byType(InputDecorator))
+        .decoration;
+    final focusedBorder = decoration.focusedBorder! as OutlineInputBorder;
+
+    expect(decoration.fillColor, AppColors.cloud);
+    expect(
+      _contrast(focusedBorder.borderSide.color, decoration.fillColor!),
+      greaterThanOrEqualTo(3),
+    );
   });
 
   test('theme text pairs meet normal-text contrast', () {

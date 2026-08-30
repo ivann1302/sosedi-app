@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../notifications/data/inbox_service.dart';
 import '../../notifications/domain/inbox_controller.dart';
 import '../../safety/domain/safety_action_controller.dart';
@@ -162,7 +163,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
                   )
                 else
                   const Material(
-                    color: Color(0xFFF2F4F7),
+                    color: AppColors.cloud,
                     child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Row(
@@ -446,7 +447,7 @@ class _MessageBubble extends StatelessWidget {
         child: Center(
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: const Color(0xFFF2F4F7),
+              color: AppColors.cloud,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Padding(

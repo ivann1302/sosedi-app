@@ -88,8 +88,9 @@ weights on one screen.
 
 | Token | Value | Use |
 |---|---|---|
-| `brand` | `#FEA319` | Primary CTA, selected destination, active progress |
+| `brand` | `#FEA319` | Primary CTA, active progress and quiet non-text brand cue |
 | `brandPressed` | `#FF8A00` | Pressed primary action |
+| `brandForeground` | `#B65700` | Accessible dark-orange foreground and input focus |
 | `ink` | `#17202B` | Primary text and important icons |
 | `muted` | `#65727C` | Secondary text |
 | `canvas` | `#FFFFFF` | Main screen background |
@@ -101,6 +102,10 @@ weights on one screen.
 
 All text/background pairs must meet WCAG AA contrast. Do not use gradients,
 glass effects or full-card orange fills.
+
+`brandForeground` is the only orange foreground/focus token: it measures
+4.825:1 on `canvas` and 4.538:1 on `subtleSurface`. Keep `brand` for filled
+primary actions, active progress and quiet non-text cues, not orange text.
 
 ### Geometry and spacing
 
@@ -123,8 +128,8 @@ glass effects or full-card orange fills.
   documentation-map choice, not a mobile rule.
 - The bottom navigation stays at five destinations: Find, Bookings, Lend,
   Inbox and Profile.
-- Remove the Material pill indicator. Selected icon and label use `brand`;
-  unselected destinations use `muted`.
+- Remove the Material pill indicator. Selected icon and 600-weight label use
+  `brandForeground`; unselected destinations use `muted` at weight 600.
 - Use a top divider instead of elevation.
 
 ### Search and filters
@@ -145,7 +150,7 @@ glass effects or full-card orange fills.
 - Destructive action: red text, confirmation dialog, no red filled button on
   ordinary screens.
 - Text fields use `subtleSurface` at rest, a one-pixel `line` boundary where
-  needed and a two-pixel `brandPressed` focus boundary.
+  needed and a two-pixel `brandForeground` focus boundary.
 - Sticky bottom actions respect safe area and never cover scrollable content.
 
 ### Cards, rows and states

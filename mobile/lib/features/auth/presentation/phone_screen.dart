@@ -47,7 +47,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               children: [
                 Text(
                   'Рады видеть вас',
-                  style: Theme.of(context).textTheme.displaySmall,
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
                 Text(

@@ -6,6 +6,7 @@ void main() {
   test('light theme exposes the approved marketplace tokens', () {
     final theme = AppTheme.light();
     final selected = <WidgetState>{WidgetState.selected};
+    final unselected = <WidgetState>{};
 
     expect(theme.textTheme.bodyMedium?.fontFamily, 'Onest');
     expect(theme.scaffoldBackgroundColor, const Color(0xFFFFFFFF));
@@ -34,7 +35,7 @@ void main() {
     expect(theme.inputDecorationTheme.fillColor, const Color(0xFFF7F8F9));
     expect(
       theme.inputDecorationTheme.focusedBorder!.borderSide,
-      const BorderSide(color: Color(0xFFFF8A00), width: 2),
+      const BorderSide(color: Color(0xFFB65700), width: 2),
     );
     expect(
       (theme.dialogTheme.shape! as RoundedRectangleBorder).borderRadius.resolve(
@@ -45,11 +46,25 @@ void main() {
     expect(theme.navigationBarTheme.indicatorColor, Colors.transparent);
     expect(
       theme.navigationBarTheme.iconTheme!.resolve(selected)!.color,
-      const Color(0xFFFEA319),
+      const Color(0xFFB65700),
     );
     expect(
       theme.navigationBarTheme.labelTextStyle!.resolve(selected)!.color,
-      const Color(0xFFFEA319),
+      const Color(0xFFB65700),
     );
+    expect(
+      theme.navigationBarTheme.labelTextStyle!.resolve(selected)!.fontWeight,
+      FontWeight.w600,
+    );
+    expect(
+      theme.navigationBarTheme.labelTextStyle!.resolve(unselected)!.fontWeight,
+      FontWeight.w600,
+    );
+    expect(theme.chipTheme.backgroundColor, const Color(0xFFF7F8F9));
+    expect(theme.chipTheme.selectedColor, const Color(0xFFFFF2D9));
+    expect(theme.chipTheme.labelStyle?.color, const Color(0xFF17202B));
+    expect(theme.chipTheme.checkmarkColor, const Color(0xFF17202B));
+    expect(theme.chipTheme.iconTheme?.color, const Color(0xFF17202B));
+    expect(theme.progressIndicatorTheme.color, const Color(0xFFFEA319));
   });
 }
