@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -179,25 +180,20 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
           const SizedBox(height: 12),
           const Text('Нажмите на фото, чтобы сделать его главным.'),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (var index = 0; index < _photos.length; index += 1)
-                InputChip(
-                  avatar: Icon(
-                    index == 0 ? Icons.star : Icons.image_outlined,
-                    size: 18,
-                  ),
-                  label: Text(
-                    index == 0
-                        ? 'Главное · ${_photos[index].name}'
-                        : _photos[index].name,
-                  ),
-                  onPressed: isSubmitting ? null : () => _makeCover(index),
-                  onDeleted: isSubmitting ? null : () => _removePhoto(index),
-                ),
-            ],
+          SizedBox(
+            height: 148,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _photos.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) => _SelectedPhotoCard(
+                photo: _photos[index],
+                isCover: index == 0,
+                enabled: !isSubmitting,
+                onMakeCover: () => _makeCover(index),
+                onDelete: () => _removePhoto(index),
+              ),
+            ),
           ),
         ],
         const SizedBox(height: 24),
@@ -664,6 +660,160 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
       ];
       _photoError = _photos.isEmpty;
     });
+  }
+}
+
+class _SelectedPhotoCard extends StatefulWidget {
+  const _SelectedPhotoCard({
+    required this.photo,
+    required this.isCover,
+    required this.enabled,
+    required this.onMakeCover,
+    required this.onDelete,
+  });
+
+  final XFile photo;
+  final bool isCover;
+  final bool enabled;
+  final VoidCallback onMakeCover;
+  final VoidCallback onDelete;
+
+  @override
+  State<_SelectedPhotoCard> createState() => _SelectedPhotoCardState();
+}
+
+class _SelectedPhotoCardState extends State<_SelectedPhotoCard> {
+  late Future<Uint8List> _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _bytes = widget.photo.readAsBytes();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SelectedPhotoCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.photo.path != widget.photo.path) {
+      _bytes = widget.photo.readAsBytes();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: widget.enabled,
+      label: widget.isCover
+          ? 'Главное фото ${widget.photo.name}'
+          : 'Сделать главным фото ${widget.photo.name}',
+      child: SizedBox(
+        width: 136,
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          margin: EdgeInsets.zero,
+          child: InkWell(
+            key: ValueKey('selected-photo-${widget.photo.name}'),
+            onTap: widget.enabled ? widget.onMakeCover : null,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                FutureBuilder<Uint8List>(
+                  future: _bytes,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const ColoredBox(
+                        color: Color(0xFFFFF0D6),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    return Image.memory(
+                      snapshot.data!,
+                      fit: BoxFit.cover,
+                      excludeFromSemantics: true,
+                      errorBuilder: (_, _, _) => const _PhotoPreviewFallback(),
+                    );
+                  },
+                ),
+                if (widget.isCover)
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.star, size: 15),
+                            SizedBox(width: 4),
+                            Text('Главное', style: TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: IconButton.filledTonal(
+                    key: ValueKey(
+                      'delete-selected-photo-${widget.photo.name}',
+                    ),
+                    onPressed: widget.enabled ? widget.onDelete : null,
+                    tooltip: 'Удалить фото ${widget.photo.name}',
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 36,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.close, size: 18),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: ColoredBox(
+                    color: Colors.black54,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        widget.photo.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoPreviewFallback extends StatelessWidget {
+  const _PhotoPreviewFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: Color(0xFFFFF0D6),
+      child: Center(child: Icon(Icons.broken_image_outlined, size: 36)),
+    );
   }
 }
 

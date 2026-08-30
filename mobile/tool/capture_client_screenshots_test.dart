@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile/core/analytics/analytics.dart';
 import 'package:mobile/core/compatibility/compatibility_gate.dart';
 import 'package:mobile/core/compatibility/update_required_screen.dart';
+import 'package:mobile/core/permissions/app_permissions.dart';
 import 'package:mobile/core/router/app_shell.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/auth/data/auth_models.dart';
@@ -58,8 +62,10 @@ import 'package:mobile/features/support/data/support_models.dart';
 import 'package:mobile/features/support/data/support_service.dart';
 import 'package:mobile/features/support/presentation/support_screen.dart';
 import 'package:mobile/features/support/presentation/support_ticket_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 const _captureKey = ValueKey('client-screenshot-boundary');
+late final Uint8List _projectorDemoBytes;
 
 void main() {
   setUpAll(() async {
@@ -68,6 +74,9 @@ void main() {
     final materialIcons = FontLoader('MaterialIcons')
       ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await Future.wait([manrope.load(), materialIcons.load()]);
+    _projectorDemoBytes = File(
+      'tool/fixtures/projector-demo.png',
+    ).readAsBytesSync();
   });
 
   _screenshot('01-onboarding.png', () => _scope(const OnboardingScreen()));
@@ -194,8 +203,22 @@ void main() {
         createItemDraftStorageProvider.overrideWithValue(
           _ScreenshotDraftStorage(),
         ),
+        appPermissionGatewayProvider.overrideWithValue(
+          _ScreenshotPermissionGateway(),
+        ),
+        itemPhotoPickerProvider.overrideWithValue(_ScreenshotPhotoPicker()),
       ],
     ),
+    prepare: (tester) async {
+      await tester.runAsync(
+        () => precacheImage(
+          MemoryImage(_projectorDemoBytes),
+          tester.element(find.byType(CreateItemScreen)),
+        ),
+      );
+      await tester.tap(find.text('Добавить фото'));
+      await tester.pumpAndSettle();
+    },
   );
   _screenshot(
     '12-owned-items.png',
@@ -532,6 +555,32 @@ class _ScreenshotDraftStorage extends CreateItemDraftStorage {
 
   @override
   Future<void> clear() async {}
+}
+
+class _ScreenshotPhotoPicker extends ItemPhotoPicker {
+  _ScreenshotPhotoPicker() : super(ImagePicker());
+
+  @override
+  Future<List<XFile>> pick() async {
+    return [
+      XFile.fromData(
+        _projectorDemoBytes,
+        path: 'projector-demo.png',
+        name: 'projector-demo.png',
+        mimeType: 'image/png',
+      ),
+    ];
+  }
+}
+
+class _ScreenshotPermissionGateway implements AppPermissionGateway {
+  @override
+  Future<PermissionStatus> request(AppPermission permission) async {
+    return PermissionStatus.granted;
+  }
+
+  @override
+  Future<bool> openSettings() async => true;
 }
 
 class _UnauthenticatedAuthController extends AuthController {

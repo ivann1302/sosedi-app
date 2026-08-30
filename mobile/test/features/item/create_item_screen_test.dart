@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -93,6 +94,44 @@ void main() {
 
     expect(find.text('Выбрано фото: 1'), findsOneWidget);
     expect(find.byIcon(Icons.star), findsOneWidget);
+  });
+
+  testWidgets('previews photos and lets the lender change the cover', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final picker = _FakePhotoPicker([
+      _photo('first.png'),
+      _photo('second.png'),
+    ]);
+    await tester.pumpWidget(_app(_FakeCreateItemService(), picker: picker));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pumpAndSettle();
+
+    final first = find.byKey(const ValueKey('selected-photo-first.png'));
+    final second = find.byKey(const ValueKey('selected-photo-second.png'));
+    expect(first, findsOneWidget);
+    expect(second, findsOneWidget);
+    expect(
+      find.descendant(of: first, matching: find.text('Главное')),
+      findsOneWidget,
+    );
+
+    await tester.tap(second);
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: second, matching: find.text('Главное')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('delete-selected-photo-second.png')),
+    );
+    await tester.pumpAndSettle();
+    expect(second, findsNothing);
+    expect(first, findsOneWidget);
   });
 
   testWidgets('does not open the picker after photo permission is denied', (
@@ -325,21 +364,31 @@ class _FakeCreateItemService extends CreateItemService {
 }
 
 class _FakePhotoPicker extends ItemPhotoPicker {
-  _FakePhotoPicker() : super(ImagePicker());
+  _FakePhotoPicker([List<XFile>? photos])
+    : _photos = photos ?? [_photo('photo.jpg')],
+      super(ImagePicker());
 
+  final List<XFile> _photos;
   var calls = 0;
 
   @override
   Future<List<XFile>> pick() async {
     calls += 1;
-    return [
-      XFile.fromData(
-        Uint8List.fromList([1, 2, 3]),
-        name: 'photo.jpg',
-        mimeType: 'image/jpeg',
-      ),
-    ];
+    return _photos;
   }
+}
+
+XFile _photo(String name) {
+  return XFile.fromData(
+    Uint8List.fromList(
+      base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      ),
+    ),
+    path: name,
+    name: name,
+    mimeType: 'image/png',
+  );
 }
 
 class _FakeDraftStorage extends CreateItemDraftStorage {
