@@ -14,6 +14,39 @@ import 'package:mobile/features/safety/data/safety_service.dart';
 
 void main() {
   testWidgets(
+    'keeps the composer reachable with large text on a compact screen',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bookingServiceProvider.overrideWithValue(_RetryBookingService()),
+            bookingDetailsProvider(
+              booking.id,
+            ).overrideWith((ref) async => booking),
+          ],
+          child: MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+              child: BookingChatScreen(bookingId: booking.id),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final composer = find.byKey(const ValueKey('booking-chat-composer'));
+      expect(composer, findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Отправить'), findsOneWidget);
+      expect(tester.getRect(composer).bottom, lessThanOrEqualTo(720));
+    },
+  );
+
+  testWidgets(
     'shows system text and retries one draft with the same client ID',
     (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);

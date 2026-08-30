@@ -91,14 +91,14 @@ class InboxScreen extends ConsumerWidget {
                           ref.invalidate(inboxEventsProvider);
                         },
                         child: ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           itemCount:
                               value.items.length +
                               (value.nextCursor != null ||
                                       value.loadMoreError != null
                                   ? 1
                                   : 0),
-                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          separatorBuilder: (_, _) => const Divider(height: 1),
                           itemBuilder: (context, index) {
                             if (index == value.items.length) {
                               return Center(
@@ -117,16 +117,46 @@ class InboxScreen extends ConsumerWidget {
                               );
                             }
                             final event = value.items[index];
-                            return Card(
-                              child: ListTile(
-                                enabled: !opening.isLoading,
-                                onTap: () => _open(context, ref, event),
-                                leading: Icon(_icon(event.eventType)),
-                                title: Text(_title(event.eventType)),
-                                subtitle: Text(_time(event.createdAt)),
-                                trailing: event.readAt == null
-                                    ? const Chip(label: Text('Новое'))
-                                    : const Icon(Icons.chevron_right),
+                            final unread = event.readAt == null;
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              enabled: !opening.isLoading,
+                              onTap: () => _open(context, ref, event),
+                              leading: Icon(_icon(event.eventType)),
+                              title: Text(
+                                _title(event.eventType),
+                                style: unread
+                                    ? Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      )
+                                    : null,
+                              ),
+                              subtitle: Text(_time(event.createdAt)),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (unread)
+                                    Semantics(
+                                      container: true,
+                                      label: 'Непрочитано',
+                                      child: ExcludeSemantics(
+                                        child: Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.chevron_right),
+                                ],
                               ),
                             );
                           },

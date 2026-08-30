@@ -31,12 +31,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Ответ поддержки'), findsOneWidget);
-    expect(find.text('Новое'), findsOneWidget);
+    expect(find.bySemanticsLabel('Непрочитано'), findsOneWidget);
     await tester.tap(find.text('Ответ поддержки'));
     await tester.pumpAndSettle();
 
     expect(service.markReadCalls, 1);
     expect(find.text('Обращение открыто'), findsOneWidget);
+
+    router.pop();
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Непрочитано'), findsNothing);
   });
 
   testWidgets('shows a neutral title for a moderated review', (tester) async {
@@ -89,12 +94,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Новое'), findsOneWidget);
+    expect(find.bySemanticsLabel('Непрочитано'), findsOneWidget);
     await tester.tap(find.byTooltip('Прочитать всё'));
     await tester.pumpAndSettle();
 
     expect(service.markAllReadCalls, 1);
-    expect(find.text('Новое'), findsNothing);
+    expect(find.bySemanticsLabel('Непрочитано'), findsNothing);
   });
 }
 
@@ -107,6 +112,7 @@ class _FakeInboxService extends InboxService {
   final List<bool> unreadOnlyValues = [];
   var markAllReadCalls = 0;
   var allRead = false;
+  var singleRead = false;
 
   @override
   Future<List<InboxEvent>> list() async => [value ?? event];
@@ -120,7 +126,7 @@ class _FakeInboxService extends InboxService {
     unreadOnlyValues.add(unreadOnly);
     if (unreadOnly) {
       return InboxPage(
-        items: allRead ? [] : [value ?? event],
+        items: allRead || singleRead ? [] : [value ?? event],
         nextCursor: null,
       );
     }
@@ -130,7 +136,7 @@ class _FakeInboxService extends InboxService {
     final first = value ?? event;
     return InboxPage(
       items: [
-        allRead
+        allRead || singleRead
             ? first.copyWith(readAt: DateTime.utc(2026, 8, 30, 12, 5))
             : first,
       ],
@@ -148,6 +154,7 @@ class _FakeInboxService extends InboxService {
   @override
   Future<InboxEvent> markRead(String eventId) async {
     markReadCalls += 1;
+    singleRead = true;
     return (value ?? event).copyWith(readAt: DateTime.utc(2026, 7, 29, 12, 5));
   }
 

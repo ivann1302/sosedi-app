@@ -364,57 +364,68 @@ class _Composer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      elevation: 8,
+      key: const ValueKey('booking-chat-composer'),
       color: Theme.of(context).colorScheme.surface,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FormBuilder(
-              key: formKey,
-              child: FormBuilderTextField(
-                name: 'body',
-                minLines: 1,
-                maxLines: 5,
-                maxLength: 2000,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Сообщение',
-                  hintText: 'Напишите о времени и передаче вещи',
-                ),
-                validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(),
-                  FormBuilderValidators.maxLength(2000),
-                ]),
-              ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
-            if (error != null)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  userFacingError(
-                    error!,
-                    fallback: 'Не удалось отправить сообщение',
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FormBuilder(
+                key: formKey,
+                child: FormBuilderTextField(
+                  name: 'body',
+                  minLines: 1,
+                  maxLines: 5,
+                  maxLength: 2000,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Сообщение',
+                    hintText: 'Напишите о времени и передаче вещи',
                   ),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  validator: FormBuilderValidators.compose([
+                    FormBuilderValidators.required(),
+                    FormBuilderValidators.maxLength(2000),
+                  ]),
                 ),
               ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: sending ? null : onSend,
-                icon: sending
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send_outlined),
-                label: Text(sending ? 'Отправляем…' : 'Отправить'),
+              if (error != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    userFacingError(
+                      error!,
+                      fallback: 'Не удалось отправить сообщение',
+                    ),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: sending ? null : onSend,
+                  icon: sending
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send_outlined),
+                  label: Text(sending ? 'Отправляем…' : 'Отправить'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -459,17 +470,26 @@ class _MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         decoration: BoxDecoration(
-          color: mine ? colors.primaryContainer : const Color(0xFFF2F4F7),
-          borderRadius: BorderRadius.circular(16),
+          color: mine ? const Color(0xFFF7F8F9) : colors.surface,
+          border: Border.all(color: colors.outlineVariant),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Align(alignment: Alignment.centerLeft, child: Text(message.body)),
-            const SizedBox(height: 4),
             Text(
-              _time(message.createdAt),
+              mine ? 'Вы' : 'Собеседник',
               style: Theme.of(context).textTheme.labelSmall,
+            ),
+            const SizedBox(height: 4),
+            Text(message.body),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                _time(message.createdAt),
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
             ),
             if (onReport != null)
               TextButton.icon(
