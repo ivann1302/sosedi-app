@@ -160,10 +160,12 @@ class _ReviewList extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             const Icon(Icons.star_rounded, size: 20),
-            const SizedBox(width: 4),
             Text(
               '${page.summary.average!.toStringAsFixed(1)} · '
               '${page.summary.count} ${_reviewCountLabel(page.summary.count)}',
@@ -178,11 +180,18 @@ class _ReviewList extends ConsumerWidget {
             children: [
               const Divider(),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  for (var index = 0; index < review.rating; index++)
-                    const Icon(Icons.star_rounded, size: 18),
-                  const Spacer(),
+                  Wrap(
+                    spacing: 2,
+                    children: [
+                      for (var index = 0; index < review.rating; index++)
+                        const Icon(Icons.star_rounded, size: 18),
+                    ],
+                  ),
                   const Text('Подтверждённая аренда'),
                 ],
               ),

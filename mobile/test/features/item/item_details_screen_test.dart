@@ -389,6 +389,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(safety.blockCalls, 1);
   });
+
+  testWidgets('wraps owner review metadata at a large text scale', (
+    tester,
+  ) async {
+    _useSmallTextScaledSurface(tester);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          itemDetailsProvider(item.id).overrideWith((ref) async => item),
+          publicReviewsProvider(
+            item.owner.id,
+          ).overrideWith((ref) async => largeRatedReviews),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const OwnerProfileScreen(itemId: 'item-1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('4.5 · 123456 отзывов'), findsOneWidget);
+    expect(find.text('Подтверждённая аренда'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _FakeSafetyService extends SafetyService {
@@ -490,6 +520,22 @@ final ratedReviews = PublicReviewPage(
   items: [
     PublicReview(
       id: 'review-1',
+      authorRole: 'BORROWER',
+      rating: 5,
+      text: 'Вещь передали вовремя.',
+      verifiedRental: true,
+      publishedAt: DateTime.utc(2026, 8, 9),
+      createdAt: DateTime.utc(2026, 8, 9),
+    ),
+  ],
+  nextCursor: null,
+);
+
+final largeRatedReviews = PublicReviewPage(
+  summary: const ReviewSummary(average: 4.5, count: 123456),
+  items: [
+    PublicReview(
+      id: 'review-large-1',
       authorRole: 'BORROWER',
       rating: 5,
       text: 'Вещь передали вовремя.',
