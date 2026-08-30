@@ -69,7 +69,7 @@ help:
 		'  make hooks-run                Run local git hooks manually'
 
 infra-up:
-	docker compose up -d
+	docker compose up -d --wait --wait-timeout 90
 
 infra-down:
 	docker compose down
