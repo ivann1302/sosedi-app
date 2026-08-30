@@ -87,15 +87,25 @@ class _BlockedUserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final action = TextButton(
+      onPressed: enabled ? onUnblock : null,
+      child: const Text('Разблокировать'),
+    );
+    final useStackedLayout =
+        MediaQuery.sizeOf(context).width <= 360 ||
+        MediaQuery.textScalerOf(context).scale(16) > 16;
+
     return ListTile(
       minTileHeight: 64,
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.person_off_outlined),
-      title: Text(user.blocked.name ?? 'Пользователь'),
-      trailing: TextButton(
-        onPressed: enabled ? onUnblock : null,
-        child: const Text('Разблокировать'),
-      ),
+      title: useStackedLayout
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [Text(user.blocked.name ?? 'Пользователь'), action],
+            )
+          : Text(user.blocked.name ?? 'Пользователь'),
+      trailing: useStackedLayout ? null : action,
     );
   }
 }
