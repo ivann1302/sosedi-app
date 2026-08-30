@@ -799,6 +799,13 @@ TDD не является отдельной фазой перед разраб�
   партиями; закрытие по-прежнему ждёт 38 обновлённых route screenshots,
   проверки 320×720 при 200% текста, MapKit и ручного smoke на реальных
   iPhone/Android.
+  **AUTONOMOUS UI COMPLETE 30.08.2026:** bundled Onest Variable 2.001 и все
+  девять визуальных партий реализованы; каталог работает в две колонки,
+  details и operational/settings rows используют плоскую иерархию. Flutter
+  harness перегенерировал 38 route/state screenshots; `make mobile-analyze`,
+  `make mobile-test`, `make mobile-screenshots` и `make app-user-paths-check`
+  прошли. Пункт остаётся открытым: нужны production MapKit и ручной visual
+  smoke на реальных iPhone/Android.
 
 ## 9. Mobile Map
 

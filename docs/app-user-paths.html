@@ -224,7 +224,7 @@
         line-height: 1.4;
       }
 
-      .branch-icon {
+      .branch .branch-icon {
         display: none;
       }
 
@@ -413,9 +413,10 @@
       <section class="hero">
         <h1>Карта приложения и пути пользователей</h1>
         <p class="hero-copy">
-          Реальные экраны текущего Flutter-клиента: от первого запуска до
-          аренды, публикации вещи, поддержки и privacy-настроек. Нажатие на
-          экран открывает исходный PNG.
+          Реальные экраны Flutter-клиента с двухколоночным каталогом и плоской
+          marketplace-иерархией: от первого запуска до аренды, публикации
+          вещи, поддержки и privacy-настроек. Нажатие на экран открывает
+          исходный PNG.
         </p>
       </section>
 
@@ -476,7 +477,7 @@
       <section class="journey" id="entry" aria-labelledby="entry-title">
         <header class="journey-head">
           <div>
-            <div class="section-label">Путь 1</div>
+            <div class="section-label">Первый вход</div>
             <h2 id="entry-title">Первый вход</h2>
           </div>
           <p>
@@ -595,8 +596,8 @@
                 <h3>Каталог</h3>
                 <span class="route">/catalog</span>
                 <p>
-                  Поиск, категории, даты, цена, район и server-backed
-                  сортировка.
+                  Две колонки предложений, поиск, компактные фильтры и
+                  server-backed сортировка.
                 </p>
               </figcaption>
             </div>
@@ -607,7 +608,7 @@
       <section class="journey" id="borrower" aria-labelledby="borrower-title">
         <header class="journey-head">
           <div>
-            <div class="section-label">Путь 2</div>
+            <div class="section-label">Сценарий арендатора</div>
             <h2 id="borrower-title">Беру вещь</h2>
           </div>
           <p>
@@ -653,8 +654,8 @@
                 <h3>Карточка вещи</h3>
                 <span class="route">/items/:id</span>
                 <p>
-                  Цена, состояние, комплектность, район и правила безопасной
-                  передачи.
+                  Фото и цена ведут плоскую иерархию фактов, владельца и правил
+                  безопасной передачи.
                 </p>
               </figcaption>
             </div>
@@ -933,7 +934,7 @@
       <section class="journey" id="lender" aria-labelledby="lender-title">
         <header class="journey-head">
           <div>
-            <div class="section-label">Путь 3</div>
+            <div class="section-label">Сценарий владельца</div>
             <h2 id="lender-title">Сдаю вещь</h2>
           </div>
           <p>
@@ -958,8 +959,8 @@
                 <h3>Новое объявление</h3>
                 <span class="route">/items/new</span>
                 <p>
-                  Категория, описание, состояние, комплектность, цена и
-                  передача.
+                  Photo-first публикация в три шага: фото, описание, затем
+                  цена и место передачи.
                 </p>
               </figcaption>
             </div>
@@ -979,7 +980,7 @@
                 </div>
                 <h3>Мои вещи</h3>
                 <span class="route">/items/mine</span>
-                <p>Все статусы своих объявлений, включая непубличные.</p>
+                <p>Плоские строки и понятные статусы всех своих объявлений.</p>
               </figcaption>
             </div>
           </figure>
@@ -1080,7 +1081,7 @@
       >
         <header class="journey-head">
           <div>
-            <div class="section-label">Путь 4</div>
+            <div class="section-label">Коммуникации</div>
             <h2 id="support-title">Уведомления и поддержка</h2>
           </div>
           <p>
@@ -1177,7 +1178,7 @@
       <section class="journey" id="profile" aria-labelledby="profile-title">
         <header class="journey-head">
           <div>
-            <div class="section-label">Путь 5</div>
+            <div class="section-label">Настройки</div>
             <h2 id="profile-title">Профиль, доверие и приватность</h2>
           </div>
           <p>
