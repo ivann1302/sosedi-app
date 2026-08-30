@@ -225,7 +225,7 @@ Add `DOING` evidence to checklist section 19 without marking human/device/extern
 
 Run: `make app-user-paths-check`, `make public-web-check`, and `rg -n "TBD|TODO|implement later|fill in" docs/closed-pilot-playbook.md` (expected no matches).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 Commit: `docs(pilot): add local runbook and usability kit`
 
@@ -234,20 +234,20 @@ Commit: `docs(pilot): add local runbook and usability kit`
 **Files:**
 - Review all files changed since the plan commit.
 
-- [ ] **Step 1: Run the actual pilot smoke**
+- [x] **Step 1: Run the actual pilot smoke**
 
 Run: `make pilot-smoke`
 
 Expected: `make check`, all backend e2e, screenshot regeneration and app-map verifier pass; test containers are removed in `finally`.
 
-- [ ] **Step 2: Run diff/security review**
+- [x] **Step 2: Run diff/security review**
 
 Check `git diff --check`, verify no credential/phone/address leakage in logs or docs, confirm seed guard rejects production/non-loopback targets, and confirm `docs/APP_WORKFLOW_GUIDE.md` remains untracked and untouched.
 
-- [ ] **Step 3: Re-read this plan and checklist requirements**
+- [x] **Step 3: Re-read this plan and checklist requirements**
 
 Mark only completed steps, record any external gates as blockers and do not call MapKit/payments/push/KYC production-ready.
 
-- [ ] **Step 4: Final commit if verification changed artifacts**
+- [x] **Step 4: Final commit if verification changed artifacts**
 
 Commit only directly related generated screenshots/checklist/handoff changes; do not push or deploy.
