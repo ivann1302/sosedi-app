@@ -121,7 +121,8 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Продолжая, вы подтверждаете согласие с правилами сервиса.',
+                  'Смотреть каталог можно без входа. Телефон понадобится для '
+                  'бронирования, публикации и личных разделов.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

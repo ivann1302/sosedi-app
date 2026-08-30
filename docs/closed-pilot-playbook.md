@@ -11,7 +11,7 @@
 - guarded fixture seed без удаления существующих данных;
 - бронирования, чат, акты, inbox, support, moderation и reviews проверяются
   автоматическими unit/widget/e2e-тестами;
-- 29 screenshot-экранов связаны в `docs/app-user-paths.html`;
+- 31 screenshot-состояние связано в `docs/app-user-paths.html`;
 - одна команда запускает полный локальный pilot smoke и всегда выключает
   изолированные test-контейнеры.
 
@@ -91,7 +91,7 @@ make pilot-smoke
 
 1. `make check`;
 2. все backend e2e против отдельной `sosedi_test` БД и Redis DB 15;
-3. регенерацию 29 route screenshots;
+3. регенерацию 31 route/state screenshot;
 4. проверку всех ссылок `docs/app-user-paths.html`;
 5. `make test-infra-down` даже после ошибки предыдущего этапа.
 

@@ -13,7 +13,9 @@ production/release-конфигурации. Демо-карта сохраня�
 
 | Файл                     | Клиентский путь или состояние                       |
 | ------------------------ | --------------------------------------------------- |
-| `01-onboarding.png`      | `/onboarding`                                       |
+| `01-onboarding.png`      | `/onboarding`, польза аренды                        |
+| `01b-onboarding-trust.png` | `/onboarding`, доверие и правила                  |
+| `01c-onboarding-search.png` | `/onboarding`, переход к поиску                   |
 | `02-phone-login.png`     | `/auth/phone`                                       |
 | `03-otp.png`             | `/auth/otp`                                         |
 | `04-catalog.png`         | `/catalog`, список                                  |

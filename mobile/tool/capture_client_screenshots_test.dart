@@ -81,6 +81,24 @@ void main() {
 
   _screenshot('01-onboarding.png', () => _scope(const OnboardingScreen()));
   _screenshot(
+    '01b-onboarding-trust.png',
+    () => _scope(const OnboardingScreen()),
+    prepare: (tester) async {
+      await tester.tap(find.text('Далее'));
+      await tester.pumpAndSettle();
+    },
+  );
+  _screenshot(
+    '01c-onboarding-search.png',
+    () => _scope(const OnboardingScreen()),
+    prepare: (tester) async {
+      await tester.tap(find.text('Далее'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Далее'));
+      await tester.pumpAndSettle();
+    },
+  );
+  _screenshot(
     '02-phone-login.png',
     () => _scope(
       const PhoneScreen(),
@@ -849,7 +867,7 @@ final _profile = UserProfile(
   city: 'Москва',
   avatarUrl: null,
   role: 'USER',
-  kycStatus: 'VERIFIED',
+  kycStatus: null,
   isBlocked: false,
   createdAt: DateTime.utc(2026, 7, 1),
   updatedAt: DateTime.utc(2026, 8, 20),
@@ -894,15 +912,8 @@ final _supportTicket = SupportTicket(
 
 final _supportMessages = [
   SupportMessage(
-    id: 'support-message-1',
-    authorRole: 'USER',
-    body: 'Как изменить время передачи вещи?',
-    attachments: const [],
-    createdAt: DateTime.utc(2026, 8, 20, 18),
-  ),
-  SupportMessage(
     id: 'support-message-2',
-    authorRole: 'ADMIN',
+    authorRole: 'SUPPORT',
     body: 'Откройте бронирование и напишите владельцу в чате.',
     attachments: const [],
     createdAt: DateTime.utc(2026, 8, 21, 8),

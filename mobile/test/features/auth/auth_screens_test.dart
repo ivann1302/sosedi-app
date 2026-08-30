@@ -9,6 +9,19 @@ import 'package:mobile/features/auth/presentation/otp_screen.dart';
 import 'package:mobile/features/auth/presentation/phone_screen.dart';
 
 void main() {
+  testWidgets('keeps guest browsing separate from unpublished rules', (
+    tester,
+  ) async {
+    final controller = _ScreenAuthController(const AuthState.unauthenticated());
+    await _pumpScreen(tester, controller, const PhoneScreen());
+
+    expect(
+      find.textContaining('Смотреть каталог можно без входа'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('согласие с правилами'), findsNothing);
+  });
+
   testWidgets('does not request OTP for an invalid phone', (tester) async {
     final controller = _ScreenAuthController(const AuthState.unauthenticated());
     await _pumpScreen(tester, controller, const PhoneScreen());
