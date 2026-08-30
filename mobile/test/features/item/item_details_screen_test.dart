@@ -102,6 +102,58 @@ void main() {
     expect(find.text('Выбор дат открыт'), findsOneWidget);
   });
 
+  testWidgets(
+    'keeps the public booking action reachable on a small text-scaled screen',
+    (tester) async {
+      _useSmallTextScaledSurface(tester);
+      final router = GoRouter(
+        initialLocation: '/items/${item.id}',
+        routes: [
+          GoRoute(
+            path: '/items/:id',
+            builder: (_, _) => ItemDetailsScreen(itemId: item.id),
+          ),
+          GoRoute(
+            path: '/items/:id/booking',
+            builder: (_, _) =>
+                const Scaffold(body: Center(child: Text('Выбор дат открыт'))),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            itemDetailsProvider(item.id).overrideWith((ref) async => item),
+            publicReviewsProvider(
+              item.owner.id,
+            ).overrideWith((ref) async => emptyReviews),
+          ],
+          child: MaterialApp.router(
+            routerConfig: router,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Тверская'), findsNothing);
+      final action = find.byKey(const ValueKey('item-primary-action'));
+      expect(action, findsOneWidget);
+      await tester.ensureVisible(action);
+      await tester.tap(action);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Выбор дат открыт'), findsOneWidget);
+    },
+  );
+
   testWidgets('sends the owner to listing management instead of self-booking', (
     tester,
   ) async {
@@ -301,7 +353,7 @@ void main() {
 
     expect(find.byIcon(Icons.star_rounded), findsOneWidget);
     expect(find.text('4.5 · 2 подтверждённых отзывов'), findsOneWidget);
-    await tester.tap(find.text('Профиль и отзывы владельца'));
+    await tester.tap(find.text('Иван'));
     await tester.pumpAndSettle();
 
     expect(find.text('Профиль владельца'), findsOneWidget);
@@ -392,6 +444,12 @@ class _OwnerController extends AuthController {
 void _useTallSurface(WidgetTester tester) {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(1000, 2200);
+  addTearDown(tester.view.reset);
+}
+
+void _useSmallTextScaledSurface(WidgetTester tester) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = const Size(320, 720);
   addTearDown(tester.view.reset);
 }
 

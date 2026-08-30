@@ -85,7 +85,7 @@ class _OwnerReviews extends ConsumerWidget {
     final canBlock = auth is AuthAuthenticated && auth.user.id != owner.id;
     final name = owner.name?.trim();
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       children: [
         const CircleAvatar(
           radius: 36,
@@ -99,7 +99,9 @@ class _OwnerReviews extends ConsumerWidget {
         ),
         if (owner.city?.trim().isNotEmpty == true)
           Text(owner.city!, textAlign: TextAlign.center),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
+        const Divider(),
+        const SizedBox(height: 12),
         Text(
           'Подтверждённые отзывы',
           style: Theme.of(context).textTheme.titleLarge,
@@ -148,12 +150,11 @@ class _ReviewList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (page.summary.count == 0) {
-      return const Card(
-        child: ListTile(
-          leading: Icon(Icons.auto_awesome_outlined),
-          title: Text('Новый владелец'),
-          subtitle: Text('Подтверждённых отзывов пока нет.'),
-        ),
+      return const ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.auto_awesome_outlined),
+        title: Text('Новый владелец'),
+        subtitle: Text('Подтверждённых отзывов пока нет.'),
       );
     }
     return Column(
@@ -172,36 +173,33 @@ class _ReviewList extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         for (final review in page.items)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Divider(),
+              const SizedBox(height: 12),
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      for (var index = 0; index < review.rating; index++)
-                        const Icon(Icons.star_rounded, size: 18),
-                      const Spacer(),
-                      const Text('Подтверждённая аренда'),
-                    ],
-                  ),
-                  if (review.text != null) ...[
-                    const SizedBox(height: 8),
-                    Text(review.text!),
-                  ],
-                  const SizedBox(height: 4),
-                  if (ref.watch(authControllerProvider) is AuthAuthenticated)
-                    TextButton.icon(
-                      onPressed: ref.watch(safetyActionProvider).isLoading
-                          ? null
-                          : () => _report(context, ref, review.id),
-                      icon: const Icon(Icons.flag_outlined),
-                      label: const Text('Пожаловаться на отзыв'),
-                    ),
+                  for (var index = 0; index < review.rating; index++)
+                    const Icon(Icons.star_rounded, size: 18),
+                  const Spacer(),
+                  const Text('Подтверждённая аренда'),
                 ],
               ),
-            ),
+              if (review.text != null) ...[
+                const SizedBox(height: 8),
+                Text(review.text!),
+              ],
+              if (ref.watch(authControllerProvider) is AuthAuthenticated)
+                TextButton.icon(
+                  onPressed: ref.watch(safetyActionProvider).isLoading
+                      ? null
+                      : () => _report(context, ref, review.id),
+                  icon: const Icon(Icons.flag_outlined),
+                  label: const Text('Пожаловаться на отзыв'),
+                ),
+              const SizedBox(height: 4),
+            ],
           ),
       ],
     );

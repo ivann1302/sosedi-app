@@ -21,6 +21,7 @@ Future<SafetyReportSubmission?> showSafetyReportDialog({
   return showDialog<SafetyReportSubmission>(
     context: context,
     builder: (context) => AlertDialog(
+      contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
       title: const Text('Отправить жалобу'),
       scrollable: true,
       content: FormBuilder(

@@ -133,154 +133,101 @@ class _ItemContent extends ConsumerWidget {
     final isOwner = currentUserId == item.owner.id;
     final canReport = currentUserId != null && !isOwner;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       children: [
         _PhotoGallery(photos: item.photos),
-        const SizedBox(height: 20),
-        Text(item.title, style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.warmSand,
-              borderRadius: BorderRadius.circular(AppRadii.small),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                '${_price(item.pricePerDay)} ₽ / день',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-          ),
+        const SizedBox(height: 16),
+        Text(
+          '${_price(item.pricePerDay)} ₽ / день',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
         ),
-        const SizedBox(height: 20),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Column(
-              children: [
-                _DetailRow(label: 'Категория', value: item.category.name),
-                _DetailRow(label: 'Район', value: item.area),
-                _DetailRow(
-                  label: 'Владелец',
-                  value: item.owner.name?.trim().isNotEmpty == true
-                      ? item.owner.name!
-                      : 'Сосед',
-                ),
-                _DetailRow(
-                  label: 'Состояние',
-                  value: _condition(item.condition),
-                ),
-                _DetailRow(label: 'Комплектация', value: item.completeness),
-              ],
-            ),
+        const SizedBox(height: 8),
+        Text(item.title, style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 16),
+        _DetailRow(label: 'Категория', value: item.category.name),
+        _DetailRow(label: 'Район', value: item.area),
+        _DetailRow(label: 'Состояние', value: _condition(item.condition)),
+        _DetailRow(label: 'Комплектация', value: item.completeness),
+        const Divider(height: 32),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          minVerticalPadding: 0,
+          leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+          title: Text(
+            item.owner.name?.trim().isNotEmpty == true
+                ? item.owner.name!
+                : 'Сосед',
           ),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Рейтинг владельца',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 6),
-                reviews.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (_, _) => const Text('Рейтинг временно недоступен'),
-                  data: (page) => page.summary.count == 0
-                      ? const Text('Новый владелец')
-                      : Row(
-                          children: [
-                            const Icon(Icons.star_rounded, size: 18),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${page.summary.average!.toStringAsFixed(1)} · '
-                              '${page.summary.count} подтверждённых отзывов',
-                            ),
-                          ],
+          subtitle: reviews.when(
+            loading: () => const Text('Загружаем отзывы'),
+            error: (_, _) => const Text('Рейтинг временно недоступен'),
+            data: (page) => page.summary.count == 0
+                ? const Text('Новый владелец')
+                : Row(
+                    children: [
+                      const Icon(Icons.star_rounded, size: 18),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '${page.summary.average!.toStringAsFixed(1)} · '
+                          '${page.summary.count} подтверждённых отзывов',
                         ),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => context.push('/items/${item.id}/owner'),
-                  icon: const Icon(Icons.person_outline),
-                  label: const Text('Профиль и отзывы владельца'),
-                ),
-              ],
-            ),
+                      ),
+                    ],
+                  ),
           ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/items/${item.id}/owner'),
         ),
         const SizedBox(height: 24),
         Text('Описание', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
         Text(item.description),
         const SizedBox(height: 24),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.warmSand,
-            borderRadius: BorderRadius.circular(AppRadii.medium),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.handshake_outlined, color: AppColors.slate800),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Передача и использование',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(item.handoverTerms),
-                      const SizedBox(height: 8),
-                      Text(
-                        item.category.safetyNotice,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+        const Divider(),
+        const SizedBox(height: 12),
+        Text(
+          'Передача и использование',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 6),
+        Text(item.handoverTerms),
+        const SizedBox(height: 8),
+        Text(
+          item.category.safetyNotice,
+          style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 16),
-        const Card(
-          child: ListTile(
-            leading: Icon(Icons.event_available_outlined),
-            title: Text('Доступность проверяется по датам'),
-            subtitle: Text(
-              'Выберите период — приложение сверит календарь владельца '
-              'перед отправкой заявки.',
-            ),
+        const Divider(),
+        const ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.event_available_outlined),
+          title: Text('Доступность проверяется по датам'),
+          subtitle: Text(
+            'Выберите период — приложение сверит календарь владельца '
+            'перед отправкой заявки.',
           ),
         ),
         if (documents.isPublishedSetReady) ...[
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => context.push('/profile/documents'),
-            icon: const Icon(Icons.policy_outlined),
-            label: Text(
-              'Правила аренды · версия '
-              '${documents.cancellationPolicyVersion}',
+          const Divider(),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.policy_outlined),
+            title: Text(
+              'Правила аренды · версия ${documents.cancellationPolicyVersion}',
             ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/profile/documents'),
           ),
         ],
         if (canReport) ...[
           const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: safety.isLoading
+          const Divider(),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            onTap: safety.isLoading
                 ? null
                 : () => _report(
                     context,
@@ -288,12 +235,13 @@ class _ItemContent extends ConsumerWidget {
                     targetType: 'ITEM',
                     targetId: item.id,
                   ),
-            icon: const Icon(Icons.flag_outlined),
-            label: const Text('Пожаловаться на объявление'),
+            leading: const Icon(Icons.flag_outlined),
+            title: const Text('Пожаловаться на объявление'),
           ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: safety.isLoading
+          const Divider(height: 1),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            onTap: safety.isLoading
                 ? null
                 : () => _report(
                     context,
@@ -301,16 +249,18 @@ class _ItemContent extends ConsumerWidget {
                     targetType: 'USER',
                     targetId: item.owner.id,
                   ),
-            icon: const Icon(Icons.report_outlined),
-            label: const Text('Пожаловаться на владельца'),
+            leading: const Icon(Icons.report_outlined),
+            title: const Text('Пожаловаться на владельца'),
           ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: safety.isLoading
-                ? null
-                : () => _blockOwner(context, ref),
-            icon: const Icon(Icons.person_off_outlined),
-            label: const Text('Заблокировать владельца'),
+          const Divider(height: 1),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            onTap: safety.isLoading ? null : () => _blockOwner(context, ref),
+            leading: const Icon(Icons.person_off_outlined),
+            title: const Text(
+              'Заблокировать владельца',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
           if (safety.hasError)
             Text(
@@ -357,8 +307,9 @@ class _ItemPrimaryAction extends ConsumerWidget {
       ),
       child: SafeArea(
         top: false,
-        minimum: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+        minimum: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: FilledButton(
+          key: const ValueKey('item-primary-action'),
           onPressed: () {
             if (isOwner) {
               context.push('/items/${item.id}/edit');
@@ -448,20 +399,31 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 124,
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 144,
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  value,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
-          ),
-        ],
-      ),
+        ),
+        const Divider(height: 1),
+      ],
     );
   }
 }

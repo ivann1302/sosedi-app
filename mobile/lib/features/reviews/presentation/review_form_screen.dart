@@ -67,9 +67,9 @@ class _ReviewFormScreenState extends ConsumerState<ReviewFormScreen> {
             }
             if (ownReview != null) {
               return ListView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 children: [
-                  const Icon(Icons.check_circle_outline, size: 48),
+                  const Icon(Icons.check_circle_outline, size: 40),
                   const SizedBox(height: 12),
                   Text(
                     ownReview.hidden
@@ -77,12 +77,10 @@ class _ReviewFormScreenState extends ConsumerState<ReviewFormScreen> {
                         : ownReview.published
                         ? 'Отзыв опубликован'
                         : 'Отзыв сохранён',
-                    textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       for (var index = 0; index < ownReview.rating; index++)
                         const Icon(Icons.star_rounded, size: 30),
@@ -90,8 +88,10 @@ class _ReviewFormScreenState extends ConsumerState<ReviewFormScreen> {
                   ),
                   if (ownReview.text != null) ...[
                     const SizedBox(height: 12),
-                    Text(ownReview.text!, textAlign: TextAlign.center),
+                    Text(ownReview.text!),
                   ],
+                  const SizedBox(height: 16),
+                  const Divider(),
                   const SizedBox(height: 16),
                   Text(
                     ownReview.hidden
@@ -100,13 +100,12 @@ class _ReviewFormScreenState extends ConsumerState<ReviewFormScreen> {
                         : ownReview.published
                         ? 'Оценка неизменяема и подтверждена завершённой арендой.'
                         : 'Она станет видна после отзыва второй стороны или по истечении 14 дней.',
-                    textAlign: TextAlign.center,
                   ),
                 ],
               );
             }
             return ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               children: [
                 Text(
                   'Как прошла аренда?',
