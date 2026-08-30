@@ -293,6 +293,37 @@ void main() {
     expect(find.text('Оставить отзыв'), findsNothing);
   });
 
+  testWidgets('shows a human-readable cancellation reason', (tester) async {
+    _useTallSurface(tester);
+    final cancelled = booking.copyWith(
+      status: 'CANCELLED',
+      expiresAt: null,
+      cancellationReason: 'BORROWER_CANCELLED',
+      nextAction: const BookingNextAction(
+        code: 'NONE',
+        title: 'Заявка завершена',
+        description: 'Новых действий по этой заявке нет.',
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingDetailsProvider(
+            booking.id,
+          ).overrideWith((ref) async => cancelled),
+          bookingActsProvider(
+            booking.id,
+          ).overrideWith((ref) async => <BookingAct>[]),
+        ],
+        child: MaterialApp(home: BookingDetailsScreen(bookingId: booking.id)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Отменено арендатором'), findsOneWidget);
+    expect(find.text('BORROWER_CANCELLED'), findsNothing);
+  });
+
   testWidgets('simulates payment outcomes locally without changing booking', (
     tester,
   ) async {

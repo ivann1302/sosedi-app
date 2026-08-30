@@ -1048,9 +1048,10 @@ MapKit, геолокацию или точный адрес и всегда ск
   и authorization e2e прошли.
 - [x] Поддерживать визуальную карту Flutter-приложения с актуальными
   screenshot-путями borrower/lender, профиля, поддержки и системных gates.
-  **DONE 30.08.2026:** `docs/app-user-paths.html` связывает 31 реальное
-  route/state screenshot, а локальные map/payment demo явно отделены от
-  production. Все три onboarding-состояния показаны отдельно.
+  **DONE 30.08.2026:** `docs/app-user-paths.html` связывает 38 реальных
+  route/state screenshot, включая все три onboarding-состояния и
+  booking lifecycle от заявки до завершения/отмены; локальные
+  map/payment demo явно отделены от production.
 - [x] Подтверждать только одну из конкурентных заявок; остальные пересекающиеся
   заявки переводить в заранее утверждённое состояние/причину.
 - [x] Создавать бронирование в статусе `PENDING`.
@@ -1831,7 +1832,7 @@ Fake provider и доменные TDD-тесты не блокируются.
 
 **LOCAL HARNESS 30.08.2026:** `make pilot-seed` идемпотентно создаёт только
 синтетические fixtures после opt-in и loopback guard. `make pilot-smoke`
-выполняет `make check`, все backend e2e, 31 Flutter screenshot-тест, проверку
+выполняет `make check`, все backend e2e, 38 Flutter screenshot-тестов, проверку
 карты user paths и всегда очищает test-инфраструктуру. Это не закрывает реальные
 store/provider/device проверки ниже.
 

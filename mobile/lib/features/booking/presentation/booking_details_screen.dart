@@ -508,7 +508,10 @@ class _Content extends StatelessWidget {
         if (booking.status == 'PENDING' && booking.expiresAt != null)
           _Row(label: 'Ответ владельца до', value: _time(booking.expiresAt!)),
         if (booking.cancellationReason != null)
-          _Row(label: 'Причина', value: booking.cancellationReason!),
+          _Row(
+            label: 'Причина',
+            value: _cancellationReason(booking.cancellationReason!),
+          ),
         if (terms != null) ...[
           const SizedBox(height: 16),
           Text('Цена и условия', style: Theme.of(context).textTheme.titleLarge),
@@ -1105,6 +1108,13 @@ List<({String code, String label})> _issuesFor(ParticipantBooking booking) {
   }
   return const [];
 }
+
+String _cancellationReason(String reason) => switch (reason) {
+  'BORROWER_CANCELLED' => 'Отменено арендатором',
+  'LENDER_DECLINED' => 'Отклонено владельцем',
+  'COMPETING_REQUEST_CONFIRMED' => 'Выбрана другая заявка на эти даты',
+  _ => 'Заявка отменена',
+};
 
 class _Row extends StatelessWidget {
   const _Row({required this.label, required this.value});

@@ -23,6 +23,13 @@ production/release-конфигурации. Демо-карта сохраня�
 | `06-item-details.png`    | `/items/item-1`                                     |
 | `07-booking-create.png`  | `/items/item-1/booking`                             |
 | `08-bookings.png`        | `/bookings`                                         |
+| `08a-booking-pending-borrower.png` | `/bookings/booking-pending`, ожидает владелец |
+| `08b-booking-pending-lender.png` | `/bookings/booking-pending-lender`, решение владельца |
+| `09a-booking-confirmed.png` | `/bookings/booking-confirmed`, подтверждено       |
+| `09b-booking-active.png` | `/bookings/booking-active`, вещь в аренде           |
+| `09c-booking-returned.png` | `/bookings/booking-returned`, возврат             |
+| `09d-booking-completed.png` | `/bookings/booking-completed`, завершено          |
+| `09e-booking-cancelled.png` | `/bookings/booking-cancelled`, отменено           |
 | `09-payment-demo.png`    | `/bookings/booking-confirmed`, успешная демо-оплата |
 | `10-booking-chat.png`    | `/bookings/booking-confirmed/chat`                  |
 | `11-create-item.png`     | `/items/new`                                        |

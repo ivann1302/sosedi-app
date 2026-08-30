@@ -177,6 +177,19 @@ void main() {
       ],
     ),
   );
+  _bookingStateScreenshot('08a-booking-pending-borrower.png', _pendingBooking);
+  _bookingStateScreenshot(
+    '08b-booking-pending-lender.png',
+    _pendingLenderBooking,
+    authOverride: authControllerProvider.overrideWith(
+      _AuthenticatedLenderAuthController.new,
+    ),
+  );
+  _bookingStateScreenshot('09a-booking-confirmed.png', _confirmedBooking);
+  _bookingStateScreenshot('09b-booking-active.png', _activeBooking);
+  _bookingStateScreenshot('09c-booking-returned.png', _returnedBooking);
+  _bookingStateScreenshot('09d-booking-completed.png', _completedBooking);
+  _bookingStateScreenshot('09e-booking-cancelled.png', _cancelledBooking);
   _screenshot(
     '09-payment-demo.png',
     () => _scope(
@@ -406,6 +419,31 @@ void main() {
   );
 }
 
+void _bookingStateScreenshot(
+  String fileName,
+  ParticipantBooking booking, {
+  Object? authOverride,
+}) {
+  _screenshot(
+    fileName,
+    () => _scope(
+      BookingDetailsScreen(bookingId: booking.id),
+      authOverride:
+          authOverride ??
+          authControllerProvider.overrideWith(_AuthenticatedAuthController.new),
+      overrides: [
+        bookingDetailsProvider(booking.id).overrideWith((ref) async => booking),
+        bookingActsProvider(
+          booking.id,
+        ).overrideWith((ref) async => <BookingAct>[]),
+        bookingReviewsProvider(
+          booking.id,
+        ).overrideWith((ref) async => <ParticipantReview>[]),
+      ],
+    ),
+  );
+}
+
 void _screenshot(
   String fileName,
   Widget Function() build, {
@@ -624,6 +662,18 @@ class _AuthenticatedAuthController extends AuthController {
   );
 }
 
+class _AuthenticatedLenderAuthController extends AuthController {
+  @override
+  AuthState build() => const AuthState.authenticated(
+    user: AuthUser(
+      id: 'owner-1',
+      phone: '+79991234568',
+      role: 'USER',
+      isBlocked: false,
+    ),
+  );
+}
+
 class _ScreenshotAnalyticsConsentController extends AnalyticsConsentController {
   @override
   AnalyticsConsent build() => AnalyticsConsent.denied;
@@ -730,9 +780,29 @@ final _pendingBooking = _booking(
   nextAction: const BookingNextAction(
     code: 'WAIT_LENDER',
     title: 'Ожидайте ответ владельца',
-    description: 'Владелец ответит на заявку в течение 12 часов.',
+    description: 'Владелец должен подтвердить или отклонить заявку.',
   ),
   expiresAt: DateTime.utc(2026, 8, 21, 21),
+);
+
+final _pendingLenderBooking = _booking(
+  id: 'booking-pending-lender',
+  status: 'PENDING',
+  actorRole: 'LENDER',
+  nextAction: const BookingNextAction(
+    code: 'REVIEW_REQUEST',
+    title: 'Ответьте на заявку',
+    description:
+        'Проверьте даты и условия, затем подтвердите или отклоните заявку.',
+  ),
+  expiresAt: DateTime.utc(2026, 8, 21, 21),
+);
+
+const _confirmedHandover = BookingHandover(
+  area: 'Хамовники',
+  address: 'Москва, улица Примерная, 1',
+  latitude: 55.733,
+  longitude: 37.574,
 );
 
 final _confirmedBooking = _booking(
@@ -741,13 +811,30 @@ final _confirmedBooking = _booking(
   nextAction: const BookingNextAction(
     code: 'PREPARE_HANDOVER',
     title: 'Подготовьтесь к передаче',
-    description: 'Согласуйте время и детали получения вещи в чате.',
+    description: 'Согласуйте время в чате и проверьте акт передачи.',
   ),
-  handover: const BookingHandover(
-    area: 'Хамовники',
-    address: 'Москва, улица Примерная, 1',
-    latitude: 55.733,
-    longitude: 37.574,
+  handover: _confirmedHandover,
+);
+
+final _activeBooking = _booking(
+  id: 'booking-active',
+  status: 'ACTIVE',
+  nextAction: const BookingNextAction(
+    code: 'USE_ITEM',
+    title: 'Верните вещь в согласованный срок',
+    description: 'Сохраните комплектность и согласуйте возврат в чате.',
+  ),
+  handover: _confirmedHandover,
+);
+
+final _returnedBooking = _booking(
+  id: 'booking-returned',
+  status: 'RETURNED',
+  nextAction: const BookingNextAction(
+    code: 'REVIEW_RETURN',
+    title: 'Завершите возврат',
+    description:
+        'Проверьте акт возврата и зафиксируйте проблему, если она есть.',
   ),
 );
 
@@ -756,28 +843,41 @@ final _completedBooking = _booking(
   status: 'COMPLETED',
   nextAction: const BookingNextAction(
     code: 'LEAVE_REVIEW',
-    title: 'Поделитесь впечатлением',
-    description: 'Отзыв поможет соседям принимать решение.',
+    title: 'Оставьте отзыв',
+    description: 'Поделитесь опытом завершённой аренды.',
   ),
+);
+
+final _cancelledBooking = _booking(
+  id: 'booking-cancelled',
+  status: 'CANCELLED',
+  nextAction: const BookingNextAction(
+    code: 'NONE',
+    title: 'Заявка завершена',
+    description: 'Новых действий по этой заявке нет.',
+  ),
+  cancellationReason: 'BORROWER_CANCELLED',
 );
 
 ParticipantBooking _booking({
   required String id,
   required String status,
   required BookingNextAction nextAction,
+  String actorRole = 'BORROWER',
   DateTime? expiresAt,
+  String? cancellationReason,
   BookingHandover? handover,
 }) {
   return ParticipantBooking(
     id: id,
     itemId: 'item-1',
-    actorRole: 'BORROWER',
+    actorRole: actorRole,
     startDate: DateTime.utc(2026, 8, 23),
     endDate: DateTime.utc(2026, 8, 24),
     status: status,
     nextAction: nextAction,
     expiresAt: expiresAt,
-    cancellationReason: null,
+    cancellationReason: cancellationReason,
     terms: const BookingTerms(
       itemTitle: 'Проектор для домашнего кино',
       lenderDisplayName: 'Иван',

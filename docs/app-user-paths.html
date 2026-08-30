@@ -797,6 +797,49 @@
           </figure>
           <figure class="screen">
             <div class="screen-card">
+              <a href="screenshots/08a-booking-pending-borrower.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/08a-booking-pending-borrower.png"
+                  alt="Заявка ожидает ответа владельца"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">07 · ожидание</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Заявка отправлена</h3>
+                <span class="route">/bookings/:id · borrower</span>
+                <p>
+                  Арендатор видит TTL заявки, зафиксированную цену и может её
+                  отменить.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/09a-booking-confirmed.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/09a-booking-confirmed.png"
+                  alt="Подтверждённое бронирование"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">08 · подтверждение</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Бронь подтверждена</h3>
+                <span class="route">/bookings/:id · confirmed</span>
+                <p>
+                  Открываются чат, точка передачи и контакт второй стороны.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
               <a href="screenshots/09-payment-demo.png"
                 ><img
                   loading="lazy"
@@ -805,7 +848,7 @@
               /></a>
               <figcaption>
                 <div class="caption-top">
-                  <span class="step">07 · расчёт</span
+                  <span class="step">09 · расчёт</span
                   ><span class="kind demo">демо</span>
                 </div>
                 <h3>Оплата</h3>
@@ -827,7 +870,7 @@
               /></a>
               <figcaption>
                 <div class="caption-top">
-                  <span class="step">08 · встреча</span
+                  <span class="step">10 · встреча</span
                   ><span class="kind ready">готово</span>
                 </div>
                 <h3>Чат брони</h3>
@@ -841,6 +884,85 @@
           </figure>
           <figure class="screen">
             <div class="screen-card">
+              <a href="screenshots/09b-booking-active.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/09b-booking-active.png"
+                  alt="Вещь находится в аренде"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">11 · аренда</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Вещь получена</h3>
+                <span class="route">/bookings/:id · active</span>
+                <p>
+                  Следующее действие — вернуть вещь; для проблемы доступно
+                  обращение в поддержку.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/09c-booking-returned.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/09c-booking-returned.png"
+                  alt="Вещь возвращена и ожидает завершения"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">12 · возврат</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Возврат зафиксирован</h3>
+                <span class="route">/bookings/:id · returned</span>
+                <p>Участники проверяют акт возврата до завершения аренды.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/09d-booking-completed.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/09d-booking-completed.png"
+                  alt="Завершённое бронирование"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">13 · завершение</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Аренда завершена</h3>
+                <span class="route">/bookings/:id · completed</span>
+                <p>После завершения становится доступен проверенный отзыв.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/09e-booking-cancelled.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/09e-booking-cancelled.png"
+                  alt="Отменённая заявка с понятной причиной"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">альтернатива · отмена</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Заявка отменена</h3>
+                <span class="route">/bookings/:id · cancelled</span>
+                <p>Терминальное состояние показывает понятную причину отмены.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
               <a href="screenshots/16-review.png"
                 ><img
                   loading="lazy"
@@ -849,7 +971,7 @@
               /></a>
               <figcaption>
                 <div class="caption-top">
-                  <span class="step">09 · завершение</span
+                  <span class="step">14 · отзыв</span
                   ><span class="kind ready">готово</span>
                 </div>
                 <h3>Отзыв</h3>
@@ -861,7 +983,7 @@
         </div>
         <div class="note">
           Точный адрес и контакт не появляются в публичном каталоге: их access
-          window привязан к подтверждённому бронированию.
+          window открыт только в состояниях confirmed и active.
         </div>
       </section>
 
@@ -979,6 +1101,28 @@
                 <p>
                   Тот же список отделяет входящие заявки владельца фильтром
                   роли.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/08b-booking-pending-lender.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/08b-booking-pending-lender.png"
+                  alt="Владелец проверяет входящую заявку"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">06 · решение</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Ответ владельца</h3>
+                <span class="route">/bookings/:id · lender</span>
+                <p>
+                  Владелец проверяет даты и условия, затем подтверждает или
+                  отклоняет заявку.
                 </p>
               </figcaption>
             </div>
