@@ -134,6 +134,31 @@ void main() {
     expect(first, findsOneWidget);
   });
 
+  testWidgets('shows a fallback when a selected photo cannot be read', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final picker = _FakePhotoPicker([
+      XFile(
+        'missing-photo-does-not-exist.png',
+        name: 'missing.png',
+        mimeType: 'image/png',
+      ),
+    ]);
+    await tester.pumpWidget(_app(_FakeCreateItemService(), picker: picker));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 20)),
+    );
+    await tester.pump();
+
+    expect(find.byIcon(Icons.broken_image_outlined), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
   testWidgets('does not open the picker after photo permission is denied', (
     tester,
   ) async {

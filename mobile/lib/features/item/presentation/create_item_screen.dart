@@ -720,6 +720,9 @@ class _SelectedPhotoCardState extends State<_SelectedPhotoCard> {
                 FutureBuilder<Uint8List>(
                   future: _bytes,
                   builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return const _PhotoPreviewFallback();
+                    }
                     if (!snapshot.hasData) {
                       return const ColoredBox(
                         color: Color(0xFFFFF0D6),
