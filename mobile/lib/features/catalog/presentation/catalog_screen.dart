@@ -317,21 +317,23 @@ class _QuickFiltersState extends ConsumerState<_QuickFilters> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _FilterSheet(
-        categories: widget.categories,
-        range: _range,
-        categoryId: _categoryId,
-        sort: _sort,
-        area: _area,
-        radiusKm: _radiusKm,
-        minPrice: _minPrice,
-        maxPrice: _maxPrice,
-        onAvailabilityChanged: _selectAvailability,
-        onCategoryChanged: _selectCategory,
-        onSortChanged: _selectSort,
-        onAreaChanged: _selectArea,
-        onRadiusChanged: _selectRadius,
-        onPriceChanged: _selectPrice,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) => _FilterSheet(
+          categories: ref.watch(catalogCategoriesProvider),
+          range: _range,
+          categoryId: _categoryId,
+          sort: _sort,
+          area: _area,
+          radiusKm: _radiusKm,
+          minPrice: _minPrice,
+          maxPrice: _maxPrice,
+          onAvailabilityChanged: _selectAvailability,
+          onCategoryChanged: _selectCategory,
+          onSortChanged: _selectSort,
+          onAreaChanged: _selectArea,
+          onRadiusChanged: _selectRadius,
+          onPriceChanged: _selectPrice,
+        ),
       ),
     );
   }

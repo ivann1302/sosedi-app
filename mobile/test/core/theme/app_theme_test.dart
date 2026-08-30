@@ -9,6 +9,9 @@ void main() {
     final unselected = <WidgetState>{};
 
     expect(theme.textTheme.bodyMedium?.fontFamily, 'Onest');
+    expect(theme.textTheme.labelSmall?.fontSize, 13);
+    expect(theme.textTheme.labelSmall?.height, 18 / 13);
+    expect(theme.textTheme.labelSmall?.fontWeight, FontWeight.w600);
     expect(theme.scaffoldBackgroundColor, const Color(0xFFFFFFFF));
     expect(theme.colorScheme.surface, const Color(0xFFFFFFFF));
     expect(theme.appBarTheme.backgroundColor, const Color(0xFFFFFFFF));

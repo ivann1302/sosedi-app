@@ -255,7 +255,7 @@ class AppTheme {
         color: AppColors.textMuted,
         fontSize: 13,
         height: 18 / 13,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

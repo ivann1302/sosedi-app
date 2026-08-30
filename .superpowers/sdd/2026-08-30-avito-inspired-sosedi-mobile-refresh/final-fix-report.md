@@ -84,3 +84,38 @@ also caught Material's default white selected-chip checkmark on warm selection.
 - No remaining code or screenshot concern found in this wave.
 - Checklist 8.2 intentionally remains open for production MapKit and manual
   visual smoke on real iPhone/Android hardware.
+
+## Minor closure round — live catalog filters
+
+### RED
+
+Two new assertions failed for the intended review findings:
+
+- the exact 13/18 `labelSmall` theme role returned weight 500 instead of 600;
+- a filter sheet opened while `catalogCategoriesProvider` was pending kept its
+  progress indicator after the provider completed, because the modal retained
+  the opening `AsyncValue` snapshot.
+
+### GREEN
+
+- `labelSmall` now uses the approved 13/18 weight-600 contract. This also keeps
+  chat metadata on the approved label role.
+- The modal contains a narrow `Consumer` that watches
+  `catalogCategoriesProvider`; loading, error/retry and data now update in the
+  already-open sheet. Filter state, callbacks and sheet controls are unchanged.
+- The focused theme/catalog suite passes 23/23; the related
+  theme/catalog/accessibility/chat suite passes 31/31.
+
+### Fresh verification
+
+- `make mobile-analyze`: `No issues found`.
+- `make mobile-test`: 270/270.
+- `make mobile-screenshots`: 38/38 captures regenerated; only
+  `10-booking-chat.png` changed and was inspected at original 430×932 with no
+  clipping or hierarchy regression.
+- `make app-user-paths-check`: `references=40, files=38`.
+- Exact Task 9 compact six-file suite: 71/71.
+- Exact font/gradient scans have no matches; the shadow scan still has only the
+  approved FAB `elevation: 2` match.
+- Checklist 8.2 remains open; `.codex/HANDOFF.md` and the main-checkout user
+  file remain untouched.

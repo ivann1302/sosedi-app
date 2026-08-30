@@ -94,6 +94,36 @@ void main() {
     );
   });
 
+  testWidgets('updates categories while the filter sheet stays open', (
+    tester,
+  ) async {
+    final categories = Completer<List<CatalogCategory>>();
+    final service = _FakeCatalogService(
+      [_page([item])],
+      categories: categories.future,
+    );
+    await tester.pumpWidget(_app(service));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Фильтры'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('Инструменты'), findsNothing);
+
+    categories.complete([item.category]);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(
+      find.widgetWithText(ChoiceChip, 'Инструменты'),
+      findsOneWidget,
+    );
+    expect(find.text('Фильтры'), findsWidgets);
+  });
+
   testWidgets('keeps two catalog results reachable in a grid at 200% text', (
     tester,
   ) async {
@@ -650,9 +680,14 @@ CatalogState _state(
 }
 
 class _FakeCatalogService extends CatalogService {
-  _FakeCatalogService(this.responses) : super(Dio());
+  _FakeCatalogService(
+    this.responses, {
+    Future<List<CatalogCategory>>? categories,
+  }) : _categories = categories ?? Future.value([item.category]),
+       super(Dio());
 
   final List<Future<CatalogState> Function()> responses;
+  final Future<List<CatalogCategory>> _categories;
   final List<int> offsets = [];
   final List<String> searches = [];
   final List<String?> categoryIds = [];
@@ -695,7 +730,7 @@ class _FakeCatalogService extends CatalogService {
   }
 
   @override
-  Future<List<CatalogCategory>> fetchCategories() async => [item.category];
+  Future<List<CatalogCategory>> fetchCategories() => _categories;
 
   @override
   Future<List<String>> fetchAreas() async => ['Арбат', 'Хамовники'];
