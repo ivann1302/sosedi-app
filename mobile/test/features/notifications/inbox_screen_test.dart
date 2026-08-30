@@ -52,6 +52,50 @@ void main() {
     expect(find.text('Отзыв скрыт после проверки'), findsOneWidget);
     expect(find.textContaining('жалоб'), findsNothing);
   });
+
+  testWidgets('loads older events and applies the unread filter', (
+    tester,
+  ) async {
+    final service = _FakeInboxService();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [inboxServiceProvider.overrideWithValue(service)],
+        child: const MaterialApp(home: InboxScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ответ поддержки'), findsOneWidget);
+    expect(find.text('Бронирование подтверждено'), findsNothing);
+
+    await tester.tap(find.text('Показать ещё'));
+    await tester.pumpAndSettle();
+    expect(find.text('Бронирование подтверждено'), findsOneWidget);
+
+    await tester.tap(find.text('Непрочитанные'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ответ поддержки'), findsOneWidget);
+    expect(find.text('Бронирование подтверждено'), findsNothing);
+    expect(service.unreadOnlyValues, [false, false, true]);
+  });
+
+  testWidgets('marks all inbox events read from the app bar', (tester) async {
+    final service = _FakeInboxService();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [inboxServiceProvider.overrideWithValue(service)],
+        child: const MaterialApp(home: InboxScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Новое'), findsOneWidget);
+    await tester.tap(find.byTooltip('Прочитать всё'));
+    await tester.pumpAndSettle();
+
+    expect(service.markAllReadCalls, 1);
+    expect(find.text('Новое'), findsNothing);
+  });
 }
 
 class _FakeInboxService extends InboxService {
@@ -60,9 +104,46 @@ class _FakeInboxService extends InboxService {
   final InboxEvent? value;
 
   var markReadCalls = 0;
+  final List<bool> unreadOnlyValues = [];
+  var markAllReadCalls = 0;
+  var allRead = false;
 
   @override
   Future<List<InboxEvent>> list() async => [value ?? event];
+
+  @override
+  Future<InboxPage> listPage({
+    int limit = 20,
+    String? cursor,
+    bool unreadOnly = false,
+  }) async {
+    unreadOnlyValues.add(unreadOnly);
+    if (unreadOnly) {
+      return InboxPage(
+        items: allRead ? [] : [value ?? event],
+        nextCursor: null,
+      );
+    }
+    if (cursor != null) {
+      return InboxPage(items: [readEvent], nextCursor: null);
+    }
+    final first = value ?? event;
+    return InboxPage(
+      items: [
+        allRead
+            ? first.copyWith(readAt: DateTime.utc(2026, 8, 30, 12, 5))
+            : first,
+      ],
+      nextCursor: value == null ? 'cursor-2' : null,
+    );
+  }
+
+  @override
+  Future<int> markAllRead() async {
+    markAllReadCalls += 1;
+    allRead = true;
+    return 1;
+  }
 
   @override
   Future<InboxEvent> markRead(String eventId) async {
@@ -93,4 +174,14 @@ final reviewEvent = InboxEvent(
   eventType: 'REVIEW_HIDDEN_BY_REPORT_REVIEW',
   readAt: null,
   createdAt: DateTime.utc(2026, 8, 9, 12),
+);
+
+final readEvent = InboxEvent(
+  eventId: '79db0bf1-f6ce-4d89-909f-f76d42e45940',
+  bookingId: 'booking-2',
+  supportTicketId: null,
+  itemId: null,
+  eventType: 'BOOKING_CONFIRMED',
+  readAt: DateTime.utc(2026, 8, 8, 12, 5),
+  createdAt: DateTime.utc(2026, 8, 8, 12),
 );

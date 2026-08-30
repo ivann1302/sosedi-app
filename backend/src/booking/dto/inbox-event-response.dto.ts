@@ -24,6 +24,19 @@ export class InboxEventResponseDto {
   createdAt: Date;
 }
 
+export class InboxPageResponseDto {
+  @ApiProperty({ type: [InboxEventResponseDto] })
+  items: InboxEventResponseDto[];
+
+  @ApiProperty({ format: 'uuid', nullable: true, type: String })
+  nextCursor: string | null;
+}
+
+export class InboxMarkAllReadResponseDto {
+  @ApiProperty({ minimum: 0, type: 'integer' })
+  updated: number;
+}
+
 export class InboxBookingDetailsDto {
   @ApiProperty({ format: 'uuid' })
   id: string;

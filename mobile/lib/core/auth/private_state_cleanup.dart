@@ -13,6 +13,7 @@ import '../../features/item/domain/create_item_controller.dart';
 import '../../features/item/domain/edit_item_controller.dart';
 import '../../features/notifications/data/inbox_service.dart';
 import '../../features/notifications/domain/inbox_open_controller.dart';
+import '../../features/notifications/domain/inbox_controller.dart';
 import '../../features/notifications/domain/notification_navigation_controller.dart';
 import '../../features/profile/data/profile_service.dart';
 import '../../features/profile/domain/account_closure_controller.dart';
@@ -44,6 +45,7 @@ final privateStateCleanupProvider = Provider<void>((ref) {
       ref.invalidate(bookingActionProvider);
       ref.invalidate(bookingAvailabilityProvider);
       ref.invalidate(inboxEventsProvider);
+      ref.invalidate(inboxControllerProvider);
       ref.invalidate(inboxOpenProvider);
       ref.invalidate(supportTicketsProvider);
       ref.invalidate(supportTicketProvider);

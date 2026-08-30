@@ -46,3 +46,16 @@ Map<String, dynamic> _$InboxEventDetailsToJson(_InboxEventDetails instance) =>
       'supportTicketId': instance.supportTicketId,
       'itemId': instance.itemId,
     };
+
+_InboxPage _$InboxPageFromJson(Map<String, dynamic> json) => _InboxPage(
+  items: (json['items'] as List<dynamic>)
+      .map((e) => InboxEvent.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  nextCursor: json['nextCursor'] as String?,
+);
+
+Map<String, dynamic> _$InboxPageToJson(_InboxPage instance) =>
+    <String, dynamic>{
+      'items': instance.items,
+      'nextCursor': instance.nextCursor,
+    };

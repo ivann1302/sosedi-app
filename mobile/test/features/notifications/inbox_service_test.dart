@@ -174,7 +174,62 @@ void main() {
       ),
     );
   });
+
+  test('loads an unread cursor page from the inbox API', () async {
+    final adapter = CallbackAdapter((options) {
+      expect(options.method, 'GET');
+      expect(options.path, '/inbox/page');
+      expect(options.queryParameters, {
+        'limit': 1,
+        'cursor': '11111111-1111-4111-8111-111111111111',
+        'unreadOnly': true,
+      });
+      return jsonResponse({
+        'success': true,
+        'data': {
+          'items': [pagedInboxEventJson],
+          'nextCursor': '21111111-1111-4111-8111-111111111111',
+        },
+        'error': null,
+      });
+    });
+    final service = InboxService(Dio()..httpClientAdapter = adapter);
+
+    final page = await service.listPage(
+      limit: 1,
+      cursor: '11111111-1111-4111-8111-111111111111',
+      unreadOnly: true,
+    );
+
+    expect(page.items.single.eventType, 'BOOKING_CONFIRMED');
+    expect(page.nextCursor, '21111111-1111-4111-8111-111111111111');
+  });
+
+  test('marks all unread inbox events through the self endpoint', () async {
+    final adapter = CallbackAdapter((options) {
+      expect(options.method, 'PATCH');
+      expect(options.path, '/inbox/read-all');
+      return jsonResponse({
+        'success': true,
+        'data': {'updated': 3},
+        'error': null,
+      });
+    });
+    final service = InboxService(Dio()..httpClientAdapter = adapter);
+
+    await expectLater(service.markAllRead(), completion(3));
+  });
 }
+
+final pagedInboxEventJson = <String, Object?>{
+  'eventId': '31111111-1111-4111-8111-111111111111',
+  'bookingId': '41111111-1111-4111-8111-111111111111',
+  'supportTicketId': null,
+  'itemId': null,
+  'eventType': 'BOOKING_CONFIRMED',
+  'readAt': null,
+  'createdAt': '2026-08-30T10:00:00.000Z',
+};
 
 Map<String, Object?> inboxEventJson(String eventId, {String? readAt}) => {
   'eventId': eventId,

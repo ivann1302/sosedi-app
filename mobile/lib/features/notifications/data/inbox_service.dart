@@ -11,7 +11,8 @@ final inboxServiceProvider = Provider<InboxService>((ref) {
 });
 
 final inboxEventsProvider = FutureProvider.autoDispose<List<InboxEvent>>(
-  (ref) => ref.watch(inboxServiceProvider).list(),
+  (ref) async =>
+      (await ref.watch(inboxServiceProvider).listPage(limit: 50)).items,
   retry: (_, _) => null,
 );
 
@@ -31,6 +32,28 @@ class InboxService {
     return _data(envelope, 'Не удалось загрузить уведомления');
   }
 
+  Future<InboxPage> listPage({
+    int limit = 20,
+    String? cursor,
+    bool unreadOnly = false,
+  }) async {
+    final body = await _request(
+      () => _dio.get(
+        '/inbox/page',
+        queryParameters: {
+          'limit': limit,
+          'cursor': ?cursor,
+          if (unreadOnly) 'unreadOnly': true,
+        },
+      ),
+    );
+    final envelope = ApiEnvelope<InboxPage>.fromJson(
+      body,
+      (json) => InboxPage.fromJson(json! as Map<String, dynamic>),
+    );
+    return _data(envelope, 'Не удалось загрузить уведомления');
+  }
+
   Future<InboxEvent> markRead(String eventId) async {
     final body = await _request(() => _dio.patch('/inbox/$eventId/read'));
     final envelope = ApiEnvelope<InboxEvent>.fromJson(
@@ -38,6 +61,23 @@ class InboxService {
       (json) => InboxEvent.fromJson(json! as Map<String, dynamic>),
     );
     return _data(envelope, 'Не удалось отметить уведомление');
+  }
+
+  Future<int> markAllRead() async {
+    final body = await _request(() => _dio.patch('/inbox/read-all'));
+    final envelope = ApiEnvelope<Map<String, dynamic>>.fromJson(
+      body,
+      (json) => json! as Map<String, dynamic>,
+    );
+    final data = _data(envelope, 'Не удалось отметить уведомления');
+    final updated = data['updated'];
+    if (updated is! int) {
+      throw const ApiException(
+        code: 'INVALID_RESPONSE',
+        message: 'Не удалось прочитать результат',
+      );
+    }
+    return updated;
   }
 
   Future<String?> resolveNavigationPath(String eventId) async {

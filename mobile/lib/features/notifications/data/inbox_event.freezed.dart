@@ -567,4 +567,276 @@ as String?,
 
 }
 
+
+/// @nodoc
+mixin _$InboxPage {
+
+ List<InboxEvent> get items; String? get nextCursor;
+/// Create a copy of InboxPage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$InboxPageCopyWith<InboxPage> get copyWith => _$InboxPageCopyWithImpl<InboxPage>(this as InboxPage, _$identity);
+
+  /// Serializes this InboxPage to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InboxPage&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(items),nextCursor);
+
+@override
+String toString() {
+  return 'InboxPage(items: $items, nextCursor: $nextCursor)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $InboxPageCopyWith<$Res>  {
+  factory $InboxPageCopyWith(InboxPage value, $Res Function(InboxPage) _then) = _$InboxPageCopyWithImpl;
+@useResult
+$Res call({
+ List<InboxEvent> items, String? nextCursor
+});
+
+
+
+
+}
+/// @nodoc
+class _$InboxPageCopyWithImpl<$Res>
+    implements $InboxPageCopyWith<$Res> {
+  _$InboxPageCopyWithImpl(this._self, this._then);
+
+  final InboxPage _self;
+  final $Res Function(InboxPage) _then;
+
+/// Create a copy of InboxPage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? items = null,Object? nextCursor = freezed,}) {
+  return _then(_self.copyWith(
+items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
+as List<InboxEvent>,nextCursor: freezed == nextCursor ? _self.nextCursor : nextCursor // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [InboxPage].
+extension InboxPagePatterns on InboxPage {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _InboxPage value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _InboxPage() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _InboxPage value)  $default,){
+final _that = this;
+switch (_that) {
+case _InboxPage():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _InboxPage value)?  $default,){
+final _that = this;
+switch (_that) {
+case _InboxPage() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<InboxEvent> items,  String? nextCursor)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _InboxPage() when $default != null:
+return $default(_that.items,_that.nextCursor);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<InboxEvent> items,  String? nextCursor)  $default,) {final _that = this;
+switch (_that) {
+case _InboxPage():
+return $default(_that.items,_that.nextCursor);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<InboxEvent> items,  String? nextCursor)?  $default,) {final _that = this;
+switch (_that) {
+case _InboxPage() when $default != null:
+return $default(_that.items,_that.nextCursor);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _InboxPage implements InboxPage {
+  const _InboxPage({required final  List<InboxEvent> items, required this.nextCursor}): _items = items;
+  factory _InboxPage.fromJson(Map<String, dynamic> json) => _$InboxPageFromJson(json);
+
+ final  List<InboxEvent> _items;
+@override List<InboxEvent> get items {
+  if (_items is EqualUnmodifiableListView) return _items;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_items);
+}
+
+@override final  String? nextCursor;
+
+/// Create a copy of InboxPage
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$InboxPageCopyWith<_InboxPage> get copyWith => __$InboxPageCopyWithImpl<_InboxPage>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$InboxPageToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InboxPage&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.nextCursor, nextCursor) || other.nextCursor == nextCursor));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_items),nextCursor);
+
+@override
+String toString() {
+  return 'InboxPage(items: $items, nextCursor: $nextCursor)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$InboxPageCopyWith<$Res> implements $InboxPageCopyWith<$Res> {
+  factory _$InboxPageCopyWith(_InboxPage value, $Res Function(_InboxPage) _then) = __$InboxPageCopyWithImpl;
+@override @useResult
+$Res call({
+ List<InboxEvent> items, String? nextCursor
+});
+
+
+
+
+}
+/// @nodoc
+class __$InboxPageCopyWithImpl<$Res>
+    implements _$InboxPageCopyWith<$Res> {
+  __$InboxPageCopyWithImpl(this._self, this._then);
+
+  final _InboxPage _self;
+  final $Res Function(_InboxPage) _then;
+
+/// Create a copy of InboxPage
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? items = null,Object? nextCursor = freezed,}) {
+  return _then(_InboxPage(
+items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
+as List<InboxEvent>,nextCursor: freezed == nextCursor ? _self.nextCursor : nextCursor // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
 // dart format on

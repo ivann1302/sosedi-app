@@ -2,8 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   InboxEventDetailsResponseDto,
+  InboxPageResponseDto,
   InboxEventResponseDto,
 } from './dto/inbox-event-response.dto';
+import { InboxPageQueryDto } from './dto/inbox-page-query.dto';
+
+const DEFAULT_PAGE_LIMIT = 20;
 
 @Injectable()
 export class InboxService {
@@ -23,6 +27,58 @@ export class InboxService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async listPage(
+    recipientId: string,
+    query: InboxPageQueryDto,
+  ): Promise<InboxPageResponseDto> {
+    const limit = query.limit ?? DEFAULT_PAGE_LIMIT;
+    if (query.cursor) {
+      const cursor = await this.prisma.inboxEvent.findFirst({
+        where: { id: query.cursor, recipientId },
+        select: { id: true },
+      });
+      if (!cursor) {
+        throw new NotFoundException('Страница событий не найдена');
+      }
+    }
+
+    const rows = await this.prisma.inboxEvent.findMany({
+      where: {
+        recipientId,
+        ...(query.unreadOnly ? { readAt: null } : {}),
+      },
+      select: {
+        id: true,
+        eventId: true,
+        bookingId: true,
+        supportTicketId: true,
+        itemId: true,
+        eventType: true,
+        readAt: true,
+        createdAt: true,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      cursor: query.cursor ? { id: query.cursor } : undefined,
+      skip: query.cursor ? 1 : undefined,
+    });
+    const hasMore = rows.length > limit;
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+      items: pageRows.map((row) => ({
+        eventId: row.eventId,
+        bookingId: row.bookingId,
+        supportTicketId: row.supportTicketId,
+        itemId: row.itemId,
+        eventType: row.eventType,
+        readAt: row.readAt,
+        createdAt: row.createdAt,
+      })),
+      nextCursor: hasMore ? (pageRows.at(-1)?.id ?? null) : null,
+    };
   }
 
   async getDetails(
@@ -115,5 +171,13 @@ export class InboxService {
         createdAt: true,
       },
     });
+  }
+
+  async markAllRead(recipientId: string): Promise<{ updated: number }> {
+    const result = await this.prisma.inboxEvent.updateMany({
+      where: { recipientId, readAt: null },
+      data: { readAt: new Date() },
+    });
+    return { updated: result.count };
   }
 }

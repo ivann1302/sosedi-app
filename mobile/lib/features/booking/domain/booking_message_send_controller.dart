@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/identifiers/uuid_v4.dart';
 import '../../notifications/data/inbox_service.dart';
+import '../../notifications/domain/inbox_controller.dart';
 import '../data/booking_models.dart';
 import '../data/booking_service.dart';
 
@@ -46,6 +47,7 @@ class BookingMessageSendController extends AsyncNotifier<BookingMessage?> {
     _clientMessageId = null;
     ref.invalidate(bookingMessagesProvider(bookingId));
     ref.invalidate(inboxEventsProvider);
+    ref.invalidate(inboxControllerProvider);
     return true;
   }
 }

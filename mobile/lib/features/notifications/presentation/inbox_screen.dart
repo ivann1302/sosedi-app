@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_exception.dart';
 import '../data/inbox_event.dart';
 import '../data/inbox_service.dart';
+import '../domain/inbox_controller.dart';
 import '../domain/inbox_open_controller.dart';
 
 class InboxScreen extends ConsumerWidget {
@@ -12,14 +13,37 @@ class InboxScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(inboxEventsProvider);
+    final events = ref.watch(inboxControllerProvider);
     final opening = ref.watch(inboxOpenProvider);
+    final inbox = events.value;
+    final hasUnread =
+        inbox?.items.any((event) => event.readAt == null) ?? false;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Уведомления'),
         actions: [
           IconButton(
-            onPressed: () => ref.invalidate(inboxEventsProvider),
+            onPressed: hasUnread && inbox?.isMarkingAllRead != true
+                ? () async {
+                    await ref
+                        .read(inboxControllerProvider.notifier)
+                        .markAllRead();
+                    ref.invalidate(inboxEventsProvider);
+                  }
+                : null,
+            tooltip: 'Прочитать всё',
+            icon: inbox?.isMarkingAllRead == true
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.done_all),
+          ),
+          IconButton(
+            onPressed: () {
+              ref.invalidate(inboxControllerProvider);
+              ref.invalidate(inboxEventsProvider);
+            },
             tooltip: 'Обновить',
             icon: const Icon(Icons.refresh),
           ),
@@ -33,30 +57,84 @@ class InboxScreen extends ConsumerWidget {
               error,
               fallback: 'Не удалось загрузить уведомления',
             ),
-            onRetry: () => ref.invalidate(inboxEventsProvider),
+            onRetry: () => ref.invalidate(inboxControllerProvider),
           ),
-          data: (values) => values.isEmpty
-              ? const Center(child: Text('Уведомлений пока нет'))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: values.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final event = values[index];
-                    return Card(
-                      child: ListTile(
-                        enabled: !opening.isLoading,
-                        onTap: () => _open(context, ref, event),
-                        leading: Icon(_icon(event.eventType)),
-                        title: Text(_title(event.eventType)),
-                        subtitle: Text(_time(event.createdAt)),
-                        trailing: event.readAt == null
-                            ? const Chip(label: Text('Новое'))
-                            : const Icon(Icons.chevron_right),
-                      ),
-                    );
-                  },
+          data: (value) => Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: FilterChip(
+                    label: const Text('Непрочитанные'),
+                    selected: value.unreadOnly,
+                    onSelected: (selected) => ref
+                        .read(inboxControllerProvider.notifier)
+                        .setUnreadOnly(selected),
+                  ),
                 ),
+              ),
+              Expanded(
+                child: value.items.isEmpty
+                    ? Center(
+                        child: Text(
+                          value.unreadOnly
+                              ? 'Непрочитанных уведомлений нет'
+                              : 'Уведомлений пока нет',
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () async {
+                          final _ = await ref.refresh(
+                            inboxControllerProvider.future,
+                          );
+                          ref.invalidate(inboxEventsProvider);
+                        },
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount:
+                              value.items.length +
+                              (value.nextCursor != null ||
+                                      value.loadMoreError != null
+                                  ? 1
+                                  : 0),
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            if (index == value.items.length) {
+                              return Center(
+                                child: value.isLoadingMore
+                                    ? const CircularProgressIndicator()
+                                    : OutlinedButton(
+                                        onPressed: () => ref
+                                            .read(
+                                              inboxControllerProvider.notifier,
+                                            )
+                                            .loadMore(),
+                                        child: Text(
+                                          value.loadMoreError ?? 'Показать ещё',
+                                        ),
+                                      ),
+                              );
+                            }
+                            final event = value.items[index];
+                            return Card(
+                              child: ListTile(
+                                enabled: !opening.isLoading,
+                                onTap: () => _open(context, ref, event),
+                                leading: Icon(_icon(event.eventType)),
+                                title: Text(_title(event.eventType)),
+                                subtitle: Text(_time(event.createdAt)),
+                                trailing: event.readAt == null
+                                    ? const Chip(label: Text('Новое'))
+                                    : const Icon(Icons.chevron_right),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

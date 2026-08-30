@@ -207,6 +207,7 @@ void main() {
     () => _scope(
       _mainPath(3, const InboxScreen()),
       overrides: [
+        inboxServiceProvider.overrideWithValue(_ScreenshotInboxService()),
         inboxEventsProvider.overrideWith((ref) async => _inboxEvents),
       ],
     ),
@@ -475,6 +476,27 @@ class _ScreenshotBookingService extends BookingService {
 
   @override
   Future<void> markMessagesRead(String bookingId) async {}
+}
+
+class _ScreenshotInboxService extends InboxService {
+  _ScreenshotInboxService() : super(Dio());
+
+  @override
+  Future<InboxPage> listPage({
+    int limit = 50,
+    String? cursor,
+    bool unreadOnly = false,
+  }) async {
+    return InboxPage(
+      items: unreadOnly
+          ? _inboxEvents.where((event) => event.readAt == null).toList()
+          : _inboxEvents,
+      nextCursor: null,
+    );
+  }
+
+  @override
+  Future<int> markAllRead() async => _inboxEvents.length;
 }
 
 class _ScreenshotDraftStorage extends CreateItemDraftStorage {

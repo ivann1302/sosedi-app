@@ -7,6 +7,7 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../notifications/data/inbox_service.dart';
+import '../../notifications/domain/inbox_controller.dart';
 import '../../safety/domain/safety_action_controller.dart';
 import '../../safety/presentation/report_dialog.dart';
 import '../data/booking_models.dart';
@@ -19,8 +20,7 @@ class BookingChatScreen extends ConsumerStatefulWidget {
   final String bookingId;
 
   @override
-  ConsumerState<BookingChatScreen> createState() =>
-      _BookingChatScreenState();
+  ConsumerState<BookingChatScreen> createState() => _BookingChatScreenState();
 }
 
 class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
@@ -103,9 +103,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
               ..._olderMessages,
               ...value.items,
             ]);
-            final nextCursor = _loadedOlder
-                ? _olderCursor
-                : value.nextCursor;
+            final nextCursor = _loadedOlder ? _olderCursor : value.nextCursor;
             return Column(
               children: [
                 Expanded(
@@ -201,6 +199,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
     try {
       await ref.read(bookingServiceProvider).markMessagesRead(widget.bookingId);
       ref.invalidate(inboxEventsProvider);
+      ref.invalidate(inboxControllerProvider);
     } catch (_) {
       // Chat reading remains available offline; inbox will retry on refresh.
     }
@@ -247,10 +246,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
     }
     final sent = await ref
         .read(bookingMessageSendProvider.notifier)
-        .send(
-          bookingId: widget.bookingId,
-          body: form.value['body']! as String,
-        );
+        .send(bookingId: widget.bookingId, body: form.value['body']! as String);
     if (sent && mounted) {
       form.reset();
       await _refresh();
@@ -285,10 +281,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
               ? 'Жалоба отправлена'
               : error == null
               ? 'Действие уже выполняется'
-              : userFacingError(
-                  error,
-                  fallback: 'Не удалось отправить жалобу',
-                ),
+              : userFacingError(error, fallback: 'Не удалось отправить жалобу'),
         ),
       ),
     );
@@ -320,12 +313,15 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
     }
     setState(() => _blocking = true);
     try {
-      await ref.read(bookingServiceProvider).blockCounterparty(widget.bookingId);
+      await ref
+          .read(bookingServiceProvider)
+          .blockCounterparty(widget.bookingId);
       ref
         ..invalidate(bookingDetailsProvider(widget.bookingId))
         ..invalidate(myBookingsProvider)
         ..invalidate(bookingMessagesProvider(widget.bookingId))
-        ..invalidate(inboxEventsProvider);
+        ..invalidate(inboxEventsProvider)
+        ..invalidate(inboxControllerProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Собеседник заблокирован')),
@@ -401,9 +397,7 @@ class _Composer extends StatelessWidget {
                     error!,
                     fallback: 'Не удалось отправить сообщение',
                   ),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             const SizedBox(height: 8),
@@ -471,10 +465,7 @@ class _MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(message.body),
-            ),
+            Align(alignment: Alignment.centerLeft, child: Text(message.body)),
             const SizedBox(height: 4),
             Text(
               _time(message.createdAt),

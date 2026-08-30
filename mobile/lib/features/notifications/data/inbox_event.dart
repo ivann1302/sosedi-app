@@ -32,3 +32,14 @@ abstract class InboxEventDetails with _$InboxEventDetails {
   factory InboxEventDetails.fromJson(Map<String, dynamic> json) =>
       _$InboxEventDetailsFromJson(json);
 }
+
+@freezed
+abstract class InboxPage with _$InboxPage {
+  const factory InboxPage({
+    required List<InboxEvent> items,
+    required String? nextCursor,
+  }) = _InboxPage;
+
+  factory InboxPage.fromJson(Map<String, dynamic> json) =>
+      _$InboxPageFromJson(json);
+}

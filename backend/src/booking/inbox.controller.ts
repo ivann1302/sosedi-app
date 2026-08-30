@@ -4,6 +4,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
@@ -16,8 +17,11 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { ok, type ApiResponse } from '../common/http/api-response';
 import {
   InboxEventDetailsResponseDto,
+  InboxMarkAllReadResponseDto,
+  InboxPageResponseDto,
   InboxEventResponseDto,
 } from './dto/inbox-event-response.dto';
+import { InboxPageQueryDto } from './dto/inbox-page-query.dto';
 import { InboxService } from './inbox.service';
 
 @ApiTags('inbox')
@@ -34,6 +38,23 @@ export class InboxController {
     @CurrentUser() user: AuthUser,
   ): Promise<ApiResponse<InboxEventResponseDto[]>> {
     return ok(await this.inbox.list(user.id));
+  }
+
+  @ApiOkResponse({ type: InboxPageResponseDto })
+  @Get('page')
+  async listPage(
+    @CurrentUser() user: AuthUser,
+    @Query() query: InboxPageQueryDto,
+  ): Promise<ApiResponse<InboxPageResponseDto>> {
+    return ok(await this.inbox.listPage(user.id, query));
+  }
+
+  @ApiOkResponse({ type: InboxMarkAllReadResponseDto })
+  @Patch('read-all')
+  async markAllRead(
+    @CurrentUser() user: AuthUser,
+  ): Promise<ApiResponse<InboxMarkAllReadResponseDto>> {
+    return ok(await this.inbox.markAllRead(user.id));
   }
 
   @ApiOkResponse({ type: InboxEventDetailsResponseDto })
