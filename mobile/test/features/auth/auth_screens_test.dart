@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/auth/data/auth_models.dart';
 import 'package:mobile/features/auth/domain/auth_controller.dart';
 import 'package:mobile/features/auth/domain/auth_state.dart';
@@ -41,7 +42,7 @@ void main() {
     await _pumpScreen(tester, controller, const PhoneScreen());
 
     final button = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Получить код'),
+      find.byKey(const ValueKey('auth-primary-action')),
     );
 
     expect(button.onPressed, isNull);
@@ -66,6 +67,22 @@ void main() {
       find.widgetWithText(FilledButton, 'Получить код'),
     );
     expect(button.onPressed, isNotNull);
+  });
+
+  testWidgets('keeps the phone action reachable at compact 200% text', (
+    tester,
+  ) async {
+    final controller = _ScreenAuthController(const AuthState.unauthenticated());
+    await _pumpCompactScreen(tester, controller, const PhoneScreen());
+
+    expect(tester.takeException(), isNull);
+    await tester.enterText(find.byType(EditableText), '+7 999 123 45 67');
+    final action = find.byKey(const ValueKey('auth-primary-action'));
+    await tester.ensureVisible(action);
+    await tester.pump();
+
+    expect(action.hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('does not verify an invalid OTP', (tester) async {
@@ -99,6 +116,22 @@ void main() {
       find.widgetWithText(FilledButton, 'Продолжить'),
     );
     expect(button.onPressed, isNotNull);
+  });
+
+  testWidgets('keeps the OTP action reachable at compact 200% text', (
+    tester,
+  ) async {
+    final controller = _ScreenAuthController(codeSentState);
+    await _pumpCompactScreen(tester, controller, const OtpScreen());
+
+    expect(tester.takeException(), isNull);
+    await tester.enterText(find.byType(EditableText), '123456');
+    final action = find.byKey(const ValueKey('auth-primary-action'));
+    await tester.ensureVisible(action);
+    await tester.pump();
+
+    expect(action.hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('opens find after successful OTP verification', (tester) async {
@@ -188,6 +221,32 @@ Future<void> _pumpScreen(
     ProviderScope(
       overrides: [authControllerProvider.overrideWith(() => controller)],
       child: MaterialApp(home: screen),
+    ),
+  );
+  await tester.pump();
+}
+
+Future<void> _pumpCompactScreen(
+  WidgetTester tester,
+  _ScreenAuthController controller,
+  Widget screen,
+) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = const Size(320, 720);
+  addTearDown(tester.view.reset);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [authControllerProvider.overrideWith(() => controller)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: screen,
+      ),
     ),
   );
   await tester.pump();

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile/core/permissions/app_permissions.dart';
+import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/support/data/support_models.dart';
 import 'package:mobile/features/support/data/support_service.dart';
 import 'package:mobile/features/support/presentation/support_screen.dart';
@@ -37,6 +38,57 @@ void main() {
     expect(service.created, hasLength(1));
     expect(find.text('Вопрос о профиле'), findsOneWidget);
     expect(find.text('Открыто'), findsOneWidget);
+  });
+
+  testWidgets('keeps the support action reachable at compact 200% text', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 720);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          supportServiceProvider.overrideWithValue(_FakeSupportService()),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const SupportScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Тема'),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.enterText(
+      find.byType(FormBuilderTextField).at(0),
+      'Вопрос о профиле',
+    );
+    await tester.scrollUntilVisible(
+      find.text('Опишите вопрос'),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.enterText(
+      find.byType(FormBuilderTextField).last,
+      'Не получается изменить имя в профиле.',
+    );
+    final action = find.byKey(const ValueKey('support-primary-action'));
+    await tester.pump();
+
+    expect(action.hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('retries the support list after an error', (tester) async {

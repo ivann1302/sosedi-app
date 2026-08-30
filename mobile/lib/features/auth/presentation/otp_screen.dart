@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/auth_intent.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/sosedi_logo.dart';
 import '../domain/auth_controller.dart';
 import '../domain/auth_state.dart';
 import '../domain/auth_validators.dart';
@@ -48,14 +47,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
           child: FormBuilder(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SosediLogo(markSize: 28),
-                const SizedBox(height: 48),
                 Text(
                   'Введите код',
                   style: Theme.of(context).textTheme.displaySmall,
@@ -95,19 +92,24 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       color: Theme.of(context).colorScheme.error,
                     ),
                   ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: authState.isSubmitting ? null : _submit,
-                  icon: authState.isSubmitting
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.check),
-                  label: const Text('Продолжить'),
-                ),
               ],
             ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: FilledButton(
+            key: const ValueKey('auth-primary-action'),
+            onPressed: authState.isSubmitting ? null : _submit,
+            child: authState.isSubmitting
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Продолжить', textAlign: TextAlign.center),
           ),
         ),
       ),

@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/auth_intent.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../shared/widgets/sosedi_logo.dart';
 import '../domain/auth_controller.dart';
 import '../domain/auth_state.dart';
 import '../domain/auth_validators.dart';
@@ -40,29 +39,12 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
           child: FormBuilder(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SosediLogo(markSize: 32),
-                const SizedBox(height: 52),
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.warmSand,
-                    borderRadius: BorderRadius.circular(AppRadii.medium),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.phone_iphone_rounded,
-                    size: 36,
-                    color: AppColors.slate800,
-                  ),
-                ),
-                const SizedBox(height: 24),
                 Text(
                   'Рады видеть вас',
                   style: Theme.of(context).textTheme.displaySmall,
@@ -102,17 +84,6 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                       color: Theme.of(context).colorScheme.error,
                     ),
                   ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: authState.isSubmitting ? null : _submit,
-                  icon: authState.isSubmitting
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.sms),
-                  label: const Text('Получить код'),
-                ),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () =>
@@ -127,6 +98,22 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: FilledButton(
+            key: const ValueKey('auth-primary-action'),
+            onPressed: authState.isSubmitting ? null : _submit,
+            child: authState.isSubmitting
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Получить код', textAlign: TextAlign.center),
           ),
         ),
       ),

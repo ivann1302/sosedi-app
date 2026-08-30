@@ -71,7 +71,7 @@ class _SupportTicketScreenState extends ConsumerState<SupportTicketScreen> {
     final messages = ref.watch(supportMessagesProvider(widget.ticketId));
     final sending = ref.watch(supportMessageCreateProvider);
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         Text(ticket.subject, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 4),
@@ -271,29 +271,46 @@ class _MessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 4),
-            Text(body),
-            if (attachments.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              for (var index = 0; index < attachments.length; index += 1)
-                TextButton.icon(
-                  onPressed: onOpenAttachment == null
-                      ? null
-                      : () => onOpenAttachment!(attachments[index]),
-                  icon: const Icon(Icons.image_outlined),
-                  label: Text('Открыть вложение ${index + 1}'),
-                ),
-            ],
-          ],
+    final isUser = label == 'Вы';
+    return Column(
+      children: [
+        Align(
+          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.82,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                crossAxisAlignment: isUser
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: Theme.of(context).textTheme.labelLarge),
+                  const SizedBox(height: 4),
+                  Text(
+                    body,
+                    textAlign: isUser ? TextAlign.right : TextAlign.left,
+                  ),
+                  if (attachments.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    for (var index = 0; index < attachments.length; index += 1)
+                      TextButton.icon(
+                        onPressed: onOpenAttachment == null
+                            ? null
+                            : () => onOpenAttachment!(attachments[index]),
+                        icon: const Icon(Icons.image_outlined),
+                        label: Text('Открыть вложение ${index + 1}'),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
+        const Divider(height: 1),
+      ],
     );
   }
 }

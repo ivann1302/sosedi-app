@@ -33,12 +33,6 @@ class UpdateRequiredScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.system_update_alt,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 24),
                   Text(
                     'Нужно обновить приложение',
                     style: Theme.of(context).textTheme.headlineMedium,

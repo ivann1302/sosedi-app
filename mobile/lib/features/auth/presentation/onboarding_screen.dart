@@ -25,15 +25,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       title: 'Всё нужное уже рядом',
       text:
           'Берите вещи у соседей, когда покупать их ради одного раза не хочется.',
-      usesBrandMark: true,
     ),
     _OnboardingSlide(
-      icon: Icons.verified_user,
+      icon: Icons.shield_outlined,
       title: 'Надежные сделки',
       text: 'Профили, модерация и понятные правила для обеих сторон аренды.',
     ),
     _OnboardingSlide(
-      icon: Icons.map,
+      icon: Icons.search_rounded,
       title: 'Быстрый поиск',
       text: 'Карта и каталог помогут найти подходящую вещь поблизости.',
     ),
@@ -52,7 +51,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -77,26 +76,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 152,
-                          height: 152,
-                          decoration: BoxDecoration(
-                            color: AppColors.warmSand,
-                            borderRadius: BorderRadius.circular(AppRadii.large),
-                          ),
-                          alignment: Alignment.center,
-                          child: slide.usesBrandMark
-                              ? const SosediLogo(
-                                  markSize: 82,
-                                  showWordmark: false,
-                                )
-                              : Icon(
-                                  slide.icon,
-                                  size: 64,
-                                  color: AppColors.slate800,
-                                ),
-                        ),
-                        const SizedBox(height: 32),
+                        Icon(slide.icon, size: 72, color: AppColors.slate800),
+                        const SizedBox(height: 24),
                         Text(
                           slide.title,
                           textAlign: TextAlign.center,
@@ -115,28 +96,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  for (var index = 0; index < _slides.length; index++)
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: index == _page ? 24 : 8,
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: index == _page
-                            ? AppColors.brand500
-                            : AppColors.line,
-                        borderRadius: BorderRadius.circular(8),
+                  Text(
+                    '${_page + 1} из ${_slides.length}',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: (_page + 1) / _slides.length,
+                        minHeight: 2,
                       ),
                     ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
-              FilledButton.icon(
+              FilledButton(
                 onPressed: () => _continue(isLastPage),
-                icon: Icon(isLastPage ? Icons.search : Icons.arrow_forward),
-                label: Text(isLastPage ? 'Смотреть вещи' : 'Далее'),
+                child: Text(isLastPage ? 'Смотреть вещи' : 'Далее'),
               ),
             ],
           ),
@@ -170,11 +150,9 @@ class _OnboardingSlide {
     required this.icon,
     required this.title,
     required this.text,
-    this.usesBrandMark = false,
   });
 
   final IconData icon;
   final String title;
   final String text;
-  final bool usesBrandMark;
 }

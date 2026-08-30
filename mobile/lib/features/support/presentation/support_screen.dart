@@ -31,17 +31,20 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
       appBar: AppBar(title: const Text('Поддержка')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            const Card(
-              child: ListTile(
-                leading: Icon(Icons.info_outline),
-                title: Text('Обычное обращение'),
-                subtitle: Text(
-                  'Не отправляйте OTP, данные карты или документы. '
-                  'Финансовые споры оформляются отдельно из бронирования.',
+            const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Не отправляйте OTP, данные карты или документы. '
+                    'Финансовые споры оформляются отдельно из бронирования.',
+                  ),
                 ),
-              ),
+              ],
             ),
             const SizedBox(height: 20),
             Text(
@@ -90,13 +93,6 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: create.isLoading ? null : _submit,
-              child: create.isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Отправить'),
-            ),
             const SizedBox(height: 32),
             Text(
               'Мои обращения',
@@ -132,6 +128,22 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: FilledButton(
+            key: const ValueKey('support-primary-action'),
+            onPressed: create.isLoading ? null : _submit,
+            child: create.isLoading
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Отправить', textAlign: TextAlign.center),
+          ),
+        ),
+      ),
     );
   }
 
@@ -164,43 +176,48 @@ class _TicketCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: () => context.push('/support/${ticket.id}'),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      ticket.subject,
-                      style: Theme.of(context).textTheme.titleMedium,
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => context.push('/support/${ticket.id}'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        ticket.subject,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                     ),
-                  ),
-                  Text(_status(ticket.status)),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(ticket.message),
-              if (ticket.adminResponse != null) ...[
-                const Divider(),
-                Text(
-                  'Ответ поддержки',
-                  style: Theme.of(context).textTheme.labelLarge,
+                    const Icon(Icons.chevron_right),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(ticket.adminResponse!),
+                Text(
+                  _status(ticket.status),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                Text(ticket.message),
+                if (ticket.adminResponse != null) ...[
+                  const Divider(),
+                  Text(
+                    'Ответ поддержки',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(ticket.adminResponse!),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
+        const Divider(height: 1),
+      ],
     );
   }
 
