@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Соседи — карта приложения и пути пользователей</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172231;
+        --muted: #5f7184;
+        --paper: #f4f6f7;
+        --surface: #ffffff;
+        --line: #dfe5e8;
+        --orange: #ff9f0a;
+        --orange-soft: #fff0d2;
+        --blue: #526d82;
+        --green: #17795f;
+        --green-soft: #dcf5ea;
+        --amber: #9a6410;
+        --amber-soft: #fff2cf;
+        --shadow: 0 18px 45px rgba(23, 34, 49, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(
+            circle at 12% 0%,
+            rgba(255, 159, 10, 0.16),
+            transparent 30rem
+          ),
+          radial-gradient(
+            circle at 90% 18%,
+            rgba(82, 109, 130, 0.12),
+            transparent 34rem
+          ),
+          var(--paper);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        width: min(1520px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 72px;
+      }
+
+      .topbar,
+      .hero,
+      .legend,
+      .journey-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 850;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 14px;
+        background: var(--orange);
+        font-size: 21px;
+      }
+
+      .updated,
+      .pill,
+      .route,
+      .kind {
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .updated {
+        padding: 9px 13px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--muted);
+      }
+
+      .hero {
+        align-items: end;
+        padding: 64px 0 36px;
+      }
+
+      h1 {
+        max-width: 900px;
+        margin: 0;
+        font-size: clamp(42px, 7vw, 92px);
+        line-height: 0.94;
+        letter-spacing: -0.065em;
+      }
+
+      .hero-copy {
+        max-width: 470px;
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .jump-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 22px;
+      }
+
+      .jump-nav a {
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .jump-nav a:hover {
+        border-color: var(--orange);
+      }
+
+      .overview,
+      .journey {
+        border: 1px solid rgba(23, 34, 49, 0.08);
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.78);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+
+      .overview {
+        padding: 28px;
+      }
+
+      .section-label {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h2 {
+        margin-bottom: 10px;
+        font-size: clamp(28px, 4vw, 48px);
+        letter-spacing: -0.04em;
+      }
+
+      .overview > p,
+      .journey-head p {
+        max-width: 720px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .shell-map {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.75fr) minmax(560px, 2fr);
+        gap: 28px;
+        align-items: center;
+        margin-top: 26px;
+      }
+
+      .hub {
+        padding: 24px;
+        border: 2px solid var(--orange);
+        border-radius: 22px;
+        background: var(--orange-soft);
+      }
+
+      .hub strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 22px;
+      }
+
+      .hub span {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .branches {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(110px, 1fr));
+        gap: 10px;
+      }
+
+      .branch {
+        position: relative;
+        min-height: 118px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--surface);
+      }
+
+      .branch::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: -15px;
+        width: 15px;
+        height: 2px;
+        background: var(--line);
+      }
+
+      .branch b,
+      .branch span {
+        display: block;
+      }
+
+      .branch b {
+        margin: 8px 0 6px;
+      }
+
+      .branch span {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .branch-icon {
+        font-size: 20px;
+      }
+
+      .legend {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        margin-top: 22px;
+      }
+
+      .pill {
+        padding: 8px 11px;
+      }
+
+      .pill.ready,
+      .kind.ready {
+        color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .pill.demo,
+      .kind.demo {
+        color: var(--amber);
+        background: var(--amber-soft);
+      }
+
+      .pill.system,
+      .kind.system {
+        color: var(--blue);
+        background: #e8eef2;
+      }
+
+      .journey {
+        margin-top: 26px;
+        padding: 28px;
+        scroll-margin-top: 20px;
+      }
+
+      .journey-head {
+        align-items: end;
+      }
+
+      .journey-head p {
+        max-width: 520px;
+        margin-bottom: 4px;
+      }
+
+      .flow {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 244px;
+        gap: 34px;
+        overflow-x: auto;
+        padding: 22px 5px 18px;
+        scroll-snap-type: x proximity;
+      }
+
+      .screen {
+        position: relative;
+        scroll-snap-align: start;
+      }
+
+      .screen:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        top: 215px;
+        right: -28px;
+        color: var(--orange);
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      .screen-card {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--surface);
+        box-shadow: 0 12px 30px rgba(23, 34, 49, 0.08);
+      }
+
+      .screen-card a {
+        display: block;
+      }
+
+      .screen-card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 430 / 932;
+        object-fit: cover;
+        object-position: top;
+        background: #eef1f2;
+      }
+
+      figcaption {
+        padding: 14px;
+      }
+
+      .caption-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .step {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .kind {
+        padding: 6px 8px;
+      }
+
+      figcaption h3 {
+        margin: 10px 0 7px;
+        font-size: 17px;
+      }
+
+      .route {
+        display: inline-block;
+        max-width: 100%;
+        padding: 6px 8px;
+        overflow: hidden;
+        color: var(--blue);
+        background: #edf2f5;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      figcaption p {
+        min-height: 52px;
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .note {
+        margin-top: 18px;
+        padding: 16px 18px;
+        border-left: 4px solid var(--orange);
+        border-radius: 0 14px 14px 0;
+        background: var(--orange-soft);
+        color: #65430e;
+        line-height: 1.5;
+      }
+
+      footer {
+        padding: 30px 8px 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 900px) {
+        .page {
+          width: min(100% - 20px, 1520px);
+          padding-top: 16px;
+        }
+
+        .topbar,
+        .hero,
+        .journey-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .hero {
+          padding-top: 46px;
+        }
+
+        .shell-map {
+          grid-template-columns: 1fr;
+        }
+
+        .branches {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .branch::before {
+          display: none;
+        }
+
+        .overview,
+        .journey {
+          padding: 20px;
+          border-radius: 22px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">С</span>
+          <span>Соседи · продуктовая карта</span>
+        </div>
+        <span class="updated">Flutter fixtures · 30.08.2026 · 430×932</span>
+      </header>
+
+      <section class="hero">
+        <h1>Карта приложения и пути пользователей</h1>
+        <p class="hero-copy">
+          Реальные экраны текущего Flutter-клиента: от первого запуска до
+          аренды, публикации вещи, поддержки и privacy-настроек. Нажатие на
+          экран открывает исходный PNG.
+        </p>
+      </section>
+
+      <nav class="jump-nav" aria-label="Пути пользователей">
+        <a href="#entry">Вход</a>
+        <a href="#borrower">Беру вещь</a>
+        <a href="#lender">Сдаю вещь</a>
+        <a href="#inbox-support">Уведомления и поддержка</a>
+        <a href="#profile">Профиль и приватность</a>
+        <a href="#system">Системный gate</a>
+      </nav>
+
+      <section class="overview" aria-labelledby="overview-title">
+        <div class="section-label">Навигационный каркас</div>
+        <h2 id="overview-title">Один аккаунт — обе стороны аренды</h2>
+        <p>
+          После onboarding и SMS OTP пользователь попадает в общий shell. Роль
+          не переключается: один и тот же пользователь может брать чужие вещи и
+          сдавать свои, а права проверяются на конкретной вещи и бронировании.
+        </p>
+        <div class="shell-map">
+          <div class="hub">
+            <strong>App shell</strong>
+            <span
+              >Пять стабильных нижних разделов и защищённые вложенные
+              маршруты.</span
+            >
+          </div>
+          <div class="branches">
+            <div class="branch">
+              <span class="branch-icon">⌕</span><b>Найти</b
+              ><span>/catalog → item → booking</span>
+            </div>
+            <div class="branch">
+              <span class="branch-icon">▣</span><b>Брони</b
+              ><span>/bookings → details → chat/review</span>
+            </div>
+            <div class="branch">
+              <span class="branch-icon">＋</span><b>Сдать</b
+              ><span>/items/mine → new/edit</span>
+            </div>
+            <div class="branch">
+              <span class="branch-icon">♟</span><b>Входящие</b
+              ><span>/inbox → authorized target</span>
+            </div>
+            <div class="branch">
+              <span class="branch-icon">♙</span><b>Профиль</b
+              ><span>favorites, sessions, privacy, support</span>
+            </div>
+          </div>
+        </div>
+        <div class="legend" aria-label="Статусы экранов">
+          <span class="pill ready">Готовый локальный flow</span>
+          <span class="pill demo">Демо или внешний gate</span>
+          <span class="pill system">Системное состояние</span>
+        </div>
+      </section>
+
+      <section class="journey" id="entry" aria-labelledby="entry-title">
+        <header class="journey-head">
+          <div>
+            <div class="section-label">Путь 1</div>
+            <h2 id="entry-title">Первый вход</h2>
+          </div>
+          <p>
+            Знакомство с продуктом, нормализованный телефон, одноразовый SMS-код
+            и переход в публичный каталог.
+          </p>
+        </header>
+        <div class="flow">
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/01-onboarding.png"
+                ><img
+                  src="screenshots/01-onboarding.png"
+                  alt="Onboarding приложения Соседи"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">01 · старт</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Onboarding</h3>
+                <span class="route">/onboarding</span>
+                <p>Коротко объясняет P2P-аренду и обе пользовательские роли.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/02-phone-login.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/02-phone-login.png"
+                  alt="Ввод телефона для авторизации"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">02 · телефон</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>SMS-вход</h3>
+                <span class="route">/auth/phone</span>
+                <p>Телефон уходит в защищённый OTP-flow с rate limits.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/03-otp.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/03-otp.png"
+                  alt="Ввод одноразового SMS-кода"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">03 · код</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Подтверждение</h3>
+                <span class="route">/auth/otp</span>
+                <p>После корректного кода создаётся пользовательская сессия.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/04-catalog.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/04-catalog.png"
+                  alt="Каталог вещей"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">04 · результат</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Каталог</h3>
+                <span class="route">/catalog</span>
+                <p>
+                  Поиск, категории, даты, цена, район и server-backed
+                  сортировка.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="journey" id="borrower" aria-labelledby="borrower-title">
+        <header class="journey-head">
+          <div>
+            <div class="section-label">Путь 2</div>
+            <h2 id="borrower-title">Беру вещь</h2>
+          </div>
+          <p>
+            Поиск рядом, проверка карточки и владельца, заявка, подтверждённая
+            бронь, общение и отзыв.
+          </p>
+        </header>
+        <div class="flow">
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/05-map-demo.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/05-map-demo.png"
+                  alt="Локальная демонстрационная карта каталога"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">01 · рядом</span
+                  ><span class="kind demo">локальное демо</span>
+                </div>
+                <h3>Карта</h3>
+                <span class="route">/catalog · map</span>
+                <p>
+                  Только coarse location; production MapKit gate ещё не открыт.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/06-item-details.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/06-item-details.png"
+                  alt="Публичная карточка вещи"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">02 · выбор</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Карточка вещи</h3>
+                <span class="route">/items/:id</span>
+                <p>
+                  Цена, состояние, комплектность, район и правила безопасной
+                  передачи.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/18-owner-profile.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/18-owner-profile.png"
+                  alt="Публичный профиль владельца"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">03 · доверие</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Владелец</h3>
+                <span class="route">/items/:id/owner</span>
+                <p>Публичный профиль и отзывы только по завершённым арендам.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/29-favorites.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/29-favorites.png"
+                  alt="Приватный список избранных вещей"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">04 · сохранить</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Избранное</h3>
+                <span class="route">/profile/favorites</span>
+                <p>
+                  Приватные закладки без публичных счётчиков и уведомлений
+                  владельцу.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/07-booking-create.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/07-booking-create.png"
+                  alt="Создание заявки на бронирование"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">05 · заявка</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Выбор дат</h3>
+                <span class="route">/items/:id/booking</span>
+                <p>Календарь, snapshot условий и явное принятие документов.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/08-bookings.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/08-bookings.png"
+                  alt="Список бронирований с фильтрами"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">06 · контроль</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Мои брони</h3>
+                <span class="route">/bookings</span>
+                <p>Текущие/история и отдельные фильтры «беру»/«сдаю».</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/09-payment-demo.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/09-payment-demo.png"
+                  alt="Демонстрационный результат оплаты"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">07 · расчёт</span
+                  ><span class="kind demo">демо</span>
+                </div>
+                <h3>Оплата</h3>
+                <span class="route">/bookings/:id</span>
+                <p>
+                  Без списания денег; production ждёт согласованный Safe Deal
+                  gate.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/10-booking-chat.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/10-booking-chat.png"
+                  alt="Чат участников бронирования"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">08 · встреча</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Чат брони</h3>
+                <span class="route">/bookings/:id/chat</span>
+                <p>
+                  Только участники, cursor history, safe retry и системные
+                  сообщения.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/16-review.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/16-review.png"
+                  alt="Форма отзыва после аренды"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">09 · завершение</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Отзыв</h3>
+                <span class="route">/bookings/:id/review</span>
+                <p>Оценка доступна участнику после завершения сделки.</p>
+              </figcaption>
+            </div>
+          </figure>
+        </div>
+        <div class="note">
+          Точный адрес и контакт не появляются в публичном каталоге: их access
+          window привязан к подтверждённому бронированию.
+        </div>
+      </section>
+
+      <section class="journey" id="lender" aria-labelledby="lender-title">
+        <header class="journey-head">
+          <div>
+            <div class="section-label">Путь 3</div>
+            <h2 id="lender-title">Сдаю вещь</h2>
+          </div>
+          <p>
+            Публикация разрешённой личной вещи, управление карточкой и работа с
+            входящей заявкой без смены роли аккаунта.
+          </p>
+        </header>
+        <div class="flow">
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/11-create-item.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/11-create-item.png"
+                  alt="Форма создания объявления"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">01 · публикация</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Новое объявление</h3>
+                <span class="route">/items/new</span>
+                <p>
+                  Категория, описание, состояние, комплектность, цена и
+                  передача.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/12-owned-items.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/12-owned-items.png"
+                  alt="Список собственных объявлений"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">02 · портфель</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Мои вещи</h3>
+                <span class="route">/items/mine</span>
+                <p>Все статусы своих объявлений, включая непубличные.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/17-item-edit.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/17-item-edit.png"
+                  alt="Редактирование своего объявления"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">03 · управление</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Редактирование</h3>
+                <span class="route">/items/:id/edit</span>
+                <p>
+                  Изменение карточки возвращает её на модерацию; активные
+                  обязательства защищены.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/13-inbox.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/13-inbox.png"
+                  alt="Входящие события приложения"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">04 · сигнал</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Входящие</h3>
+                <span class="route">/inbox</span>
+                <p>
+                  Cursor pagination, непрочитанные и безопасное «прочитать всё».
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/08-bookings.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/08-bookings.png"
+                  alt="Заявки владельца в общем списке бронирований"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">05 · заявка</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Роль «сдаю»</h3>
+                <span class="route">/bookings · lender</span>
+                <p>
+                  Тот же список отделяет входящие заявки владельца фильтром
+                  роли.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section
+        class="journey"
+        id="inbox-support"
+        aria-labelledby="support-title"
+      >
+        <header class="journey-head">
+          <div>
+            <div class="section-label">Путь 4</div>
+            <h2 id="support-title">Уведомления и поддержка</h2>
+          </div>
+          <p>
+            Inbox остаётся источником истины, а push — только сигналом с opaque
+            eventId. Детали всегда загружаются после авторизации.
+          </p>
+        </header>
+        <div class="flow">
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/13-inbox.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/13-inbox.png"
+                  alt="Входящие уведомления"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">01 · событие</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Inbox</h3>
+                <span class="route">/inbox</span>
+                <p>
+                  Открывает только повторно авторизованный booking/item/support
+                  target.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/15-support.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/15-support.png"
+                  alt="Создание обращения в поддержку"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">02 · обращение</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Поддержка</h3>
+                <span class="route">/support</span>
+                <p>Новый вопрос и список собственных обращений.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/27-support-ticket.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/27-support-ticket.png"
+                  alt="Диалог по обращению в поддержку"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">03 · диалог</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Тикет</h3>
+                <span class="route">/support/:ticketId</span>
+                <p>
+                  История сообщений доступна только автору обращения и
+                  оператору.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/26-support-export.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/26-support-export.png"
+                  alt="Fallback обращения по экспорту данных"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">04 · fallback</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Помощь с экспортом</h3>
+                <span class="route">/support/export</span>
+                <p>Assisted path, если step-up SMS временно недоступен.</p>
+              </figcaption>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="journey" id="profile" aria-labelledby="profile-title">
+        <header class="journey-head">
+          <div>
+            <div class="section-label">Путь 5</div>
+            <h2 id="profile-title">Профиль, доверие и приватность</h2>
+          </div>
+          <p>
+            Все self-service настройки собраны в защищённом профиле: данные,
+            сессии, consent, документы, экспорт, блокировки и закрытие аккаунта.
+          </p>
+        </header>
+        <div class="flow">
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/14-profile.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/14-profile.png"
+                  alt="Главный экран профиля"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">01 · центр</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Профиль</h3>
+                <span class="route">/profile</span>
+                <p>
+                  Статус аккаунта, trust-состояние и все self-service разделы.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/19-profile-edit.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/19-profile-edit.png"
+                  alt="Редактирование профиля"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">02 · данные</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Личные данные</h3>
+                <span class="route">/profile/edit</span>
+                <p>Редактирование минимального набора профиля.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/20-sessions.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/20-sessions.png"
+                  alt="Устройства и активные сессии"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">03 · защита</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Сессии</h3>
+                <span class="route">/profile/sessions</span>
+                <p>Просмотр устройств и отзыв пользовательских сессий.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/21-analytics.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/21-analytics.png"
+                  alt="Настройка согласия на аналитику"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">04 · consent</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Аналитика</h3>
+                <span class="route">/profile/analytics</span>
+                <p>
+                  Consent-first настройка без телефона, адреса и booking
+                  content.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/22-documents.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/22-documents.png"
+                  alt="Правила и документы сервиса"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">05 · правила</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Документы</h3>
+                <span class="route">/profile/documents</span>
+                <p>Versioned offer, rental rules и privacy-ссылки.</p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/23-data-export.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/23-data-export.png"
+                  alt="Экспорт персональных данных"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">06 · доступ</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Экспорт данных</h3>
+                <span class="route">/profile/data-export</span>
+                <p>
+                  Одноразовый step-up, JSON в памяти и включая приватное
+                  избранное.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/25-blocked-users.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/25-blocked-users.png"
+                  alt="Список заблокированных пользователей"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">07 · safety</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Блокировки</h3>
+                <span class="route">/profile/blocked-users</span>
+                <p>
+                  Управление собственным списком без раскрытия лишних данных.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/24-close-account.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/24-close-account.png"
+                  alt="Закрытие аккаунта"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">08 · выход</span
+                  ><span class="kind ready">готово</span>
+                </div>
+                <h3>Закрыть аккаунт</h3>
+                <span class="route">/profile/close-account</span>
+                <p>
+                  Учитывает активные обязательства, retention и последующую
+                  anonymization.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="journey" id="system" aria-labelledby="system-title">
+        <header class="journey-head">
+          <div>
+            <div class="section-label">Системный путь</div>
+            <h2 id="system-title">Обязательное обновление</h2>
+          </div>
+          <p>
+            Compatibility gate стоит выше продуктовых маршрутов и не позволяет
+            продолжать на несовместимой версии клиента.
+          </p>
+        </header>
+        <div class="flow">
+          <figure class="screen">
+            <div class="screen-card">
+              <a href="screenshots/28-update-required.png"
+                ><img
+                  loading="lazy"
+                  src="screenshots/28-update-required.png"
+                  alt="Экран обязательного обновления приложения"
+              /></a>
+              <figcaption>
+                <div class="caption-top">
+                  <span class="step">gate</span
+                  ><span class="kind system">система</span>
+                </div>
+                <h3>Обновление клиента</h3>
+                <span class="route">/update-required</span>
+                <p>
+                  Безопасная ссылка на актуальную сборку для конкретной
+                  платформы.
+                </p>
+              </figcaption>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <footer>
+        Источник изображений:
+        <a href="screenshots/README.md">docs/screenshots</a>. Скриншоты
+        сгенерированы widget-тестом на safe fixtures и не содержат production
+        ПД. Локальная карта и оплата помечены как demo и выключены
+        release-конфигурацией до внешних gates.
+      </footer>
+    </main>
+  </body>
+</html>

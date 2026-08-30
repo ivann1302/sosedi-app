@@ -56,6 +56,8 @@ mobile/               Flutter приложение
 operator/             Закрытый React/Vite UI операторов
 public-web/           Статический Astro-сайт документов и поддержки
 docs/                 Проектная документация
+docs/app-user-paths.html
+                      Карта Flutter-приложения с реальными screenshot-путями
 docs/adr/README.md     ADR-правила и шаблон внешних/business решений
 docs/testing.md       Команды, test-инфраструктура и coverage baseline
 docs/workflow-state-machines.md
