@@ -1,7 +1,9 @@
 # Sosedi Mobile: Avito Mechanics, Sosedi Identity
 
-**Date:** 2026-08-30  
-**Status:** approved direction; awaiting written-spec review  
+**Date:** 2026-08-30
+
+**Status:** approved for implementation
+
 **Roadmap owner:** `MVP_CHECKLIST.md`, section 8.2
 
 ## Goal

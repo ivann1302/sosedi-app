@@ -43,7 +43,7 @@ provider decision → KYC ADR → production payment integration.
   `TBD`: это не блокирует общую разработку каталога/карты, но блокирует набор
   предложения и публичный пилот.
 - Продукт ориентирован на обычных жителей без узкой профессиональной ниши.
-  Визуальный канон — текущий brandbook: тёплый orange/graphite, Manrope,
+  Визуальный канон — текущий brandbook: тёплый orange/graphite, Onest,
   практичность и доверие.
 - Главный вход — единый `Найти`: каталог и карта используют одни поиск, даты и
   фильтры. На телефоне карта полноэкранная с лентой/bottom sheet, на широком
@@ -773,7 +773,7 @@ TDD не является отдельной фазой перед разраб�
   allowlisted `returnTo`, отмена возвращает в public route, а OTP восстанавливает
   цель. External URL отбрасывается; public DTO/backend не менялись.
 - [ ] Провести единый photo-first UI refresh ключевых экранов по текущему
-  brandbook orange/graphite/Manrope: `Найти` сначала показывает предложения и
+  brandbook orange/graphite/Onest: `Найти` сначала показывает предложения и
   компактные chips поиска/дат/района/категории, вторичные фильтры открывает в
   bottom sheet, а список работает до подключения карты и затем делит с ней одно
   состояние. Onboarding оставлять коротким и пропускаемым; формы, CTA,
@@ -787,8 +787,18 @@ TDD не является отдельной фазой перед разраб�
   выбранную карточку; карта и демо-оплата проверены на 320×720 при 200% текста.
   Первый шаг публикации показывает реальные thumbnails выбранных файлов, даёт
   сменить обложку и удалить фото до upload; route screenshot обновлён.
-  Все 252 mobile tests и analyzer проходят; закрытие ждёт MapKit и ручной visual
+  Все 254 mobile tests и analyzer проходят; закрытие ждёт MapKit и ручной visual
   smoke на iPhone/Android.
+  **APPROVED DESIGN 30.08.2026:**
+  [спецификация](docs/superpowers/specs/2026-08-30-avito-inspired-sosedi-mobile-design.md)
+  фиксирует bundled Onest Variable и знакомую marketplace-механику в духе
+  Avito внутри identity Sosedi, без копирования бренда: плоские поверхности,
+  каталог в две колонки, пять вкладок без pill, sticky CTA, grouped rows и
+  photo-first публикацию в три шага. Scope — только visual/interaction;
+  REST/FSM/auth/legal не меняются. Автономная реализация идёт проверяемыми
+  партиями; закрытие по-прежнему ждёт 38 обновлённых route screenshots,
+  проверки 320×720 при 200% текста, MapKit и ручного smoke на реальных
+  iPhone/Android.
 
 ## 9. Mobile Map
 
