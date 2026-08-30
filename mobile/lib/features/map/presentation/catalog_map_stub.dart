@@ -170,8 +170,8 @@ class _Notice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
+    return ColoredBox(
+      color: AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -219,8 +219,8 @@ class _SelectedItemCard extends StatelessWidget {
       child: const Text('Открыть'),
     );
 
-    return Card(
-      margin: EdgeInsets.zero,
+    return ColoredBox(
+      color: AppColors.surface,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: compact

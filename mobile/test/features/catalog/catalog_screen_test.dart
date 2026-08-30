@@ -39,8 +39,63 @@ void main() {
 
     expect(find.text('Перфоратор'), findsOneWidget);
     expect(find.text('450 ₽ / день'), findsOneWidget);
-    expect(find.text('Инструменты · Хамовники'), findsOneWidget);
+    expect(find.text('Хамовники'), findsOneWidget);
     expect(find.textContaining('улица'), findsNothing);
+  });
+
+  testWidgets('keeps two catalog results reachable in a grid at 200% text', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+    addTearDown(tester.view.reset);
+    final drill = item.copyWith(id: 'item-2', title: 'Дрель');
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          catalogServiceProvider.overrideWithValue(
+            _FakeCatalogService([
+              _page([item, drill]),
+            ]),
+          ),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const CatalogScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final grid = find.byKey(const ValueKey('catalog-grid'));
+    expect(grid, findsOneWidget);
+    expect(
+      tester.widget<GridView>(grid).gridDelegate,
+      isA<SliverGridDelegateWithFixedCrossAxisCount>().having(
+        (delegate) => delegate.crossAxisCount,
+        'crossAxisCount',
+        2,
+      ),
+    );
+    expect(find.byType(TextField), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('Открыть объявление Перфоратор')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp('Открыть объявление Дрель')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets('switches the loaded catalog to the local demo map', (
@@ -306,7 +361,10 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Показать ещё'),
       300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('catalog-grid')),
+        matching: find.byType(Scrollable),
+      ),
     );
     await tester.tap(find.text('Показать ещё'));
     await tester.pumpAndSettle();

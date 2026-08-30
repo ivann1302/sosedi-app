@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../catalog/data/catalog_models.dart';
@@ -21,27 +22,34 @@ class FavoriteButton extends ConsumerWidget {
     final favorites = ref.watch(favoriteItemsProvider);
     final isFavorite =
         favorites.value?.any((value) => value.id == item.id) ?? false;
-    return IconButton.filledTonal(
-      tooltip: isFavorite ? 'Убрать из избранного' : 'Добавить в избранное',
-      onPressed: () async {
-        try {
-          await ref.read(favoriteItemsProvider.notifier).toggle(item);
-        } catch (error) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  userFacingError(
-                    error,
-                    fallback: 'Не удалось обновить избранное',
+    return SizedBox.square(
+      dimension: 48,
+      child: IconButton.filled(
+        style: IconButton.styleFrom(
+          backgroundColor: AppColors.ink900,
+          foregroundColor: AppColors.surface,
+        ),
+        tooltip: isFavorite ? 'Убрать из избранного' : 'Добавить в избранное',
+        onPressed: () async {
+          try {
+            await ref.read(favoriteItemsProvider.notifier).toggle(item);
+          } catch (error) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    userFacingError(
+                      error,
+                      fallback: 'Не удалось обновить избранное',
+                    ),
                   ),
                 ),
-              ),
-            );
+              );
+            }
           }
-        }
-      },
-      icon: Icon(isFavorite ? Icons.bookmark : Icons.bookmark_border),
+        },
+        icon: Icon(isFavorite ? Icons.bookmark : Icons.bookmark_border),
+      ),
     );
   }
 }

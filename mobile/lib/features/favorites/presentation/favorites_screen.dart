@@ -31,37 +31,65 @@ class FavoritesScreen extends ConsumerWidget {
                   onRefresh: () async {
                     final _ = await ref.refresh(favoriteItemsProvider.future);
                   },
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) => _FavoriteCard(
-                      item: items[index],
-                      onRemove: () async {
-                        try {
-                          await ref
-                              .read(favoriteItemsProvider.notifier)
-                              .toggle(items[index]);
-                        } catch (error) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  userFacingError(
-                                    error,
-                                    fallback: 'Не удалось обновить избранное',
-                                  ),
+                  child: _FavoritesGrid(
+                    items: items,
+                    onRemove: (item) async {
+                      try {
+                        await ref
+                            .read(favoriteItemsProvider.notifier)
+                            .toggle(item);
+                      } catch (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                userFacingError(
+                                  error,
+                                  fallback: 'Не удалось обновить избранное',
                                 ),
                               ),
-                            );
-                          }
+                            ),
+                          );
                         }
-                      },
-                    ),
+                      }
+                    },
                   ),
                 ),
         ),
       ),
+    );
+  }
+}
+
+class _FavoritesGrid extends StatelessWidget {
+  const _FavoritesGrid({required this.items, required this.onRemove});
+
+  final List<CatalogItem> items;
+  final ValueChanged<CatalogItem> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final columns = constraints.maxWidth < 600 ? 2 : 3;
+        final itemWidth =
+            (constraints.maxWidth - 32 - 12 * (columns - 1)) / columns;
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 16,
+            mainAxisExtent: itemWidth + (textScale > 1.5 ? 240 : 116),
+          ),
+          itemCount: items.length,
+          itemBuilder: (context, index) => _FavoriteCard(
+            item: items[index],
+            onRemove: () => onRemove(items[index]),
+          ),
+        );
+      },
     );
   }
 }
@@ -78,35 +106,77 @@ class _FavoriteCard extends StatelessWidget {
         item.photos.where((photo) => photo.isCover).firstOrNull ??
         item.photos.firstOrNull;
     final coverUrl = cover?.thumbnailUrl ?? cover?.previewUrl;
-    return Card(
-      child: ListTile(
-        onTap: () => context.push('/items/${item.id}'),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadii.small),
-          child: SizedBox.square(
-            dimension: 52,
-            child: coverUrl == null
-                ? const ColoredBox(
-                    color: AppColors.warmSand,
-                    child: Icon(Icons.inventory_2_outlined),
-                  )
-                : Image.network(
-                    coverUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const ColoredBox(
-                      color: AppColors.warmSand,
-                      child: Icon(Icons.broken_image_outlined),
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadii.medium),
+      onTap: () => context.push('/items/${item.id}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 1,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.medium),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  coverUrl == null
+                      ? const ColoredBox(
+                          color: AppColors.warmSand,
+                          child: Icon(Icons.inventory_2_outlined),
+                        )
+                      : Image.network(
+                          coverUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const ColoredBox(
+                            color: AppColors.warmSand,
+                            child: Icon(Icons.broken_image_outlined),
+                          ),
+                        ),
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: SizedBox.square(
+                      dimension: 48,
+                      child: IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.ink900,
+                          foregroundColor: AppColors.surface,
+                        ),
+                        tooltip: 'Убрать из избранного',
+                        onPressed: onRemove,
+                        icon: const Icon(Icons.bookmark),
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
           ),
-        ),
-        title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-        subtitle: Text('${_price(item.pricePerDay)} ₽ / день · ${item.area}'),
-        trailing: IconButton(
-          tooltip: 'Убрать из избранного',
-          onPressed: onRemove,
-          icon: const Icon(Icons.bookmark),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            '${_price(item.pricePerDay)} ₽ / день',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            item.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            [
+              item.area,
+              if (item.distanceBucket != null) item.distanceBucket,
+            ].join(' · '),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
       ),
     );
   }

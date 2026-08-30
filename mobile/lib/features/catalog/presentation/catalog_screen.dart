@@ -38,7 +38,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Найти'),
+        title: const Text('Найти', maxLines: 1, overflow: TextOverflow.visible),
         actions: [
           if (AppConfig.demoStubsEnabled)
             if (compactMapAction)
@@ -50,10 +50,13 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 icon: mapActionIcon,
               )
             else
-              TextButton.icon(
-                onPressed: _toggleDemoMap,
-                icon: mapActionIcon,
-                label: Text(_showDemoMap ? 'Список' : 'Карта (демо)'),
+              SizedBox(
+                width: 128,
+                child: TextButton.icon(
+                  onPressed: _toggleDemoMap,
+                  icon: mapActionIcon,
+                  label: Text(_showDemoMap ? 'Список' : 'Карта (демо)'),
+                ),
               ),
         ],
       ),
@@ -62,17 +65,20 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Что хотите найти?',
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: AppColors.slate700,
+              child: SizedBox(
+                height: 48,
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Что хотите найти?',
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: AppColors.slate700,
+                    ),
                   ),
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (value) =>
+                      ref.read(catalogProvider.notifier).search(value),
                 ),
-                textInputAction: TextInputAction.search,
-                onSubmitted: (value) =>
-                    ref.read(catalogProvider.notifier).search(value),
               ),
             ),
             _QuickFilters(categories: categories),
@@ -122,33 +128,58 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                                     onRefresh: () => ref
                                         .read(catalogProvider.notifier)
                                         .refreshCatalog(),
-                                    child: ListView.separated(
-                                      padding: const EdgeInsets.all(16),
-                                      itemCount:
-                                          value.items.length +
-                                          (value.hasMore ? 1 : 0),
-                                      separatorBuilder: (_, _) =>
-                                          const SizedBox(height: 12),
-                                      itemBuilder: (context, index) {
-                                        if (index == value.items.length) {
-                                          return Center(
-                                            child: value.isLoadingMore
-                                                ? const CircularProgressIndicator()
-                                                : OutlinedButton(
-                                                    onPressed: () => ref
-                                                        .read(
-                                                          catalogProvider
-                                                              .notifier,
-                                                        )
-                                                        .loadMore(),
-                                                    child: const Text(
-                                                      'Показать ещё',
-                                                    ),
-                                                  ),
-                                          );
-                                        }
-                                        return _CatalogCard(
-                                          item: value.items[index],
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final textScale =
+                                            MediaQuery.textScalerOf(
+                                              context,
+                                            ).scale(1);
+                                        final columns =
+                                            constraints.maxWidth < 600 ? 2 : 3;
+                                        final itemWidth =
+                                            (constraints.maxWidth -
+                                                32 -
+                                                12 * (columns - 1)) /
+                                            columns;
+                                        return GridView.builder(
+                                          key: const ValueKey('catalog-grid'),
+                                          padding: const EdgeInsets.all(16),
+                                          gridDelegate:
+                                              SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: columns,
+                                                crossAxisSpacing: 12,
+                                                mainAxisSpacing: 16,
+                                                mainAxisExtent:
+                                                    itemWidth +
+                                                    (textScale > 1.5
+                                                        ? 240
+                                                        : 116),
+                                              ),
+                                          itemCount:
+                                              value.items.length +
+                                              (value.hasMore ? 1 : 0),
+                                          itemBuilder: (context, index) {
+                                            if (index == value.items.length) {
+                                              return Center(
+                                                child: value.isLoadingMore
+                                                    ? const CircularProgressIndicator()
+                                                    : OutlinedButton(
+                                                        onPressed: () => ref
+                                                            .read(
+                                                              catalogProvider
+                                                                  .notifier,
+                                                            )
+                                                            .loadMore(),
+                                                        child: const Text(
+                                                          'Показать ещё',
+                                                        ),
+                                                      ),
+                                              );
+                                            }
+                                            return _CatalogCard(
+                                              item: value.items[index],
+                                            );
+                                          },
                                         );
                                       },
                                     ),
@@ -176,6 +207,18 @@ class _QuickFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final categoryControls = categories.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: SizedBox.square(
+          dimension: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (_, _) => const _CategoryErrorChip(),
+      data: (value) => _CategoryChips(categories: value),
+    );
     return SizedBox(
       height: 48,
       child: ListView(
@@ -184,18 +227,7 @@ class _QuickFilters extends StatelessWidget {
         children: [
           const _AvailabilityChip(),
           const SizedBox(width: 8),
-          categories.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              child: SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-            error: (_, _) => const _CategoryErrorChip(),
-            data: (value) => _CategoryChips(categories: value),
-          ),
-          const SizedBox(width: 8),
+          if (!compact) ...[categoryControls, const SizedBox(width: 8)],
           ActionChip(
             avatar: const Icon(Icons.tune, size: 18),
             label: const Text('Фильтры'),
@@ -203,6 +235,7 @@ class _QuickFilters extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           const _SortChip(),
+          if (compact) ...[const SizedBox(width: 8), categoryControls],
         ],
       ),
     );
@@ -625,18 +658,20 @@ class _CatalogCard extends ConsumerWidget {
         item.photos.firstOrNull;
     final coverUrl = coverPhoto?.thumbnailUrl ?? coverPhoto?.previewUrl;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Semantics(
-        button: true,
-        label: 'Открыть объявление ${item.title}',
-        child: InkWell(
-          onTap: () => context.push('/items/${item.id}'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AspectRatio(
-                aspectRatio: 16 / 10,
+    return Semantics(
+      container: true,
+      button: true,
+      label: 'Открыть объявление ${item.title}',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.medium),
+        onTap: () => context.push('/items/${item.id}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadii.medium),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -658,78 +693,39 @@ class _CatalogCard extends ConsumerWidget {
                             ),
                           ),
                     Positioned(
-                      left: 12,
-                      top: 12,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: AppColors.surface.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(AppRadii.small),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          child: Text(
-                            _condition(item.condition),
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 12,
-                      top: 12,
+                      right: 4,
+                      top: 4,
                       child: FavoriteButton(item: item),
                     ),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${_price(item.pricePerDay)} ₽ / день',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 18,
-                          color: AppColors.slate700,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            [
-                              item.category.name,
-                              item.area,
-                              if (item.distanceBucket != null)
-                                item.distanceBucket!,
-                            ].join(' · '),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${_price(item.pricePerDay)} ₽ / день',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              item.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              [
+                item.area,
+                if (item.distanceBucket != null) item.distanceBucket,
+              ].join(' · '),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ),
       ),
     );
@@ -740,14 +736,6 @@ class _CatalogCard extends ConsumerWidget {
         ? value.toInt().toString()
         : value.toStringAsFixed(2);
   }
-
-  String _condition(String value) => switch (value) {
-    'NEW' => 'Новое',
-    'LIKE_NEW' => 'Как новое',
-    'GOOD' => 'Хорошее состояние',
-    'FAIR' => 'Есть следы использования',
-    _ => 'Состояние указано',
-  };
 }
 
 class _CatalogPhotoPlaceholder extends StatelessWidget {
