@@ -178,8 +178,9 @@ void main() {
 
     expect(otp.expiresInSeconds, 600);
     expect(stepUp.expiresInSeconds, 300);
-    expect(export.schemaVersion, '2026-07-30.1');
+    expect(export.schemaVersion, '2026-08-30.1');
     expect(export.profile['phone'], '+79991234567');
+    expect(export.favorites.single['itemId'], 'item-favorite');
     expect(adapter.requests, hasLength(3));
   });
 }
@@ -198,7 +199,7 @@ Map<String, Object?> profileJson({String city = 'Москва'}) => {
 };
 
 Map<String, Object?> dataExportJson() => {
-  'schemaVersion': '2026-07-30.1',
+  'schemaVersion': '2026-08-30.1',
   'generatedAt': '2026-07-30T02:00:00.000Z',
   'retentionPolicyVersion': 'ADR-0002/2026-07-27',
   'profile': {'id': 'user-1', 'phone': '+79991234567', 'name': 'Анна'},
@@ -208,6 +209,9 @@ Map<String, Object?> dataExportJson() => {
   'support': <Object?>[],
   'reports': <Object?>[],
   'blocks': <Object?>[],
+  'favorites': [
+    {'itemId': 'item-favorite', 'createdAt': '2026-08-30T10:00:00.000Z'},
+  ],
   'documentAcceptances': <Object?>[],
   'financialHistory': <Object?>[],
   'fileManifest': <Object?>[],

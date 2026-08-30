@@ -7,6 +7,7 @@ import '../../features/auth/domain/auth_state.dart';
 import '../../features/booking/data/booking_service.dart';
 import '../../features/booking/domain/booking_action_controller.dart';
 import '../../features/booking/domain/booking_availability_controller.dart';
+import '../../features/favorites/domain/favorite_controller.dart';
 import '../../features/item/data/owned_items_service.dart';
 import '../../features/item/data/create_item_draft_storage.dart';
 import '../../features/item/domain/create_item_controller.dart';
@@ -33,6 +34,7 @@ final privateStateCleanupProvider = Provider<void>((ref) {
       ref.invalidate(profileProvider);
       ref.invalidate(sessionsProvider);
       ref.invalidate(ownedItemsProvider);
+      ref.invalidate(favoriteItemsProvider);
       ref.invalidate(unavailablePeriodsProvider);
       ref.invalidate(myBookingsProvider);
       ref.invalidate(bookingDetailsProvider);

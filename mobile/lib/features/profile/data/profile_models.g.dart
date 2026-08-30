@@ -109,6 +109,9 @@ _UserDataExport _$UserDataExportFromJson(Map<String, dynamic> json) =>
       blocks: (json['blocks'] as List<dynamic>)
           .map((e) => e as Map<String, dynamic>)
           .toList(),
+      favorites: (json['favorites'] as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList(),
       documentAcceptances: (json['documentAcceptances'] as List<dynamic>)
           .map((e) => e as Map<String, dynamic>)
           .toList(),
@@ -133,6 +136,7 @@ Map<String, dynamic> _$UserDataExportToJson(_UserDataExport instance) =>
       'support': instance.support,
       'reports': instance.reports,
       'blocks': instance.blocks,
+      'favorites': instance.favorites,
       'documentAcceptances': instance.documentAcceptances,
       'financialHistory': instance.financialHistory,
       'fileManifest': instance.fileManifest,

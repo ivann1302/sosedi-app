@@ -23,6 +23,8 @@ import 'package:mobile/features/booking/presentation/booking_list_screen.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/catalog/data/catalog_service.dart';
 import 'package:mobile/features/catalog/presentation/catalog_screen.dart';
+import 'package:mobile/features/favorites/data/favorite_service.dart';
+import 'package:mobile/features/favorites/presentation/favorites_screen.dart';
 import 'package:mobile/features/item/data/create_item_draft_storage.dart';
 import 'package:mobile/features/item/data/create_item_models.dart';
 import 'package:mobile/features/item/data/item_service.dart';
@@ -349,6 +351,18 @@ void main() {
       ],
     ),
   );
+  _screenshot(
+    '29-favorites.png',
+    () => _scope(
+      const FavoritesScreen(),
+      authOverride: authControllerProvider.overrideWith(
+        _AuthenticatedAuthController.new,
+      ),
+      overrides: [
+        favoriteServiceProvider.overrideWithValue(_ScreenshotFavoriteService()),
+      ],
+    ),
+  );
 }
 
 void _screenshot(
@@ -497,6 +511,16 @@ class _ScreenshotInboxService extends InboxService {
 
   @override
   Future<int> markAllRead() async => _inboxEvents.length;
+}
+
+class _ScreenshotFavoriteService extends FavoriteService {
+  _ScreenshotFavoriteService() : super(Dio());
+
+  @override
+  Future<List<CatalogItem>> list() async => _catalogItems;
+
+  @override
+  Future<void> remove(String itemId) async {}
 }
 
 class _ScreenshotDraftStorage extends CreateItemDraftStorage {

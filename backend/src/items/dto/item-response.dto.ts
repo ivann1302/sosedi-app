@@ -136,6 +136,11 @@ export class PublicItemResponseDto extends ItemResponseBaseDto {
   photos: PublicItemPhotoResponseDto[];
 }
 
+export class FavoriteMutationResponseDto {
+  @ApiProperty({ format: 'uuid' })
+  itemId: string;
+}
+
 export class PrivateItemResponseDto extends ItemResponseBaseDto {
   @ApiProperty({ enum: ItemStatus })
   status: ItemStatus;

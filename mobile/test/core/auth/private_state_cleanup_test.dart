@@ -140,7 +140,7 @@ class _TestProfileService extends ProfileService {
   @override
   Future<UserDataExport> createDataExport(String stepUpToken) async {
     return UserDataExport(
-      schemaVersion: '2026-07-30.1',
+      schemaVersion: '2026-08-30.1',
       generatedAt: DateTime.utc(2026, 7, 30, 2),
       retentionPolicyVersion: 'ADR-0002/2026-07-27',
       profile: const {'id': 'user-1'},
@@ -150,6 +150,7 @@ class _TestProfileService extends ProfileService {
       support: const [],
       reports: const [],
       blocks: const [],
+      favorites: const [],
       documentAcceptances: const [],
       financialHistory: const [],
       fileManifest: const [],

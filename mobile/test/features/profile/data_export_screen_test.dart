@@ -45,7 +45,7 @@ void main() {
       expect(service.verifiedCode, '123456');
       expect(service.exportToken, 'step-up-token');
       expect(find.text('Экспорт готов'), findsOneWidget);
-      expect(find.textContaining('2026-07-30.1'), findsWidgets);
+      expect(find.textContaining('2026-08-30.1'), findsWidgets);
       expect(find.textContaining('+79991234567'), findsOneWidget);
       expect(find.byKey(const ValueKey('data-export-json')), findsOneWidget);
     },
@@ -112,7 +112,7 @@ class _FakeProfileService extends ProfileService {
   Future<UserDataExport> createDataExport(String stepUpToken) async {
     exportToken = stepUpToken;
     return UserDataExport(
-      schemaVersion: '2026-07-30.1',
+      schemaVersion: '2026-08-30.1',
       generatedAt: DateTime.utc(2026, 7, 30, 2),
       retentionPolicyVersion: 'ADR-0002/2026-07-27',
       profile: const {'id': 'user-1', 'phone': '+79991234567', 'name': 'Анна'},
@@ -122,6 +122,7 @@ class _FakeProfileService extends ProfileService {
       support: const [],
       reports: const [],
       blocks: const [],
+      favorites: const [],
       documentAcceptances: const [],
       financialHistory: const [],
       fileManifest: const [],

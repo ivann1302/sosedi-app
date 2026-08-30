@@ -256,6 +256,14 @@ function createService() {
         },
       ]),
     },
+    favorite: {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          itemId: 'item-favorite',
+          createdAt,
+        },
+      ]),
+    },
   };
   const transaction = jest.fn(
     (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
@@ -283,6 +291,12 @@ describe('UserDataExportService', () => {
     expect(result.listings[0]).toMatchObject({
       location: { address: 'Москва, свой адрес, 1' },
     });
+    expect(result.favorites).toEqual([
+      {
+        itemId: 'item-favorite',
+        createdAt: createdAt.toISOString(),
+      },
+    ]);
     expect(result.bookings[0]).toMatchObject({
       actorRole: 'BORROWER',
       terms: { handoverArea: 'Хамовники' },

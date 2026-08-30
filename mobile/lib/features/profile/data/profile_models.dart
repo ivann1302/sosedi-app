@@ -79,6 +79,7 @@ abstract class UserDataExport with _$UserDataExport {
     required List<Map<String, Object?>> support,
     required List<Map<String, Object?>> reports,
     required List<Map<String, Object?>> blocks,
+    required List<Map<String, Object?>> favorites,
     required List<Map<String, Object?>> documentAcceptances,
     required List<Map<String, Object?>> financialHistory,
     required List<Map<String, Object?>> fileManifest,

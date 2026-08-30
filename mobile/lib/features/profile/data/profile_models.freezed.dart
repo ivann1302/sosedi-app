@@ -1378,7 +1378,7 @@ as int,
 /// @nodoc
 mixin _$UserDataExport {
 
- String get schemaVersion; DateTime get generatedAt; String get retentionPolicyVersion; Map<String, Object?> get profile; List<Map<String, Object?>> get listings; List<Map<String, Object?>> get bookings; List<Map<String, Object?>> get inbox; List<Map<String, Object?>> get support; List<Map<String, Object?>> get reports; List<Map<String, Object?>> get blocks; List<Map<String, Object?>> get documentAcceptances; List<Map<String, Object?>> get financialHistory; List<Map<String, Object?>> get fileManifest; Map<String, Object?> get processing;
+ String get schemaVersion; DateTime get generatedAt; String get retentionPolicyVersion; Map<String, Object?> get profile; List<Map<String, Object?>> get listings; List<Map<String, Object?>> get bookings; List<Map<String, Object?>> get inbox; List<Map<String, Object?>> get support; List<Map<String, Object?>> get reports; List<Map<String, Object?>> get blocks; List<Map<String, Object?>> get favorites; List<Map<String, Object?>> get documentAcceptances; List<Map<String, Object?>> get financialHistory; List<Map<String, Object?>> get fileManifest; Map<String, Object?> get processing;
 /// Create a copy of UserDataExport
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1391,16 +1391,16 @@ $UserDataExportCopyWith<UserDataExport> get copyWith => _$UserDataExportCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDataExport&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.retentionPolicyVersion, retentionPolicyVersion) || other.retentionPolicyVersion == retentionPolicyVersion)&&const DeepCollectionEquality().equals(other.profile, profile)&&const DeepCollectionEquality().equals(other.listings, listings)&&const DeepCollectionEquality().equals(other.bookings, bookings)&&const DeepCollectionEquality().equals(other.inbox, inbox)&&const DeepCollectionEquality().equals(other.support, support)&&const DeepCollectionEquality().equals(other.reports, reports)&&const DeepCollectionEquality().equals(other.blocks, blocks)&&const DeepCollectionEquality().equals(other.documentAcceptances, documentAcceptances)&&const DeepCollectionEquality().equals(other.financialHistory, financialHistory)&&const DeepCollectionEquality().equals(other.fileManifest, fileManifest)&&const DeepCollectionEquality().equals(other.processing, processing));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDataExport&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.retentionPolicyVersion, retentionPolicyVersion) || other.retentionPolicyVersion == retentionPolicyVersion)&&const DeepCollectionEquality().equals(other.profile, profile)&&const DeepCollectionEquality().equals(other.listings, listings)&&const DeepCollectionEquality().equals(other.bookings, bookings)&&const DeepCollectionEquality().equals(other.inbox, inbox)&&const DeepCollectionEquality().equals(other.support, support)&&const DeepCollectionEquality().equals(other.reports, reports)&&const DeepCollectionEquality().equals(other.blocks, blocks)&&const DeepCollectionEquality().equals(other.favorites, favorites)&&const DeepCollectionEquality().equals(other.documentAcceptances, documentAcceptances)&&const DeepCollectionEquality().equals(other.financialHistory, financialHistory)&&const DeepCollectionEquality().equals(other.fileManifest, fileManifest)&&const DeepCollectionEquality().equals(other.processing, processing));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,generatedAt,retentionPolicyVersion,const DeepCollectionEquality().hash(profile),const DeepCollectionEquality().hash(listings),const DeepCollectionEquality().hash(bookings),const DeepCollectionEquality().hash(inbox),const DeepCollectionEquality().hash(support),const DeepCollectionEquality().hash(reports),const DeepCollectionEquality().hash(blocks),const DeepCollectionEquality().hash(documentAcceptances),const DeepCollectionEquality().hash(financialHistory),const DeepCollectionEquality().hash(fileManifest),const DeepCollectionEquality().hash(processing));
+int get hashCode => Object.hash(runtimeType,schemaVersion,generatedAt,retentionPolicyVersion,const DeepCollectionEquality().hash(profile),const DeepCollectionEquality().hash(listings),const DeepCollectionEquality().hash(bookings),const DeepCollectionEquality().hash(inbox),const DeepCollectionEquality().hash(support),const DeepCollectionEquality().hash(reports),const DeepCollectionEquality().hash(blocks),const DeepCollectionEquality().hash(favorites),const DeepCollectionEquality().hash(documentAcceptances),const DeepCollectionEquality().hash(financialHistory),const DeepCollectionEquality().hash(fileManifest),const DeepCollectionEquality().hash(processing));
 
 @override
 String toString() {
-  return 'UserDataExport(schemaVersion: $schemaVersion, generatedAt: $generatedAt, retentionPolicyVersion: $retentionPolicyVersion, profile: $profile, listings: $listings, bookings: $bookings, inbox: $inbox, support: $support, reports: $reports, blocks: $blocks, documentAcceptances: $documentAcceptances, financialHistory: $financialHistory, fileManifest: $fileManifest, processing: $processing)';
+  return 'UserDataExport(schemaVersion: $schemaVersion, generatedAt: $generatedAt, retentionPolicyVersion: $retentionPolicyVersion, profile: $profile, listings: $listings, bookings: $bookings, inbox: $inbox, support: $support, reports: $reports, blocks: $blocks, favorites: $favorites, documentAcceptances: $documentAcceptances, financialHistory: $financialHistory, fileManifest: $fileManifest, processing: $processing)';
 }
 
 
@@ -1411,7 +1411,7 @@ abstract mixin class $UserDataExportCopyWith<$Res>  {
   factory $UserDataExportCopyWith(UserDataExport value, $Res Function(UserDataExport) _then) = _$UserDataExportCopyWithImpl;
 @useResult
 $Res call({
- String schemaVersion, DateTime generatedAt, String retentionPolicyVersion, Map<String, Object?> profile, List<Map<String, Object?>> listings, List<Map<String, Object?>> bookings, List<Map<String, Object?>> inbox, List<Map<String, Object?>> support, List<Map<String, Object?>> reports, List<Map<String, Object?>> blocks, List<Map<String, Object?>> documentAcceptances, List<Map<String, Object?>> financialHistory, List<Map<String, Object?>> fileManifest, Map<String, Object?> processing
+ String schemaVersion, DateTime generatedAt, String retentionPolicyVersion, Map<String, Object?> profile, List<Map<String, Object?>> listings, List<Map<String, Object?>> bookings, List<Map<String, Object?>> inbox, List<Map<String, Object?>> support, List<Map<String, Object?>> reports, List<Map<String, Object?>> blocks, List<Map<String, Object?>> favorites, List<Map<String, Object?>> documentAcceptances, List<Map<String, Object?>> financialHistory, List<Map<String, Object?>> fileManifest, Map<String, Object?> processing
 });
 
 
@@ -1428,7 +1428,7 @@ class _$UserDataExportCopyWithImpl<$Res>
 
 /// Create a copy of UserDataExport
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? generatedAt = null,Object? retentionPolicyVersion = null,Object? profile = null,Object? listings = null,Object? bookings = null,Object? inbox = null,Object? support = null,Object? reports = null,Object? blocks = null,Object? documentAcceptances = null,Object? financialHistory = null,Object? fileManifest = null,Object? processing = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? generatedAt = null,Object? retentionPolicyVersion = null,Object? profile = null,Object? listings = null,Object? bookings = null,Object? inbox = null,Object? support = null,Object? reports = null,Object? blocks = null,Object? favorites = null,Object? documentAcceptances = null,Object? financialHistory = null,Object? fileManifest = null,Object? processing = null,}) {
   return _then(_self.copyWith(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as String,generatedAt: null == generatedAt ? _self.generatedAt : generatedAt // ignore: cast_nullable_to_non_nullable
@@ -1440,6 +1440,7 @@ as List<Map<String, Object?>>,inbox: null == inbox ? _self.inbox : inbox // igno
 as List<Map<String, Object?>>,support: null == support ? _self.support : support // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,reports: null == reports ? _self.reports : reports // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,blocks: null == blocks ? _self.blocks : blocks // ignore: cast_nullable_to_non_nullable
+as List<Map<String, Object?>>,favorites: null == favorites ? _self.favorites : favorites // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,documentAcceptances: null == documentAcceptances ? _self.documentAcceptances : documentAcceptances // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,financialHistory: null == financialHistory ? _self.financialHistory : financialHistory // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,fileManifest: null == fileManifest ? _self.fileManifest : fileManifest // ignore: cast_nullable_to_non_nullable
@@ -1529,10 +1530,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String schemaVersion,  DateTime generatedAt,  String retentionPolicyVersion,  Map<String, Object?> profile,  List<Map<String, Object?>> listings,  List<Map<String, Object?>> bookings,  List<Map<String, Object?>> inbox,  List<Map<String, Object?>> support,  List<Map<String, Object?>> reports,  List<Map<String, Object?>> blocks,  List<Map<String, Object?>> documentAcceptances,  List<Map<String, Object?>> financialHistory,  List<Map<String, Object?>> fileManifest,  Map<String, Object?> processing)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String schemaVersion,  DateTime generatedAt,  String retentionPolicyVersion,  Map<String, Object?> profile,  List<Map<String, Object?>> listings,  List<Map<String, Object?>> bookings,  List<Map<String, Object?>> inbox,  List<Map<String, Object?>> support,  List<Map<String, Object?>> reports,  List<Map<String, Object?>> blocks,  List<Map<String, Object?>> favorites,  List<Map<String, Object?>> documentAcceptances,  List<Map<String, Object?>> financialHistory,  List<Map<String, Object?>> fileManifest,  Map<String, Object?> processing)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserDataExport() when $default != null:
-return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersion,_that.profile,_that.listings,_that.bookings,_that.inbox,_that.support,_that.reports,_that.blocks,_that.documentAcceptances,_that.financialHistory,_that.fileManifest,_that.processing);case _:
+return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersion,_that.profile,_that.listings,_that.bookings,_that.inbox,_that.support,_that.reports,_that.blocks,_that.favorites,_that.documentAcceptances,_that.financialHistory,_that.fileManifest,_that.processing);case _:
   return orElse();
 
 }
@@ -1550,10 +1551,10 @@ return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String schemaVersion,  DateTime generatedAt,  String retentionPolicyVersion,  Map<String, Object?> profile,  List<Map<String, Object?>> listings,  List<Map<String, Object?>> bookings,  List<Map<String, Object?>> inbox,  List<Map<String, Object?>> support,  List<Map<String, Object?>> reports,  List<Map<String, Object?>> blocks,  List<Map<String, Object?>> documentAcceptances,  List<Map<String, Object?>> financialHistory,  List<Map<String, Object?>> fileManifest,  Map<String, Object?> processing)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String schemaVersion,  DateTime generatedAt,  String retentionPolicyVersion,  Map<String, Object?> profile,  List<Map<String, Object?>> listings,  List<Map<String, Object?>> bookings,  List<Map<String, Object?>> inbox,  List<Map<String, Object?>> support,  List<Map<String, Object?>> reports,  List<Map<String, Object?>> blocks,  List<Map<String, Object?>> favorites,  List<Map<String, Object?>> documentAcceptances,  List<Map<String, Object?>> financialHistory,  List<Map<String, Object?>> fileManifest,  Map<String, Object?> processing)  $default,) {final _that = this;
 switch (_that) {
 case _UserDataExport():
-return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersion,_that.profile,_that.listings,_that.bookings,_that.inbox,_that.support,_that.reports,_that.blocks,_that.documentAcceptances,_that.financialHistory,_that.fileManifest,_that.processing);case _:
+return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersion,_that.profile,_that.listings,_that.bookings,_that.inbox,_that.support,_that.reports,_that.blocks,_that.favorites,_that.documentAcceptances,_that.financialHistory,_that.fileManifest,_that.processing);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1570,10 +1571,10 @@ return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String schemaVersion,  DateTime generatedAt,  String retentionPolicyVersion,  Map<String, Object?> profile,  List<Map<String, Object?>> listings,  List<Map<String, Object?>> bookings,  List<Map<String, Object?>> inbox,  List<Map<String, Object?>> support,  List<Map<String, Object?>> reports,  List<Map<String, Object?>> blocks,  List<Map<String, Object?>> documentAcceptances,  List<Map<String, Object?>> financialHistory,  List<Map<String, Object?>> fileManifest,  Map<String, Object?> processing)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String schemaVersion,  DateTime generatedAt,  String retentionPolicyVersion,  Map<String, Object?> profile,  List<Map<String, Object?>> listings,  List<Map<String, Object?>> bookings,  List<Map<String, Object?>> inbox,  List<Map<String, Object?>> support,  List<Map<String, Object?>> reports,  List<Map<String, Object?>> blocks,  List<Map<String, Object?>> favorites,  List<Map<String, Object?>> documentAcceptances,  List<Map<String, Object?>> financialHistory,  List<Map<String, Object?>> fileManifest,  Map<String, Object?> processing)?  $default,) {final _that = this;
 switch (_that) {
 case _UserDataExport() when $default != null:
-return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersion,_that.profile,_that.listings,_that.bookings,_that.inbox,_that.support,_that.reports,_that.blocks,_that.documentAcceptances,_that.financialHistory,_that.fileManifest,_that.processing);case _:
+return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersion,_that.profile,_that.listings,_that.bookings,_that.inbox,_that.support,_that.reports,_that.blocks,_that.favorites,_that.documentAcceptances,_that.financialHistory,_that.fileManifest,_that.processing);case _:
   return null;
 
 }
@@ -1585,7 +1586,7 @@ return $default(_that.schemaVersion,_that.generatedAt,_that.retentionPolicyVersi
 @JsonSerializable()
 
 class _UserDataExport implements UserDataExport {
-  const _UserDataExport({required this.schemaVersion, required this.generatedAt, required this.retentionPolicyVersion, required final  Map<String, Object?> profile, required final  List<Map<String, Object?>> listings, required final  List<Map<String, Object?>> bookings, required final  List<Map<String, Object?>> inbox, required final  List<Map<String, Object?>> support, required final  List<Map<String, Object?>> reports, required final  List<Map<String, Object?>> blocks, required final  List<Map<String, Object?>> documentAcceptances, required final  List<Map<String, Object?>> financialHistory, required final  List<Map<String, Object?>> fileManifest, required final  Map<String, Object?> processing}): _profile = profile,_listings = listings,_bookings = bookings,_inbox = inbox,_support = support,_reports = reports,_blocks = blocks,_documentAcceptances = documentAcceptances,_financialHistory = financialHistory,_fileManifest = fileManifest,_processing = processing;
+  const _UserDataExport({required this.schemaVersion, required this.generatedAt, required this.retentionPolicyVersion, required final  Map<String, Object?> profile, required final  List<Map<String, Object?>> listings, required final  List<Map<String, Object?>> bookings, required final  List<Map<String, Object?>> inbox, required final  List<Map<String, Object?>> support, required final  List<Map<String, Object?>> reports, required final  List<Map<String, Object?>> blocks, required final  List<Map<String, Object?>> favorites, required final  List<Map<String, Object?>> documentAcceptances, required final  List<Map<String, Object?>> financialHistory, required final  List<Map<String, Object?>> fileManifest, required final  Map<String, Object?> processing}): _profile = profile,_listings = listings,_bookings = bookings,_inbox = inbox,_support = support,_reports = reports,_blocks = blocks,_favorites = favorites,_documentAcceptances = documentAcceptances,_financialHistory = financialHistory,_fileManifest = fileManifest,_processing = processing;
   factory _UserDataExport.fromJson(Map<String, dynamic> json) => _$UserDataExportFromJson(json);
 
 @override final  String schemaVersion;
@@ -1640,6 +1641,13 @@ class _UserDataExport implements UserDataExport {
   return EqualUnmodifiableListView(_blocks);
 }
 
+ final  List<Map<String, Object?>> _favorites;
+@override List<Map<String, Object?>> get favorites {
+  if (_favorites is EqualUnmodifiableListView) return _favorites;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_favorites);
+}
+
  final  List<Map<String, Object?>> _documentAcceptances;
 @override List<Map<String, Object?>> get documentAcceptances {
   if (_documentAcceptances is EqualUnmodifiableListView) return _documentAcceptances;
@@ -1682,16 +1690,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDataExport&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.retentionPolicyVersion, retentionPolicyVersion) || other.retentionPolicyVersion == retentionPolicyVersion)&&const DeepCollectionEquality().equals(other._profile, _profile)&&const DeepCollectionEquality().equals(other._listings, _listings)&&const DeepCollectionEquality().equals(other._bookings, _bookings)&&const DeepCollectionEquality().equals(other._inbox, _inbox)&&const DeepCollectionEquality().equals(other._support, _support)&&const DeepCollectionEquality().equals(other._reports, _reports)&&const DeepCollectionEquality().equals(other._blocks, _blocks)&&const DeepCollectionEquality().equals(other._documentAcceptances, _documentAcceptances)&&const DeepCollectionEquality().equals(other._financialHistory, _financialHistory)&&const DeepCollectionEquality().equals(other._fileManifest, _fileManifest)&&const DeepCollectionEquality().equals(other._processing, _processing));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDataExport&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.generatedAt, generatedAt) || other.generatedAt == generatedAt)&&(identical(other.retentionPolicyVersion, retentionPolicyVersion) || other.retentionPolicyVersion == retentionPolicyVersion)&&const DeepCollectionEquality().equals(other._profile, _profile)&&const DeepCollectionEquality().equals(other._listings, _listings)&&const DeepCollectionEquality().equals(other._bookings, _bookings)&&const DeepCollectionEquality().equals(other._inbox, _inbox)&&const DeepCollectionEquality().equals(other._support, _support)&&const DeepCollectionEquality().equals(other._reports, _reports)&&const DeepCollectionEquality().equals(other._blocks, _blocks)&&const DeepCollectionEquality().equals(other._favorites, _favorites)&&const DeepCollectionEquality().equals(other._documentAcceptances, _documentAcceptances)&&const DeepCollectionEquality().equals(other._financialHistory, _financialHistory)&&const DeepCollectionEquality().equals(other._fileManifest, _fileManifest)&&const DeepCollectionEquality().equals(other._processing, _processing));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,generatedAt,retentionPolicyVersion,const DeepCollectionEquality().hash(_profile),const DeepCollectionEquality().hash(_listings),const DeepCollectionEquality().hash(_bookings),const DeepCollectionEquality().hash(_inbox),const DeepCollectionEquality().hash(_support),const DeepCollectionEquality().hash(_reports),const DeepCollectionEquality().hash(_blocks),const DeepCollectionEquality().hash(_documentAcceptances),const DeepCollectionEquality().hash(_financialHistory),const DeepCollectionEquality().hash(_fileManifest),const DeepCollectionEquality().hash(_processing));
+int get hashCode => Object.hash(runtimeType,schemaVersion,generatedAt,retentionPolicyVersion,const DeepCollectionEquality().hash(_profile),const DeepCollectionEquality().hash(_listings),const DeepCollectionEquality().hash(_bookings),const DeepCollectionEquality().hash(_inbox),const DeepCollectionEquality().hash(_support),const DeepCollectionEquality().hash(_reports),const DeepCollectionEquality().hash(_blocks),const DeepCollectionEquality().hash(_favorites),const DeepCollectionEquality().hash(_documentAcceptances),const DeepCollectionEquality().hash(_financialHistory),const DeepCollectionEquality().hash(_fileManifest),const DeepCollectionEquality().hash(_processing));
 
 @override
 String toString() {
-  return 'UserDataExport(schemaVersion: $schemaVersion, generatedAt: $generatedAt, retentionPolicyVersion: $retentionPolicyVersion, profile: $profile, listings: $listings, bookings: $bookings, inbox: $inbox, support: $support, reports: $reports, blocks: $blocks, documentAcceptances: $documentAcceptances, financialHistory: $financialHistory, fileManifest: $fileManifest, processing: $processing)';
+  return 'UserDataExport(schemaVersion: $schemaVersion, generatedAt: $generatedAt, retentionPolicyVersion: $retentionPolicyVersion, profile: $profile, listings: $listings, bookings: $bookings, inbox: $inbox, support: $support, reports: $reports, blocks: $blocks, favorites: $favorites, documentAcceptances: $documentAcceptances, financialHistory: $financialHistory, fileManifest: $fileManifest, processing: $processing)';
 }
 
 
@@ -1702,7 +1710,7 @@ abstract mixin class _$UserDataExportCopyWith<$Res> implements $UserDataExportCo
   factory _$UserDataExportCopyWith(_UserDataExport value, $Res Function(_UserDataExport) _then) = __$UserDataExportCopyWithImpl;
 @override @useResult
 $Res call({
- String schemaVersion, DateTime generatedAt, String retentionPolicyVersion, Map<String, Object?> profile, List<Map<String, Object?>> listings, List<Map<String, Object?>> bookings, List<Map<String, Object?>> inbox, List<Map<String, Object?>> support, List<Map<String, Object?>> reports, List<Map<String, Object?>> blocks, List<Map<String, Object?>> documentAcceptances, List<Map<String, Object?>> financialHistory, List<Map<String, Object?>> fileManifest, Map<String, Object?> processing
+ String schemaVersion, DateTime generatedAt, String retentionPolicyVersion, Map<String, Object?> profile, List<Map<String, Object?>> listings, List<Map<String, Object?>> bookings, List<Map<String, Object?>> inbox, List<Map<String, Object?>> support, List<Map<String, Object?>> reports, List<Map<String, Object?>> blocks, List<Map<String, Object?>> favorites, List<Map<String, Object?>> documentAcceptances, List<Map<String, Object?>> financialHistory, List<Map<String, Object?>> fileManifest, Map<String, Object?> processing
 });
 
 
@@ -1719,7 +1727,7 @@ class __$UserDataExportCopyWithImpl<$Res>
 
 /// Create a copy of UserDataExport
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? schemaVersion = null,Object? generatedAt = null,Object? retentionPolicyVersion = null,Object? profile = null,Object? listings = null,Object? bookings = null,Object? inbox = null,Object? support = null,Object? reports = null,Object? blocks = null,Object? documentAcceptances = null,Object? financialHistory = null,Object? fileManifest = null,Object? processing = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? schemaVersion = null,Object? generatedAt = null,Object? retentionPolicyVersion = null,Object? profile = null,Object? listings = null,Object? bookings = null,Object? inbox = null,Object? support = null,Object? reports = null,Object? blocks = null,Object? favorites = null,Object? documentAcceptances = null,Object? financialHistory = null,Object? fileManifest = null,Object? processing = null,}) {
   return _then(_UserDataExport(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as String,generatedAt: null == generatedAt ? _self.generatedAt : generatedAt // ignore: cast_nullable_to_non_nullable
@@ -1731,6 +1739,7 @@ as List<Map<String, Object?>>,inbox: null == inbox ? _self._inbox : inbox // ign
 as List<Map<String, Object?>>,support: null == support ? _self._support : support // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,reports: null == reports ? _self._reports : reports // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,blocks: null == blocks ? _self._blocks : blocks // ignore: cast_nullable_to_non_nullable
+as List<Map<String, Object?>>,favorites: null == favorites ? _self._favorites : favorites // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,documentAcceptances: null == documentAcceptances ? _self._documentAcceptances : documentAcceptances // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,financialHistory: null == financialHistory ? _self._financialHistory : financialHistory // ignore: cast_nullable_to_non_nullable
 as List<Map<String, Object?>>,fileManifest: null == fileManifest ? _self._fileManifest : fileManifest // ignore: cast_nullable_to_non_nullable

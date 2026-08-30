@@ -261,6 +261,100 @@ describe('Items public API (e2e)', () => {
     });
   });
 
+  it('keeps item favorites private and idempotent', async () => {
+    const [owner, firstUser, secondUser] = await Promise.all([
+      prisma.user.create({
+        data: { phone: '+79990000142', role: UserRole.USER },
+      }),
+      prisma.user.create({
+        data: { phone: '+79990000143', role: UserRole.USER },
+      }),
+      prisma.user.create({
+        data: { phone: '+79990000144', role: UserRole.USER },
+      }),
+    ]);
+    const category = await prisma.category.create({
+      data: {
+        name: 'Избранное e2e',
+        slug: 'favorites-e2e',
+        isAllowedForListings: true,
+        listingPolicy: CategoryListingPolicy.ALLOWED,
+      },
+    });
+    const item = await prisma.item.create({
+      data: {
+        ownerId: owner.id,
+        categoryId: category.id,
+        title: 'Проектор для избранного',
+        description: 'Публичная карточка для проверки приватного списка',
+        condition: ItemCondition.GOOD,
+        completeness: 'Проектор и пульт',
+        handoverTerms: 'Проверка при передаче',
+        pricePerDay: 500,
+        status: ItemStatus.APPROVED,
+        publicArea: 'Арбат',
+        address: 'Москва, приватный адрес, 42',
+        latitude: 55.75,
+        longitude: 37.59,
+      },
+    });
+    const authorization = async (user: typeof firstUser) => {
+      const token = await jwt.signAsync(
+        {
+          sub: user.id,
+          phone: user.phone,
+          role: user.role,
+          tokenType: 'access',
+          sessionVersion: 0,
+        },
+        { secret: 'e2e-access-secret', expiresIn: '15m' },
+      );
+      return `Bearer ${token}`;
+    };
+    const [firstAuthorization, secondAuthorization] = await Promise.all([
+      authorization(firstUser),
+      authorization(secondUser),
+    ]);
+
+    await request(httpServer()).get('/api/v1/items/favorites').expect(401);
+    await request(httpServer())
+      .put(`/api/v1/items/${item.id}/favorite`)
+      .set('Authorization', firstAuthorization)
+      .expect(200);
+    await request(httpServer())
+      .put(`/api/v1/items/${item.id}/favorite`)
+      .set('Authorization', firstAuthorization)
+      .expect(200);
+    await request(httpServer())
+      .put(`/api/v1/items/${item.id}/favorite`)
+      .set('Authorization', secondAuthorization)
+      .expect(200);
+
+    const firstList = await request(httpServer())
+      .get('/api/v1/items/favorites')
+      .set('Authorization', firstAuthorization)
+      .expect(200);
+    expect(asRecord(firstList.body as unknown).data).toMatchObject([
+      { id: item.id, area: 'Арбат' },
+    ]);
+
+    await request(httpServer())
+      .delete(`/api/v1/items/${item.id}/favorite`)
+      .set('Authorization', firstAuthorization)
+      .expect(200);
+    await request(httpServer())
+      .delete(`/api/v1/items/${item.id}/favorite`)
+      .set('Authorization', firstAuthorization)
+      .expect(200);
+    const secondList = await request(httpServer())
+      .get('/api/v1/items/favorites')
+      .set('Authorization', secondAuthorization)
+      .expect(200);
+    expect(asRecord(secondList.body as unknown).data).toMatchObject([
+      { id: item.id },
+    ]);
+  });
+
   it('lets a lender borrow another item but rejects self-booking in the database', async () => {
     const [firstUser, secondUser] = await Promise.all([
       prisma.user.create({

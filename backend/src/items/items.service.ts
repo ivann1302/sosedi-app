@@ -20,6 +20,7 @@ import { CreateItemDto } from './dto/create-item.dto';
 import { ListItemsQueryDto, ItemListSort } from './dto/list-items-query.dto';
 import {
   DistanceBucket,
+  FavoriteMutationResponseDto,
   PrivateItemResponseDto,
   PublicLocationPrecision,
   PublicItemResponseDto,
@@ -127,6 +128,10 @@ const publicItemSelect = {
     select: publicItemPhotoSelect,
   },
 } as const satisfies Prisma.ItemSelect;
+
+const favoriteItemSelect = {
+  item: { select: publicItemSelect },
+} as const satisfies Prisma.FavoriteSelect;
 
 type PrivateItemModel = Prisma.ItemGetPayload<{
   select: typeof privateItemSelect;
@@ -292,6 +297,43 @@ export class ItemsService {
     });
 
     return areas.map((area) => area.publicArea);
+  }
+
+  async listFavorites(userId: string): Promise<PublicItemResponseDto[]> {
+    const favorites = await this.prisma.favorite.findMany({
+      where: {
+        userId,
+        item: this.buildPublicWhere({}, null),
+      },
+      orderBy: [{ createdAt: 'desc' }, { itemId: 'desc' }],
+      select: favoriteItemSelect,
+    });
+
+    return favorites.map((favorite) =>
+      this.toPublicItemResponse(favorite.item),
+    );
+  }
+
+  async addFavorite(
+    userId: string,
+    itemId: string,
+  ): Promise<FavoriteMutationResponseDto> {
+    await this.getPublicById(itemId);
+    await this.prisma.favorite.upsert({
+      where: { userId_itemId: { userId, itemId } },
+      create: { userId, itemId },
+      update: {},
+      select: { itemId: true },
+    });
+    return { itemId };
+  }
+
+  async removeFavorite(
+    userId: string,
+    itemId: string,
+  ): Promise<FavoriteMutationResponseDto> {
+    await this.prisma.favorite.deleteMany({ where: { userId, itemId } });
+    return { itemId };
   }
 
   async listOwn(ownerId: string): Promise<PrivateItemResponseDto[]> {

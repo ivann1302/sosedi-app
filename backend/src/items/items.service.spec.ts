@@ -45,6 +45,12 @@ type TestBooking = {
   endDate: Date;
 };
 
+type TestFavorite = {
+  userId: string;
+  itemId: string;
+  createdAt: Date;
+};
+
 type TestItemPhoto = {
   id: string;
   originalUrl: string;
@@ -228,6 +234,7 @@ function createService() {
     ],
   ]);
   const bookings: TestBooking[] = [];
+  const favorites: TestFavorite[] = [];
   const items = new Map<string, TestItem>();
 
   function categoryForItem(
@@ -582,6 +589,58 @@ function createService() {
         },
       ),
     },
+    favorite: {
+      findMany: jest.fn(
+        ({ where }: { where: { userId: string; item: TestItemWhere } }) => {
+          return Promise.resolve(
+            favorites
+              .filter((favorite) => favorite.userId === where.userId)
+              .sort(
+                (left, right) =>
+                  right.createdAt.getTime() - left.createdAt.getTime(),
+              )
+              .flatMap((favorite) => {
+                const item = items.get(favorite.itemId);
+                return item && matchesPublicWhere(item, where.item)
+                  ? [{ item }]
+                  : [];
+              }),
+          );
+        },
+      ),
+      upsert: jest.fn(
+        ({
+          where,
+        }: {
+          where: { userId_itemId: { userId: string; itemId: string } };
+        }) => {
+          const { userId, itemId } = where.userId_itemId;
+          if (
+            !favorites.some(
+              (favorite) =>
+                favorite.userId === userId && favorite.itemId === itemId,
+            )
+          ) {
+            favorites.push({ userId, itemId, createdAt: new Date() });
+          }
+          return Promise.resolve({ itemId });
+        },
+      ),
+      deleteMany: jest.fn(
+        ({ where }: { where: { userId: string; itemId: string } }) => {
+          const index = favorites.findIndex(
+            (favorite) =>
+              favorite.userId === where.userId &&
+              favorite.itemId === where.itemId,
+          );
+          if (index < 0) {
+            return Promise.resolve({ count: 0 });
+          }
+          favorites.splice(index, 1);
+          return Promise.resolve({ count: 1 });
+        },
+      ),
+    },
     $queryRaw: jest.fn(() => Promise.resolve([])),
   } as unknown as PrismaService & {
     $queryRaw: jest.Mock;
@@ -596,6 +655,7 @@ function createService() {
     prisma,
     categories,
     bookings,
+    favorites,
     owners,
     items,
     storeItem,
@@ -1058,5 +1118,45 @@ describe('ItemsService', () => {
         availableTo: '2026-03-02',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('keeps favorites user-scoped, idempotent and public-only', async () => {
+    const { service, storeItem, favorites } = createService();
+    const visible = storeItem({ id: 'item-visible' });
+    const hidden = storeItem({
+      id: 'item-hidden',
+      status: ItemStatus.PENDING,
+    });
+
+    await service.addFavorite('user-1', visible.id);
+    await service.addFavorite('user-1', visible.id);
+    await service.addFavorite('user-2', visible.id);
+
+    await expect(service.listFavorites('user-1')).resolves.toMatchObject([
+      { id: visible.id },
+    ]);
+    await expect(service.listFavorites('user-3')).resolves.toEqual([]);
+    await expect(
+      service.addFavorite('user-1', hidden.id),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(favorites).toHaveLength(2);
+  });
+
+  it('removes only the actor favorite and stays idempotent', async () => {
+    const { service, storeItem } = createService();
+    const item = storeItem({ id: 'item-visible' });
+    await service.addFavorite('user-1', item.id);
+    await service.addFavorite('user-2', item.id);
+
+    await expect(service.removeFavorite('user-1', item.id)).resolves.toEqual({
+      itemId: item.id,
+    });
+    await expect(service.removeFavorite('user-1', item.id)).resolves.toEqual({
+      itemId: item.id,
+    });
+    await expect(service.listFavorites('user-1')).resolves.toEqual([]);
+    await expect(service.listFavorites('user-2')).resolves.toMatchObject([
+      { id: item.id },
+    ]);
   });
 });

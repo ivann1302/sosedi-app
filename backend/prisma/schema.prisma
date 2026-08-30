@@ -211,6 +211,7 @@ model User {
   blocksCreated            UserBlock[]                @relation("UserBlockBlocker")
   blocksReceived           UserBlock[]                @relation("UserBlockBlocked")
   devicePushTokens         DevicePushToken[]
+  favorites                Favorite[]
 
   @@index([role])
   @@index([kycStatus])
@@ -297,6 +298,7 @@ model Item {
   unavailablePeriods ItemUnavailablePeriod[]
   outboxEvents       NotificationOutboxEvent[]
   inboxEvents        InboxEvent[]
+  favorites          Favorite[]
 
   @@unique([ownerId, clientRequestId])
   @@index([ownerId])
@@ -306,6 +308,19 @@ model Item {
   @@index([createdAt])
   @@index([location], type: Gist, map: "items_location_idx")
   @@map("items")
+}
+
+model Favorite {
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, itemId])
+  @@index([userId, createdAt])
+  @@map("favorites")
 }
 
 model ItemUnavailablePeriod {

@@ -11,6 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../catalog/data/catalog_models.dart';
+import '../../favorites/presentation/favorite_button.dart';
 import '../../reviews/data/review_service.dart';
 import '../../safety/domain/safety_action_controller.dart';
 import '../../safety/presentation/report_dialog.dart';
@@ -26,7 +27,12 @@ class ItemDetailsScreen extends ConsumerWidget {
     final item = ref.watch(itemDetailsProvider(itemId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Объявление')),
+      appBar: AppBar(
+        title: const Text('Объявление'),
+        actions: [
+          if (item.value case final value?) FavoriteButton(item: value),
+        ],
+      ),
       body: SafeArea(
         child: item.when(
           loading: () => const Center(child: CircularProgressIndicator()),

@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { readBookingTermsSnapshot } from '../booking/booking-terms';
 import { PrismaService } from '../prisma/prisma.service';
 
-export const USER_DATA_EXPORT_SCHEMA_VERSION = '2026-08-09.2';
+export const USER_DATA_EXPORT_SCHEMA_VERSION = '2026-08-30.1';
 export const USER_DATA_RETENTION_POLICY_VERSION = 'ADR-0002/2026-07-27';
 
 export type UserDataExport = {
@@ -17,6 +17,7 @@ export type UserDataExport = {
   support: Record<string, unknown>[];
   reports: Record<string, unknown>[];
   blocks: Record<string, unknown>[];
+  favorites: Record<string, unknown>[];
   documentAcceptances: Record<string, unknown>[];
   financialHistory: Record<string, unknown>[];
   fileManifest: Record<string, unknown>[];
@@ -231,6 +232,11 @@ export class UserDataExportService {
               select: { id: true, createdAt: true },
             }),
           ]);
+        const favorites = await tx.favorite.findMany({
+          where: { userId },
+          orderBy: [{ createdAt: 'asc' }, { itemId: 'asc' }],
+          select: { itemId: true, createdAt: true },
+        });
 
         if (!user) {
           throw new NotFoundException('Пользователь не найден');
@@ -495,6 +501,10 @@ export class UserDataExportService {
             id: block.id,
             target: 'WITHHELD_THIRD_PARTY',
             createdAt: block.createdAt.toISOString(),
+          })),
+          favorites: favorites.map((favorite) => ({
+            itemId: favorite.itemId,
+            createdAt: favorite.createdAt.toISOString(),
           })),
           documentAcceptances,
           financialHistory,

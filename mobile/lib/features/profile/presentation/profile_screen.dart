@@ -108,6 +108,12 @@ class _ProfileContent extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         OutlinedButton.icon(
+          onPressed: () => context.push('/profile/favorites'),
+          icon: const Icon(Icons.bookmark_outline),
+          label: const Text('Избранное'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
           onPressed: () => context.push('/profile/sessions'),
           icon: const Icon(Icons.devices_outlined),
           label: const Text('Устройства и сессии'),

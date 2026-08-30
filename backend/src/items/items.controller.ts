@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -32,6 +34,7 @@ import { getRequestId } from '../common/http/request-id';
 import { CreateItemDto } from './dto/create-item.dto';
 import { ListItemsQueryDto } from './dto/list-items-query.dto';
 import {
+  FavoriteMutationResponseDto,
   PrivateItemResponseDto,
   PublicItemResponseDto,
 } from './dto/item-response.dto';
@@ -83,6 +86,17 @@ export class ItemsController {
     return ok(await this.items.listPublicAreas());
   }
 
+  @ApiOkResponse({ type: [PublicItemResponseDto] })
+  @ApiBearerAuth()
+  @Roles(UserRole.USER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('favorites')
+  async listFavorites(
+    @CurrentUser() user: AuthUser,
+  ): Promise<ApiResponse<PublicItemResponseDto[]>> {
+    return ok(await this.items.listFavorites(user.id));
+  }
+
   @ApiOkResponse({
     description:
       'Все собственные объявления actor, включая непубличные статусы',
@@ -116,6 +130,30 @@ export class ItemsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ApiResponse<PublicItemResponseDto>> {
     return ok(await this.items.getPublicById(id));
+  }
+
+  @ApiOkResponse({ type: FavoriteMutationResponseDto })
+  @ApiBearerAuth()
+  @Roles(UserRole.USER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Put(':id/favorite')
+  async addFavorite(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiResponse<FavoriteMutationResponseDto>> {
+    return ok(await this.items.addFavorite(user.id, id));
+  }
+
+  @ApiOkResponse({ type: FavoriteMutationResponseDto })
+  @ApiBearerAuth()
+  @Roles(UserRole.USER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete(':id/favorite')
+  async removeFavorite(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiResponse<FavoriteMutationResponseDto>> {
+    return ok(await this.items.removeFavorite(user.id, id));
   }
 
   @ApiCreatedResponse({

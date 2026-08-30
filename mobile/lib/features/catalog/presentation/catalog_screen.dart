@@ -11,6 +11,7 @@ import '../../../core/permissions/permission_prompt.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/catalog_models.dart';
 import '../domain/catalog_controller.dart';
+import '../../favorites/presentation/favorite_button.dart';
 import '../../map/presentation/catalog_map_stub.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
@@ -233,12 +234,7 @@ class _SortChipState extends ConsumerState<_SortChip> {
       tooltip: 'Сортировка',
       onSelected: _select,
       itemBuilder: (context) => CatalogSort.values
-          .map(
-            (sort) => PopupMenuItem(
-              value: sort,
-              child: Text(_label(sort)),
-            ),
-          )
+          .map((sort) => PopupMenuItem(value: sort, child: Text(_label(sort))))
           .toList(growable: false),
       child: Chip(
         avatar: const Icon(Icons.sort, size: 18),
@@ -617,13 +613,13 @@ class _PriceFilterState extends ConsumerState<_PriceFilter> {
   }
 }
 
-class _CatalogCard extends StatelessWidget {
+class _CatalogCard extends ConsumerWidget {
   const _CatalogCard({required this.item});
 
   final CatalogItem item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final coverPhoto =
         item.photos.where((photo) => photo.isCover).firstOrNull ??
         item.photos.firstOrNull;
@@ -680,6 +676,11 @@ class _CatalogCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                    ),
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: FavoriteButton(item: item),
                     ),
                   ],
                 ),

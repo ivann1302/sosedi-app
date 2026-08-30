@@ -8,6 +8,7 @@ import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/auth/presentation/otp_screen.dart';
 import '../../features/auth/presentation/phone_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
+import '../../features/favorites/presentation/favorites_screen.dart';
 import '../../features/booking/presentation/booking_create_screen.dart';
 import '../../features/booking/presentation/booking_chat_screen.dart';
 import '../../features/booking/presentation/booking_details_screen.dart';
@@ -160,6 +161,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     builder: (context, state) => const ProfileEditScreen(),
+                  ),
+                  GoRoute(
+                    path: 'favorites',
+                    builder: (context, state) => const FavoritesScreen(),
                   ),
                   GoRoute(
                     path: 'sessions',

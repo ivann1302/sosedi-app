@@ -177,6 +177,7 @@ class _ExportResult extends StatelessWidget {
       ...export.support,
       ...export.reports,
       ...export.blocks,
+      ...export.favorites,
     ].length;
 
     return ListView(
