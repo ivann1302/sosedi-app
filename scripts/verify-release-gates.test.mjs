@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { verifyReleaseGate } from './verify-release-gates.mjs';
 
@@ -11,6 +12,13 @@ const expected = {
   marketplaceOfferVersion: 'offer-v1',
   cancellationPolicyVersion: 'rental-rules-v1',
 };
+
+const releaseGateTemplate = JSON.parse(
+  readFileSync(
+    new URL('../ops/release/release-gate.example.json', import.meta.url),
+    'utf8',
+  ),
+);
 
 function validRecord() {
   return {
@@ -77,10 +85,7 @@ function validRecord() {
       auditSmoke: 'passed',
       checkedAt: '2026-07-29T11:00:00.000Z',
     },
-    payment: {
-      scenario: 'PAY_ON_HANDOVER',
-      legalGate: 'not-applicable',
-    },
+    payment: releaseGateTemplate.payment,
     kyc: { mode: 'disabled', legalGate: 'not-applicable' },
     approvals: {
       productOwner: 'approval-product-42',

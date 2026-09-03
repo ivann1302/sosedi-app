@@ -91,4 +91,56 @@ describe('PaymentPolicyService', () => {
       'SAFE_DEAL_PROVIDER_NOT_CONFIGURED',
     );
   });
+
+  it('requires FAKE_SAFE_DEAL before a fake payment command', () => {
+    expect(() => createService().requireFakeSafeDeal()).toThrow(
+      'FAKE_SAFE_DEAL_REQUIRED',
+    );
+    expect(() =>
+      createService(completeFakePolicy).requireFakeSafeDeal(),
+    ).not.toThrow();
+  });
+
+  it.each([
+    {
+      scenario: 'PAY_ON_HANDOVER',
+      amountMinor: -1n,
+      error: 'Deposit amount cannot be negative',
+    },
+    {
+      scenario: 'PAY_ON_HANDOVER',
+      amountMinor: 0n,
+      error: null,
+    },
+    {
+      scenario: 'PAY_ON_HANDOVER',
+      amountMinor: 1n,
+      error: 'Deposits require FAKE_SAFE_DEAL',
+    },
+    {
+      scenario: 'FAKE_SAFE_DEAL',
+      amountMinor: 10_000_000n,
+      error: null,
+    },
+    {
+      scenario: 'FAKE_SAFE_DEAL',
+      amountMinor: 10_000_001n,
+      error: 'Deposit exceeds the active policy maximum',
+    },
+  ])(
+    'enforces $scenario deposit boundary for $amountMinor',
+    ({ scenario, amountMinor, error }) => {
+      const service = createService(
+        scenario === 'FAKE_SAFE_DEAL'
+          ? completeFakePolicy
+          : { PAYMENT_SCENARIO: scenario },
+      );
+
+      if (error) {
+        expect(() => service.assertDepositAllowed(amountMinor)).toThrow(error);
+        return;
+      }
+      expect(() => service.assertDepositAllowed(amountMinor)).not.toThrow();
+    },
+  );
 });
