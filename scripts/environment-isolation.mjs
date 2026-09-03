@@ -18,7 +18,7 @@ const REQUIRED_KEYS = [
   'S3_ACCESS_KEY',
   'SMS_PROVIDER',
   'SMS_PROVIDER_MODE',
-  'PAYMENT_PROVIDER_MODE',
+  'PAYMENT_SCENARIO',
   'PUSH_PROVIDER_MODE',
 ];
 const DISTINCT_KEYS = [
@@ -79,11 +79,24 @@ export function verifyEnvironmentIsolation(configs) {
   expectMode(configs.local, 'local', 'local', 'console');
   expectMode(configs.staging, 'test', 'test', 'smsru');
   expectMode(configs.production, 'live', 'live', 'smsru');
-  expectOneOf(configs.local, 'PAYMENT_PROVIDER_MODE', ['disabled', 'fake']);
   expectOneOf(configs.local, 'PUSH_PROVIDER_MODE', ['disabled', 'fake']);
-  for (const key of ['PAYMENT_PROVIDER_MODE', 'PUSH_PROVIDER_MODE']) {
-    expectOneOf(configs.staging, key, ['disabled', 'test']);
-    expectOneOf(configs.production, key, ['disabled', 'live']);
+  expectOneOf(configs.staging, 'PUSH_PROVIDER_MODE', ['disabled', 'test']);
+  expectOneOf(configs.production, 'PUSH_PROVIDER_MODE', ['disabled', 'live']);
+  expectOneOf(configs.local, 'PAYMENT_SCENARIO', ['FAKE_SAFE_DEAL']);
+  expectOneOf(configs.staging, 'PAYMENT_SCENARIO', ['FAKE_SAFE_DEAL']);
+  if (configs.production.get('PAYMENT_SCENARIO') !== 'PAY_ON_HANDOVER') {
+    fail('PAYMENT_SCENARIO must be PAY_ON_HANDOVER in production');
+  }
+  expectFakeSafeDealPolicy(configs.local, 'local');
+  expectFakeSafeDealPolicy(configs.staging, 'staging');
+  for (const key of [
+    'FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR',
+    'FAKE_SAFE_DEAL_POLICY_VERSION',
+    'FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS',
+  ]) {
+    if (configs.production.has(key)) {
+      fail(`production: ${key} is not allowed`);
+    }
   }
 
   expectOneOf(configs.local, 'NONPRODUCTION_DATA_POLICY', [
@@ -134,6 +147,19 @@ function expectMode(config, providerMode, smsMode, smsProvider) {
 function expectOneOf(config, key, allowed) {
   if (!allowed.includes(config.get(key))) {
     fail(`${key} must be one of: ${allowed.join(', ')}`);
+  }
+}
+
+function expectFakeSafeDealPolicy(config, name) {
+  const expected = {
+    FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '10000000',
+    FAKE_SAFE_DEAL_POLICY_VERSION: 'fake-deposit-2026-09-02',
+    FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '300',
+  };
+  for (const [key, value] of Object.entries(expected)) {
+    if (config.get(key) !== value) {
+      fail(`${name}: ${key} must equal ${value}`);
+    }
   }
 }
 

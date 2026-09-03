@@ -233,19 +233,14 @@ export function verifyReleaseGate(record, expected, now = new Date()) {
   }
   fresh(record.admin?.checkedAt, 'admin.checkedAt', now, DAY_MS);
 
-  if (record.payment?.providerMode !== expected.paymentProviderMode) {
-    fail('Payment provider mode mismatch');
+  if (expected.paymentScenario !== 'PAY_ON_HANDOVER') {
+    fail('Production payment scenario must be PAY_ON_HANDOVER');
   }
-  if (expected.paymentProviderMode === 'live') {
-    if (
-      record.payment?.legalGate !== 'accepted' ||
-      record.payment?.providerConfirmed !== true
-    ) {
-      fail('Live payment legal/provider gate blocks release');
-    }
-    reference(record.payment?.approvalRef, 'payment.approvalRef');
-  } else if (record.payment?.legalGate !== 'not-applicable') {
-    fail('Disabled payment mode must be not-applicable');
+  if (record.payment?.scenario !== expected.paymentScenario) {
+    fail('Payment scenario mismatch');
+  }
+  if (record.payment?.legalGate !== 'not-applicable') {
+    fail('PAY_ON_HANDOVER payment must be not-applicable');
   }
 
   if (record.kyc?.mode === 'disabled') {
@@ -279,7 +274,7 @@ function main() {
     releaseId: process.env.RELEASE_CHANGE_ID,
     commitSha: process.env.RELEASE_COMMIT_SHA,
     backendImage: process.env.BACKEND_IMAGE,
-    paymentProviderMode: backendEnv.get('PAYMENT_PROVIDER_MODE'),
+    paymentScenario: backendEnv.get('PAYMENT_SCENARIO'),
     marketplaceOfferVersion: backendEnv.get('MARKETPLACE_OFFER_VERSION'),
     cancellationPolicyVersion: backendEnv.get(
       'MARKETPLACE_CANCELLATION_POLICY_VERSION',

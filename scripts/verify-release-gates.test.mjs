@@ -7,7 +7,7 @@ const expected = {
   releaseId: 'release-42',
   commitSha: 'a'.repeat(40),
   backendImage: `registry.ru/sosedi/backend@sha256:${'b'.repeat(64)}`,
-  paymentProviderMode: 'disabled',
+  paymentScenario: 'PAY_ON_HANDOVER',
   marketplaceOfferVersion: 'offer-v1',
   cancellationPolicyVersion: 'rental-rules-v1',
 };
@@ -78,7 +78,7 @@ function validRecord() {
       checkedAt: '2026-07-29T11:00:00.000Z',
     },
     payment: {
-      providerMode: 'disabled',
+      scenario: 'PAY_ON_HANDOVER',
       legalGate: 'not-applicable',
     },
     kyc: { mode: 'disabled', legalGate: 'not-applicable' },
@@ -123,18 +123,33 @@ test('blocks boolean-only S3 restore evidence without checksum-bound sample', ()
   );
 });
 
-test('blocks live payments without legal and provider approval', () => {
+test('blocks FAKE_SAFE_DEAL in a production artifact', () => {
   const record = validRecord();
-  record.payment = { providerMode: 'live', legalGate: 'pending' };
+  record.payment = { scenario: 'FAKE_SAFE_DEAL', legalGate: 'not-applicable' };
 
   assert.throws(
     () =>
       verifyReleaseGate(
         record,
-        { ...expected, paymentProviderMode: 'live' },
+        { ...expected, paymentScenario: 'FAKE_SAFE_DEAL' },
         now,
       ),
-    /Live payment legal\/provider gate/,
+    /Production payment scenario must be PAY_ON_HANDOVER/,
+  );
+});
+
+test('blocks SAFE_DEAL in a production artifact', () => {
+  const record = validRecord();
+  record.payment = { scenario: 'SAFE_DEAL', legalGate: 'not-applicable' };
+
+  assert.throws(
+    () =>
+      verifyReleaseGate(
+        record,
+        { ...expected, paymentScenario: 'SAFE_DEAL' },
+        now,
+      ),
+    /Production payment scenario must be PAY_ON_HANDOVER/,
   );
 });
 

@@ -2,7 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { parseEnv, verifyEnvironmentIsolation } from './environment-isolation.mjs';
 
-function config(name, providerMode, smsProvider, paymentMode, pushMode) {
+function config(name, providerMode, smsProvider, paymentScenario, pushMode) {
+  const fakePolicy =
+    name === 'production'
+      ? ''
+      : `
+FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR=10000000
+FAKE_SAFE_DEAL_POLICY_VERSION=fake-deposit-2026-09-02
+FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS=300`;
   return parseEnv(`
 DEPLOYMENT_ENVIRONMENT=${name}
 PROVIDER_MODE=${providerMode}
@@ -19,16 +26,22 @@ S3_BUCKET_PRIVATE=sosedi-${name}-private
 S3_ACCESS_KEY=${name}-s3-access-identity
 SMS_PROVIDER=${smsProvider}
 SMS_PROVIDER_MODE=${providerMode}
-PAYMENT_PROVIDER_MODE=${paymentMode}
+PAYMENT_SCENARIO=${paymentScenario}${fakePolicy}
 PUSH_PROVIDER_MODE=${pushMode}
 `);
 }
 
 function validConfigs() {
   return {
-    local: config('local', 'local', 'console', 'fake', 'disabled'),
-    staging: config('staging', 'test', 'smsru', 'test', 'test'),
-    production: config('production', 'live', 'smsru', 'disabled', 'disabled'),
+    local: config('local', 'local', 'console', 'FAKE_SAFE_DEAL', 'disabled'),
+    staging: config('staging', 'test', 'smsru', 'FAKE_SAFE_DEAL', 'test'),
+    production: config(
+      'production',
+      'live',
+      'smsru',
+      'PAY_ON_HANDOVER',
+      'disabled',
+    ),
   };
 }
 
@@ -51,5 +64,14 @@ test('rejects test provider mode in production', () => {
   assert.throws(
     () => verifyEnvironmentIsolation(configs),
     /Provider mode mismatch/,
+  );
+});
+
+test('rejects a non-production payment scenario in production', () => {
+  const configs = validConfigs();
+  configs.production.set('PAYMENT_SCENARIO', 'FAKE_SAFE_DEAL');
+  assert.throws(
+    () => verifyEnvironmentIsolation(configs),
+    /PAYMENT_SCENARIO must be PAY_ON_HANDOVER/,
   );
 });
