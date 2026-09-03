@@ -8,6 +8,7 @@ export const PROVISIONAL_PLATFORM_FEE_BASIS_POINTS = 100n;
 export type SafeDealPrice = {
   currency: 'RUB';
   rentalSubtotalMinor: bigint;
+  depositMinor: bigint;
   borrowerTotalMinor: bigint;
   platformFeeMinor: bigint;
   ownerPayoutMinor: bigint;
@@ -15,9 +16,13 @@ export type SafeDealPrice = {
 
 export function calculateProvisionalSafeDealPrice(
   rentalSubtotalMinor: bigint,
+  depositMinor: bigint,
 ): SafeDealPrice {
   if (rentalSubtotalMinor <= 0n) {
     throw new BadRequestException('Rental subtotal must be positive');
+  }
+  if (depositMinor < 0n) {
+    throw new BadRequestException('Deposit must be non-negative');
   }
 
   const platformFeeMinor =
@@ -29,7 +34,8 @@ export function calculateProvisionalSafeDealPrice(
   return {
     currency: 'RUB',
     rentalSubtotalMinor,
-    borrowerTotalMinor: rentalSubtotalMinor,
+    depositMinor,
+    borrowerTotalMinor: rentalSubtotalMinor + depositMinor,
     platformFeeMinor,
     ownerPayoutMinor,
   };

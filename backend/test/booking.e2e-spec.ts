@@ -602,10 +602,15 @@ describe('Booking availability (e2e)', () => {
         data: { pricePerDay: -1 },
       }),
     ).rejects.toThrow();
+    const itemWithStoredDeposit = await prisma.item.update({
+      where: { id: item.id },
+      data: { depositAmount: 1 },
+    });
+    expect(itemWithStoredDeposit.depositAmount?.toString()).toBe('1');
     await expect(
       prisma.item.update({
         where: { id: item.id },
-        data: { depositAmount: 1 },
+        data: { depositAmount: 30_000_001 },
       }),
     ).rejects.toThrow();
     await expect(

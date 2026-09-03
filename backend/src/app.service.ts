@@ -18,7 +18,8 @@ export type ReadinessResponse = {
   };
 };
 
-export const LATEST_REQUIRED_MIGRATION = '20260830000100_add_item_favorites';
+export const LATEST_REQUIRED_MIGRATION =
+  '20260902000100_add_safe_deal_deposit_domain';
 export const DEFAULT_MAX_CLOCK_SKEW_MS = 5_000;
 const READINESS_TIMEOUT_MS = 2_000;
 

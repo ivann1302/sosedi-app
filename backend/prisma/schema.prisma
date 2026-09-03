@@ -17,6 +17,7 @@ enum AdminCapability {
   SUPPORT
   KYC_REVIEW
   FINANCE
+  DISPUTE
 }
 
 enum ItemStatus {
@@ -83,6 +84,34 @@ enum DisputeStatus {
   OPEN
   UNDER_REVIEW
   RESOLVED
+}
+
+enum DepositStatus {
+  PENDING
+  HELD
+  DISPUTED
+  RESOLVING
+  RESOLVED
+  CANCELLED
+}
+
+enum DepositOperationKind {
+  HOLD
+  CANCEL
+  REFUND
+  RELEASE_TO_LENDER
+}
+
+enum DepositOperationStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum FinancialDisputeReason {
+  ITEM_DAMAGED
+  ITEM_LOST
+  OTHER
 }
 
 enum KycStatus {
@@ -212,6 +241,8 @@ model User {
   blocksReceived           UserBlock[]                @relation("UserBlockBlocked")
   devicePushTokens         DevicePushToken[]
   favorites                Favorite[]
+  financialDisputesOpened  FinancialDispute[]         @relation("FinancialDisputeOpener")
+  financialDisputesResolved FinancialDispute[]         @relation("FinancialDisputeResolver")
 
   @@index([role])
   @@index([kycStatus])
@@ -370,6 +401,7 @@ model UploadIntent {
 
   actor             User               @relation("UploadIntentActor", fields: [actorId], references: [id], onDelete: Cascade)
   bookingEvidence   BookingEvidence?
+  disputeEvidence   DisputeEvidence?
   supportAttachment SupportAttachment?
 
   @@index([actorId])
@@ -407,6 +439,8 @@ model Booking {
   transitions    BookingTransitionHistory[]
   messages       BookingMessage[]
   reviews        Review[]
+  deposit        BookingDeposit?
+  financialDispute FinancialDispute?
 
   @@unique([borrowerId, clientRequestId])
   @@index([itemId])
@@ -416,6 +450,96 @@ model Booking {
   @@index([expiresAt])
   @@index([startDate, endDate])
   @@map("bookings")
+}
+
+model BookingDeposit {
+  id                     String        @id @default(uuid())
+  bookingId              String        @unique
+  amount                 Decimal       @db.Decimal(10, 2)
+  currency               String        @default("RUB")
+  policyVersion          String
+  disputeWindowSeconds   Int
+  status                 DepositStatus @default(PENDING)
+  disputeWindowEndsAt    DateTime?
+  refundedAmount         Decimal       @default(0) @db.Decimal(10, 2)
+  releasedToLenderAmount Decimal       @default(0) @db.Decimal(10, 2)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  booking    Booking            @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  operations DepositOperation[]
+
+  @@index([status, disputeWindowEndsAt])
+  @@map("booking_deposits")
+}
+
+model DepositOperation {
+  id                  String                 @id @default(uuid())
+  depositId           String
+  kind                DepositOperationKind
+  amount              Decimal                @db.Decimal(10, 2)
+  status              DepositOperationStatus @default(PENDING)
+  idempotencyKey      String                 @unique
+  providerOperationId String?                @unique
+  retryOfId           String?
+  providerErrorCode   String?
+  attempts            Int                    @default(0)
+  nextAttemptAt       DateTime               @default(now())
+  processingUntil     DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  deposit BookingDeposit     @relation(fields: [depositId], references: [id], onDelete: Restrict)
+  retryOf DepositOperation?  @relation("DepositOperationRetries", fields: [retryOfId], references: [id], onDelete: Restrict)
+  retries DepositOperation[] @relation("DepositOperationRetries")
+
+  @@index([depositId, createdAt])
+  @@index([status, nextAttemptAt, processingUntil])
+  @@index([retryOfId])
+  @@map("deposit_operations")
+}
+
+model FinancialDispute {
+  id                     String                 @id @default(uuid())
+  bookingId              String                 @unique
+  openedById             String
+  resolvedById           String?
+  reason                 FinancialDisputeReason
+  description            String?                @db.VarChar(1000)
+  status                 DisputeStatus          @default(OPEN)
+  decisionReason         String?                @db.VarChar(1000)
+  refundToBorrowerAmount Decimal                @default(0) @db.Decimal(10, 2)
+  releaseToLenderAmount  Decimal                @default(0) @db.Decimal(10, 2)
+  openedAt               DateTime               @default(now())
+  resolvedAt             DateTime?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  booking    Booking           @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  openedBy   User              @relation("FinancialDisputeOpener", fields: [openedById], references: [id], onDelete: Restrict)
+  resolvedBy User?             @relation("FinancialDisputeResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  evidence   DisputeEvidence[]
+
+  @@index([status, openedAt])
+  @@index([openedById])
+  @@index([resolvedById])
+  @@map("financial_disputes")
+}
+
+model DisputeEvidence {
+  id             String   @id @default(uuid())
+  disputeId      String
+  uploadIntentId String   @unique
+  storageKey     String
+  sha256         String
+  createdAt      DateTime @default(now())
+
+  dispute      FinancialDispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  uploadIntent UploadIntent     @relation(fields: [uploadIntentId], references: [id], onDelete: Restrict)
+
+  @@index([disputeId])
+  @@map("dispute_evidence")
 }
 
 model BookingMessage {
