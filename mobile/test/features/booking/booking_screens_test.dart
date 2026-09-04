@@ -11,12 +11,13 @@ import 'package:mobile/features/auth/domain/auth_controller.dart';
 import 'package:mobile/features/auth/domain/auth_state.dart';
 import 'package:mobile/features/booking/data/booking_models.dart';
 import 'package:mobile/features/booking/data/booking_service.dart';
-import 'package:mobile/features/booking/domain/demo_payment_controller.dart';
 import 'package:mobile/features/booking/presentation/booking_create_screen.dart';
 import 'package:mobile/features/booking/presentation/booking_details_screen.dart';
 import 'package:mobile/features/booking/presentation/booking_list_screen.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/item/data/item_service.dart';
+import 'package:mobile/features/payments/data/marketplace_policy_models.dart';
+import 'package:mobile/features/payments/data/marketplace_policy_service.dart';
 import 'package:mobile/features/reviews/data/review_models.dart';
 import 'package:mobile/features/reviews/data/review_service.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -24,30 +25,6 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../support/network_fakes.dart';
 
 void main() {
-  test('keeps demo payment outcomes isolated and idempotent', () async {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-    final firstPayment = demoPaymentProvider('booking-1');
-    final subscription = container.listen(firstPayment, (_, _) {});
-    addTearDown(subscription.close);
-
-    expect(container.read(firstPayment), DemoPaymentResult.idle);
-
-    final decline = container.read(firstPayment.notifier).decline();
-    final ignoredSuccess = container.read(firstPayment.notifier).succeed();
-    expect(container.read(firstPayment), DemoPaymentResult.processing);
-    await Future.wait([decline, ignoredSuccess]);
-    expect(container.read(firstPayment), DemoPaymentResult.declined);
-
-    await container.read(firstPayment.notifier).succeed();
-    await container.read(firstPayment.notifier).succeed();
-    expect(container.read(firstPayment), DemoPaymentResult.succeeded);
-    expect(
-      container.read(demoPaymentProvider('booking-2')),
-      DemoPaymentResult.idle,
-    );
-  });
-
   testWidgets('shows date rules and keeps public submit behind legal gate', (
     tester,
   ) async {
@@ -166,6 +143,40 @@ void main() {
 
     expect(service.createCalls, 1);
     expect(find.text('Создано booking-created'), findsOneWidget);
+  });
+
+  testWidgets('shows separate provisional fake checkout price rows', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final service = _CreateBookingService();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          itemDetailsProvider(
+            item.id,
+          ).overrideWith((ref) async => item.copyWith(depositAmount: 500)),
+          bookingServiceProvider.overrideWithValue(service),
+          marketplacePolicyProvider.overrideWith((ref) async => fakePolicy),
+        ],
+        child: MaterialApp(home: BookingCreateScreen(itemId: item.id)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Начало: выберите'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Тестовый сценарий безопасной сделки'), findsOneWidget);
+    expect(find.text('Залог'), findsOneWidget);
+    expect(find.text('500 ₽'), findsOneWidget);
+    expect(find.text('Предварительная комиссия Sosedi'), findsOneWidget);
+    expect(find.text('4,50 ₽'), findsOneWidget);
+    expect(find.text('Выплата владельцу'), findsOneWidget);
+    expect(find.text('445,50 ₽'), findsOneWidget);
+    expect(find.text('Итого'), findsOneWidget);
+    expect(find.text('950 ₽'), findsOneWidget);
   });
 
   testWidgets('shows my booking snapshot and redacts pending handover', (
@@ -324,25 +335,51 @@ void main() {
     expect(find.text('BORROWER_CANCELLED'), findsNothing);
   });
 
-  testWidgets('simulates payment outcomes locally without changing booking', (
+  testWidgets('uses authoritative fake checkout and keeps retry ID stable', (
     tester,
   ) async {
     _useTallSurface(tester);
-    final confirmed = booking.copyWith(
-      status: 'CONFIRMED',
-      expiresAt: null,
-      nextAction: const BookingNextAction(
-        code: 'PREPARE_HANDOVER',
-        title: 'Подготовьтесь к передаче',
-        description: 'Согласуйте время в чате.',
+    final service = _FlowBookingService(fakeBooking());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [bookingServiceProvider.overrideWithValue(service)],
+        child: MaterialApp(home: BookingDetailsScreen(bookingId: booking.id)),
       ),
     );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Тестовый сценарий оплаты'), findsOneWidget);
+    expect(find.text('Ожидает тестовой оплаты'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.widgetWithText(OutlinedButton, 'Таймаут'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Таймаут'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Таймаут'));
+    await tester.pumpAndSettle();
+    expect(service.requestIds, hasLength(2));
+    expect(service.requestIds.toSet(), hasLength(1));
+    expect(service.detailLoads, greaterThan(1));
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Успех'));
+    await tester.pumpAndSettle();
+    expect(find.text('Удерживается'), findsOneWidget);
+    expect(find.text('Тестовый сценарий оплаты'), findsNothing);
+  });
+
+  testWidgets('offline booking never shows fake checkout controls', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final offline = booking.copyWith(status: 'CONFIRMED', expiresAt: null);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           bookingDetailsProvider(
             booking.id,
-          ).overrideWith((ref) async => confirmed),
+          ).overrideWith((ref) async => offline),
           bookingActsProvider(
             booking.id,
           ).overrideWith((ref) async => <BookingAct>[]),
@@ -351,55 +388,121 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-
-    expect(find.text('Демонстрация оплаты'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.widgetWithText(OutlinedButton, 'Отказ оплаты'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.textContaining('Деньги не списываются'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Отказ оплаты'));
-    await tester.pump();
-    expect(find.text('Обработка тестовой оплаты…'), findsOneWidget);
-    expect(
-      tester
-          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Обработка…'))
-          .onPressed,
-      isNull,
-    );
-    expect(
-      tester
-          .widget<OutlinedButton>(
-            find.widgetWithText(OutlinedButton, 'Отказ оплаты'),
-          )
-          .onPressed,
-      isNull,
-    );
-    await tester.pump(demoPaymentDelay);
-    expect(find.text('Тестовый отказ оплаты'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Успешная оплата'));
-    await tester.pump(demoPaymentDelay);
-    expect(find.text('Тестовая оплата успешна'), findsOneWidget);
-    expect(find.text('Подготовьтесь к передаче'), findsOneWidget);
+    expect(find.text('Тестовый сценарий оплаты'), findsNothing);
   });
 
-  testWidgets('keeps demo payment usable on a small screen at 200% text', (
+  testWidgets('opens a dedicated financial dispute inside the server window', (
     tester,
   ) async {
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(320, 720);
-    tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
-    addTearDown(tester.view.reset);
-    final confirmed = booking.copyWith(
-      status: 'CONFIRMED',
-      expiresAt: null,
-      nextAction: const BookingNextAction(
-        code: 'PREPARE_HANDOVER',
-        title: 'Подготовьтесь к передаче',
-        description: 'Согласуйте время в чате.',
+    _useTallSurface(tester);
+    final returned = fakeBooking().copyWith(
+      status: 'RETURNED',
+      payment: const ParticipantPayment(
+        amountMinor: 95000,
+        status: 'SUCCEEDED',
+      ),
+      deposit: ParticipantDeposit(
+        amountMinor: 5000,
+        status: 'HELD',
+        refundedMinor: 0,
+        releasedToLenderMinor: 0,
+        policyVersion: 'fake-v1',
+        disputeWindowEndsAt: DateTime.now().add(const Duration(hours: 1)),
+      ),
+    );
+    final service = _FlowBookingService(returned);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [bookingServiceProvider.overrideWithValue(service)],
+        child: MaterialApp(home: BookingDetailsScreen(bookingId: booking.id)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Открыть финансовый спор'));
+    expect(find.text('Есть проблема'), findsOneWidget);
+    await tester.tap(find.text('Открыть финансовый спор'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Факты'),
+      'После возврата обнаружено повреждение корпуса.',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Открыть спор'));
+    await tester.pumpAndSettle();
+
+    expect(service.disputeCreates, 1);
+    expect(find.text('Открыт спор'), findsAtLeastNWidgets(1));
+    expect(find.text('Есть проблема'), findsOneWidget);
+  });
+
+  for (final role in ['BORROWER', 'LENDER']) {
+    testWidgets('$role can attach private dispute evidence', (tester) async {
+      _useTallSurface(tester);
+      final disputed = fakeBooking().copyWith(
+        actorRole: role,
+        status: 'RETURNED',
+        payment: const ParticipantPayment(
+          amountMinor: 95000,
+          status: 'SUCCEEDED',
+        ),
+        deposit: ParticipantDeposit(
+          amountMinor: 5000,
+          status: 'DISPUTED',
+          refundedMinor: 0,
+          releasedToLenderMinor: 0,
+          policyVersion: 'fake-v1',
+          disputeWindowEndsAt: DateTime.now().add(const Duration(hours: 1)),
+        ),
+        financialDispute: FinancialDispute(
+          id: 'dispute-1',
+          bookingId: booking.id,
+          openedById: 'borrower-1',
+          reason: 'ITEM_DAMAGED',
+          description: 'После возврата обнаружено повреждение корпуса.',
+          status: 'OPEN',
+          openedAt: DateTime.now(),
+          resolvedAt: null,
+          evidence: const [],
+        ),
+      );
+      final service = _FlowBookingService(disputed);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bookingServiceProvider.overrideWithValue(service),
+            bookingEvidencePickerProvider.overrideWithValue(
+              _FakeEvidencePicker(),
+            ),
+            appPermissionGatewayProvider.overrideWithValue(
+              _GrantedPermissionGateway(),
+            ),
+          ],
+          child: MaterialApp(home: BookingDetailsScreen(bookingId: booking.id)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Добавить фото к спору'));
+      await tester.tap(find.text('Добавить фото к спору'));
+      await tester.pumpAndSettle();
+      expect(service.evidenceAdds, 1);
+    });
+  }
+
+  testWidgets('expired or resolved deposit hides dispute command', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final expired = fakeBooking().copyWith(
+      status: 'RETURNED',
+      deposit: ParticipantDeposit(
+        amountMinor: 5000,
+        status: 'HELD',
+        refundedMinor: 0,
+        releasedToLenderMinor: 0,
+        policyVersion: 'fake-v1',
+        disputeWindowEndsAt: DateTime.now().subtract(
+          const Duration(seconds: 1),
+        ),
       ),
     );
     await tester.pumpWidget(
@@ -407,48 +510,40 @@ void main() {
         overrides: [
           bookingDetailsProvider(
             booking.id,
-          ).overrideWith((ref) async => confirmed),
+          ).overrideWith((ref) async => expired),
           bookingActsProvider(
             booking.id,
           ).overrideWith((ref) async => <BookingAct>[]),
         ],
-        child: MaterialApp(
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: const TextScaler.linear(2)),
-            child: child!,
-          ),
-          home: BookingDetailsScreen(bookingId: booking.id),
-        ),
+        child: MaterialApp(home: BookingDetailsScreen(bookingId: booking.id)),
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.text('Открыть финансовый спор'), findsNothing);
 
-    final declineButton = find.widgetWithText(OutlinedButton, 'Отказ оплаты');
-    final scrollable = find.descendant(
-      of: find.byType(ListView),
-      matching: find.byType(Scrollable),
+    await tester.pumpWidget(const SizedBox.shrink());
+    final resolved = expired.copyWith(
+      deposit: expired.deposit!.copyWith(
+        status: 'RESOLVED',
+        disputeWindowEndsAt: DateTime.now().add(const Duration(hours: 1)),
+      ),
     );
-    final position = tester.state<ScrollableState>(scrollable).position;
-    for (var index = 0; index < 20; index += 1) {
-      if (declineButton.hitTestable().evaluate().isNotEmpty) break;
-      final nextOffset = position.pixels + 300;
-      position.jumpTo(
-        nextOffset < position.maxScrollExtent
-            ? nextOffset
-            : position.maxScrollExtent,
-      );
-      await tester.pump();
-    }
-    expect(declineButton.hitTestable(), findsOneWidget);
-    await tester.tap(declineButton);
-    await tester.pump();
-
-    expect(tester.takeException(), isNull);
-    expect(find.text('Обработка тестовой оплаты…'), findsOneWidget);
-    await tester.pump(demoPaymentDelay);
-    expect(find.text('Тестовый отказ оплаты'), findsOneWidget);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingDetailsProvider(
+            booking.id,
+          ).overrideWith((ref) async => resolved),
+          bookingActsProvider(
+            booking.id,
+          ).overrideWith((ref) async => <BookingAct>[]),
+        ],
+        child: MaterialApp(home: BookingDetailsScreen(bookingId: booking.id)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Возвращён/распределён'), findsOneWidget);
+    expect(find.text('Открыть финансовый спор'), findsNothing);
   });
 
   testWidgets('keeps the next action usable on a small safe screen at 200%', (
@@ -748,6 +843,97 @@ void main() {
   });
 }
 
+class _FlowBookingService extends BookingService {
+  _FlowBookingService(this.current) : super(Dio());
+
+  ParticipantBooking current;
+  int detailLoads = 0;
+  int disputeCreates = 0;
+  int evidenceAdds = 0;
+  final requestIds = <String>[];
+
+  @override
+  Future<ParticipantBooking> getDetails(String bookingId) async {
+    detailLoads += 1;
+    return current;
+  }
+
+  @override
+  Future<List<ParticipantBooking>> listMine() async => [current];
+
+  @override
+  Future<List<BookingAct>> listActs(String bookingId) async => const [];
+
+  @override
+  Future<FakeCheckoutResult> fakeCheckout({
+    required String bookingId,
+    required String outcome,
+    required String requestId,
+  }) async {
+    requestIds.add(requestId);
+    if (outcome == 'SUCCESS') {
+      current = current.copyWith(
+        payment: const ParticipantPayment(
+          amountMinor: 95000,
+          status: 'SUCCEEDED',
+        ),
+        deposit: current.deposit?.copyWith(status: 'HELD'),
+      );
+      return const FakeCheckoutResult(outcome: 'SUCCEEDED');
+    }
+    return FakeCheckoutResult(
+      outcome: outcome == 'DECLINE' ? 'DECLINED' : 'TIMEOUT',
+      errorCode: outcome == 'DECLINE' ? 'CARD_DECLINED' : null,
+    );
+  }
+
+  @override
+  Future<FinancialDispute> openFinancialDispute({
+    required String bookingId,
+    required String reason,
+    required String description,
+  }) async {
+    disputeCreates += 1;
+    final dispute = FinancialDispute(
+      id: 'dispute-1',
+      bookingId: bookingId,
+      openedById: 'borrower-1',
+      reason: reason,
+      description: description,
+      status: 'OPEN',
+      openedAt: DateTime.now(),
+      resolvedAt: null,
+      evidence: const [],
+    );
+    current = current.copyWith(
+      deposit: current.deposit?.copyWith(status: 'DISPUTED'),
+      financialDispute: dispute,
+    );
+    return dispute;
+  }
+
+  @override
+  Future<FinancialDisputeEvidence> addDisputeEvidence({
+    required String bookingId,
+    required String disputeId,
+    required XFile photo,
+  }) async {
+    evidenceAdds += 1;
+    final evidence = FinancialDisputeEvidence(
+      id: 'evidence-new',
+      sha256: 'abc123',
+      createdAt: DateTime.now(),
+    );
+    final dispute = current.financialDispute!;
+    current = current.copyWith(
+      financialDispute: dispute.copyWith(
+        evidence: [...dispute.evidence, evidence],
+      ),
+    );
+    return evidence;
+  }
+}
+
 class _AvailabilityBookingService extends BookingService {
   _AvailabilityBookingService() : super(Dio());
 
@@ -919,6 +1105,17 @@ const approvedTerms = MarketplaceDocumentsConfig(
   privacyUrl: 'https://docs.sosedi.ru/documents/privacy/2026-08-01.3/',
 );
 
+const fakePolicy = MarketplacePolicy(
+  paymentScenario: PaymentScenario.fakeSafeDeal,
+  deposit: MarketplaceDepositPolicy(
+    enabled: true,
+    currency: 'RUB',
+    maximumMinor: 10000000,
+    policyVersion: 'fake-v1',
+    disputeWindowSeconds: 86400,
+  ),
+);
+
 final booking = ParticipantBooking(
   id: 'booking-1',
   itemId: 'item-1',
@@ -952,6 +1149,53 @@ final booking = ParticipantBooking(
   handover: null,
   counterpartyContact: null,
   createdAt: DateTime.utc(2026, 7, 29, 12),
+);
+
+ParticipantBooking fakeBooking() => booking.copyWith(
+  status: 'CONFIRMED',
+  expiresAt: null,
+  nextAction: const BookingNextAction(
+    code: 'PREPARE_HANDOVER',
+    title: 'Подготовьтесь к передаче',
+    description: 'Согласуйте время в чате.',
+  ),
+  terms: const BookingTerms(
+    itemTitle: 'Перфоратор',
+    lenderDisplayName: 'Иван',
+    pricePerDay: 450,
+    days: 2,
+    rentalSubtotal: 900,
+    depositAmount: 50,
+    platformFee: 9,
+    ownerPayout: 891,
+    total: 950,
+    currency: 'RUB',
+    paymentScenario: 'FAKE_SAFE_DEAL',
+    listingVersion: '2026-07-28:1',
+    offerVersion: '2026-08-01.1',
+    cancellationPolicyVersion: '2026-08-01.2',
+    moneyMinor: BookingMoneyMinor(
+      pricePerDay: 45000,
+      rentalSubtotal: 90000,
+      deposit: 5000,
+      platformFee: 900,
+      ownerPayout: 89100,
+      total: 95000,
+    ),
+    depositTerms: BookingDepositTerms(
+      policyVersion: 'fake-v1',
+      disputeWindowSeconds: 86400,
+    ),
+  ),
+  payment: const ParticipantPayment(amountMinor: 95000, status: 'PENDING'),
+  deposit: const ParticipantDeposit(
+    amountMinor: 5000,
+    status: 'PENDING',
+    refundedMinor: 0,
+    releasedToLenderMinor: 0,
+    policyVersion: 'fake-v1',
+    disputeWindowEndsAt: null,
+  ),
 );
 
 final handoverAct = BookingAct(

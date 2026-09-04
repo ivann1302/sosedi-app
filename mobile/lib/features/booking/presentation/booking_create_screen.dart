@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/config/marketplace_documents_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../item/data/item_service.dart';
+import '../../payments/data/marketplace_policy_models.dart';
+import '../../payments/data/marketplace_policy_service.dart';
 import '../domain/booking_availability_controller.dart';
 import '../domain/booking_create_controller.dart';
 import '../domain/booking_date_rules.dart';
@@ -32,6 +34,7 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
     final availability = ref.watch(bookingAvailabilityProvider);
     final creation = ref.watch(bookingCreateProvider);
     final marketplaceTerms = ref.watch(marketplaceDocumentsConfigProvider);
+    final paymentPolicy = ref.watch(marketplacePolicyProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Выбор дат')),
@@ -61,7 +64,6 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
             final days = _start != null && _end != null
                 ? inclusiveBookingDays(_start!, _end!)
                 : null;
-            final total = days == null ? null : days * value.pricePerDay;
             final canSubmit =
                 marketplaceTerms.isBookingReady &&
                 days != null &&
@@ -122,13 +124,13 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
                           ),
                   ),
                 ],
-                if (days != null && total != null) ...[
+                if (days != null) ...[
                   const SizedBox(height: 24),
                   _PriceBreakdown(
                     pricePerDay: value.pricePerDay,
                     days: days,
-                    total: total,
                     depositAmount: value.depositAmount,
+                    policy: paymentPolicy.value,
                   ),
                 ],
                 const SizedBox(height: 20),
@@ -140,13 +142,7 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
                       'примет другую пересекающуюся заявку, эта заявка отменится.',
                 ),
                 const SizedBox(height: 12),
-                const _Notice(
-                  icon: Icons.payments_outlined,
-                  title: 'Оплата при передаче вещи',
-                  description:
-                      'Офлайн-пилот: комиссия Sosedi 0 ₽. '
-                      'Приложение не принимает оплату и не переводит деньги.',
-                ),
+                _PaymentNotice(policy: paymentPolicy.value),
                 const SizedBox(height: 12),
                 if (marketplaceTerms.isBookingReady)
                   _MarketplaceTermsCard(
@@ -393,33 +389,52 @@ class _PriceBreakdown extends StatelessWidget {
   const _PriceBreakdown({
     required this.pricePerDay,
     required this.days,
-    required this.total,
     required this.depositAmount,
+    required this.policy,
   });
 
   final double pricePerDay;
   final int days;
-  final double total;
   final double? depositAmount;
+  final MarketplacePolicy? policy;
 
   @override
   Widget build(BuildContext context) {
+    final rentalMinor = _rublesMinor(pricePerDay) * days;
+    final isFake = policy?.paymentScenario == PaymentScenario.fakeSafeDeal;
+    final depositMinor = isFake ? _rublesMinor(depositAmount ?? 0) : 0;
+    final feeMinor = isFake ? (rentalMinor + 50) ~/ 100 : 0;
+    final ownerPayoutMinor = rentalMinor - feeMinor;
+    final totalMinor = rentalMinor + depositMinor;
     final rows = [
       _PriceLine(
         label: '${_money(pricePerDay)} ₽ × $days дн.',
-        value: '${_money(total)} ₽',
+        value: '${_minorMoney(rentalMinor)} ₽',
       ),
       _PriceLine(
         label: 'Залог',
-        value: depositAmount == null || depositAmount == 0
-            ? 'Нет'
-            : '${_money(depositAmount!)} ₽',
+        value: depositMinor == 0 ? 'Нет' : '${_minorMoney(depositMinor)} ₽',
       ),
-      const _PriceLine(label: 'Комиссия Sosedi (офлайн-пилот)', value: '0 ₽'),
-      _PriceLine(label: 'Выплата владельцу', value: '${_money(total)} ₽'),
-      const _PriceLine(label: 'Оплата', value: 'При передаче вещи'),
+      _PriceLine(
+        label: isFake
+            ? 'Предварительная комиссия Sosedi'
+            : 'Комиссия Sosedi (офлайн-пилот)',
+        value: '${_minorMoney(feeMinor)} ₽',
+      ),
+      _PriceLine(
+        label: 'Выплата владельцу',
+        value: '${_minorMoney(ownerPayoutMinor)} ₽',
+      ),
+      _PriceLine(
+        label: 'Оплата',
+        value: isFake ? 'Тестовый сценарий' : 'При передаче вещи',
+      ),
       const _PriceLine(label: 'Валюта', value: 'RUB'),
-      _PriceLine(label: 'Итого', value: '${_money(total)} ₽', strong: true),
+      _PriceLine(
+        label: 'Итого',
+        value: '${_minorMoney(totalMinor)} ₽',
+        strong: true,
+      ),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,6 +449,32 @@ class _PriceBreakdown extends StatelessWidget {
           rows[index],
         ],
       ],
+    );
+  }
+}
+
+class _PaymentNotice extends StatelessWidget {
+  const _PaymentNotice({required this.policy});
+
+  final MarketplacePolicy? policy;
+
+  @override
+  Widget build(BuildContext context) {
+    if (policy?.paymentScenario == PaymentScenario.fakeSafeDeal) {
+      return const _Notice(
+        icon: Icons.science_outlined,
+        title: 'Тестовый сценарий безопасной сделки',
+        description:
+            'Деньги не списываются. Окончательные суммы фиксирует сервер '
+            'при создании бронирования.',
+      );
+    }
+    return const _Notice(
+      icon: Icons.payments_outlined,
+      title: 'Оплата при передаче вещи',
+      description:
+          'Офлайн-пилот: комиссия Sosedi 0 ₽. '
+          'Приложение не принимает оплату и не переводит деньги.',
     );
   }
 }
@@ -509,3 +550,17 @@ String _date(DateTime value) =>
 String _money(double value) => value == value.roundToDouble()
     ? value.toInt().toString()
     : value.toStringAsFixed(2);
+
+int _rublesMinor(double value) {
+  final parts = value.toString().split('.');
+  final fraction = (parts.length == 1 ? '' : parts[1]).padRight(2, '0');
+  return int.parse(parts[0]) * 100 + int.parse(fraction.substring(0, 2));
+}
+
+String _minorMoney(int value) {
+  final whole = value ~/ 100;
+  final fraction = value % 100;
+  return fraction == 0
+      ? whole.toString()
+      : '$whole,${fraction.toString().padLeft(2, '0')}';
+}

@@ -12,6 +12,43 @@ _ItemAvailability _$ItemAvailabilityFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$ItemAvailabilityToJson(_ItemAvailability instance) =>
     <String, dynamic>{'available': instance.available};
 
+_BookingMoneyMinor _$BookingMoneyMinorFromJson(Map<String, dynamic> json) =>
+    _BookingMoneyMinor(
+      pricePerDay: _exactSafeIntegerFromJson(json['pricePerDay'] as Object),
+      rentalSubtotal: _exactSafeIntegerFromJson(
+        json['rentalSubtotal'] as Object,
+      ),
+      deposit: _exactSafeIntegerFromJson(json['deposit'] as Object),
+      platformFee: _exactSafeIntegerFromJson(json['platformFee'] as Object),
+      ownerPayout: _exactSafeIntegerFromJson(json['ownerPayout'] as Object),
+      total: _exactSafeIntegerFromJson(json['total'] as Object),
+    );
+
+Map<String, dynamic> _$BookingMoneyMinorToJson(_BookingMoneyMinor instance) =>
+    <String, dynamic>{
+      'pricePerDay': instance.pricePerDay,
+      'rentalSubtotal': instance.rentalSubtotal,
+      'deposit': instance.deposit,
+      'platformFee': instance.platformFee,
+      'ownerPayout': instance.ownerPayout,
+      'total': instance.total,
+    };
+
+_BookingDepositTerms _$BookingDepositTermsFromJson(Map<String, dynamic> json) =>
+    _BookingDepositTerms(
+      policyVersion: json['policyVersion'] as String,
+      disputeWindowSeconds: _exactSafeIntegerFromJson(
+        json['disputeWindowSeconds'] as Object,
+      ),
+    );
+
+Map<String, dynamic> _$BookingDepositTermsToJson(
+  _BookingDepositTerms instance,
+) => <String, dynamic>{
+  'policyVersion': instance.policyVersion,
+  'disputeWindowSeconds': instance.disputeWindowSeconds,
+};
+
 _BookingTerms _$BookingTermsFromJson(Map<String, dynamic> json) =>
     _BookingTerms(
       itemTitle: json['itemTitle'] as String,
@@ -25,6 +62,16 @@ _BookingTerms _$BookingTermsFromJson(Map<String, dynamic> json) =>
       total: (json['total'] as num).toDouble(),
       currency: json['currency'] as String,
       paymentScenario: json['paymentScenario'] as String? ?? 'PAY_ON_HANDOVER',
+      moneyMinor: json['moneyMinor'] == null
+          ? null
+          : BookingMoneyMinor.fromJson(
+              json['moneyMinor'] as Map<String, dynamic>,
+            ),
+      depositTerms: json['depositTerms'] == null
+          ? null
+          : BookingDepositTerms.fromJson(
+              json['depositTerms'] as Map<String, dynamic>,
+            ),
       listingVersion: json['listingVersion'] as String,
       offerVersion: json['offerVersion'] as String?,
       cancellationPolicyVersion: json['cancellationPolicyVersion'] as String?,
@@ -43,9 +90,107 @@ Map<String, dynamic> _$BookingTermsToJson(_BookingTerms instance) =>
       'total': instance.total,
       'currency': instance.currency,
       'paymentScenario': instance.paymentScenario,
+      'moneyMinor': instance.moneyMinor,
+      'depositTerms': instance.depositTerms,
       'listingVersion': instance.listingVersion,
       'offerVersion': instance.offerVersion,
       'cancellationPolicyVersion': instance.cancellationPolicyVersion,
+    };
+
+_ParticipantPayment _$ParticipantPaymentFromJson(Map<String, dynamic> json) =>
+    _ParticipantPayment(
+      amountMinor: _exactSafeIntegerFromJson(json['amountMinor'] as Object),
+      status: json['status'] as String,
+    );
+
+Map<String, dynamic> _$ParticipantPaymentToJson(_ParticipantPayment instance) =>
+    <String, dynamic>{
+      'amountMinor': instance.amountMinor,
+      'status': instance.status,
+    };
+
+_ParticipantDeposit _$ParticipantDepositFromJson(Map<String, dynamic> json) =>
+    _ParticipantDeposit(
+      amountMinor: _exactSafeIntegerFromJson(json['amountMinor'] as Object),
+      status: json['status'] as String,
+      refundedMinor: _exactSafeIntegerFromJson(json['refundedMinor'] as Object),
+      releasedToLenderMinor: _exactSafeIntegerFromJson(
+        json['releasedToLenderMinor'] as Object,
+      ),
+      policyVersion: json['policyVersion'] as String,
+      disputeWindowEndsAt: json['disputeWindowEndsAt'] == null
+          ? null
+          : DateTime.parse(json['disputeWindowEndsAt'] as String),
+    );
+
+Map<String, dynamic> _$ParticipantDepositToJson(_ParticipantDeposit instance) =>
+    <String, dynamic>{
+      'amountMinor': instance.amountMinor,
+      'status': instance.status,
+      'refundedMinor': instance.refundedMinor,
+      'releasedToLenderMinor': instance.releasedToLenderMinor,
+      'policyVersion': instance.policyVersion,
+      'disputeWindowEndsAt': instance.disputeWindowEndsAt?.toIso8601String(),
+    };
+
+_FinancialDisputeEvidence _$FinancialDisputeEvidenceFromJson(
+  Map<String, dynamic> json,
+) => _FinancialDisputeEvidence(
+  id: json['id'] as String,
+  sha256: json['sha256'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+);
+
+Map<String, dynamic> _$FinancialDisputeEvidenceToJson(
+  _FinancialDisputeEvidence instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'sha256': instance.sha256,
+  'createdAt': instance.createdAt.toIso8601String(),
+};
+
+_FinancialDispute _$FinancialDisputeFromJson(Map<String, dynamic> json) =>
+    _FinancialDispute(
+      id: json['id'] as String,
+      bookingId: json['bookingId'] as String,
+      openedById: json['openedById'] as String,
+      reason: json['reason'] as String,
+      description: json['description'] as String?,
+      status: json['status'] as String,
+      openedAt: DateTime.parse(json['openedAt'] as String),
+      resolvedAt: json['resolvedAt'] == null
+          ? null
+          : DateTime.parse(json['resolvedAt'] as String),
+      evidence: (json['evidence'] as List<dynamic>)
+          .map(
+            (e) => FinancialDisputeEvidence.fromJson(e as Map<String, dynamic>),
+          )
+          .toList(),
+    );
+
+Map<String, dynamic> _$FinancialDisputeToJson(_FinancialDispute instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'bookingId': instance.bookingId,
+      'openedById': instance.openedById,
+      'reason': instance.reason,
+      'description': instance.description,
+      'status': instance.status,
+      'openedAt': instance.openedAt.toIso8601String(),
+      'resolvedAt': instance.resolvedAt?.toIso8601String(),
+      'evidence': instance.evidence,
+    };
+
+_FakeCheckoutResult _$FakeCheckoutResultFromJson(Map<String, dynamic> json) =>
+    _FakeCheckoutResult(
+      outcome: json['outcome'] as String,
+      errorCode: json['errorCode'] as String?,
+    );
+
+Map<String, dynamic> _$FakeCheckoutResultToJson(_FakeCheckoutResult instance) =>
+    <String, dynamic>{
+      'outcome': instance.outcome,
+      'errorCode': instance.errorCode,
     };
 
 _BookingHandover _$BookingHandoverFromJson(Map<String, dynamic> json) =>
@@ -78,30 +223,42 @@ Map<String, dynamic> _$BookingNextActionToJson(_BookingNextAction instance) =>
       'description': instance.description,
     };
 
-_ParticipantBooking _$ParticipantBookingFromJson(Map<String, dynamic> json) =>
-    _ParticipantBooking(
-      id: json['id'] as String,
-      itemId: json['itemId'] as String,
-      actorRole: json['actorRole'] as String,
-      startDate: DateTime.parse(json['startDate'] as String),
-      endDate: DateTime.parse(json['endDate'] as String),
-      status: json['status'] as String,
-      nextAction: BookingNextAction.fromJson(
-        json['nextAction'] as Map<String, dynamic>,
-      ),
-      expiresAt: json['expiresAt'] == null
-          ? null
-          : DateTime.parse(json['expiresAt'] as String),
-      cancellationReason: json['cancellationReason'] as String?,
-      terms: json['terms'] == null
-          ? null
-          : BookingTerms.fromJson(json['terms'] as Map<String, dynamic>),
-      handover: json['handover'] == null
-          ? null
-          : BookingHandover.fromJson(json['handover'] as Map<String, dynamic>),
-      counterpartyContact: json['counterpartyContact'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-    );
+_ParticipantBooking _$ParticipantBookingFromJson(
+  Map<String, dynamic> json,
+) => _ParticipantBooking(
+  id: json['id'] as String,
+  itemId: json['itemId'] as String,
+  actorRole: json['actorRole'] as String,
+  startDate: DateTime.parse(json['startDate'] as String),
+  endDate: DateTime.parse(json['endDate'] as String),
+  status: json['status'] as String,
+  nextAction: BookingNextAction.fromJson(
+    json['nextAction'] as Map<String, dynamic>,
+  ),
+  expiresAt: json['expiresAt'] == null
+      ? null
+      : DateTime.parse(json['expiresAt'] as String),
+  cancellationReason: json['cancellationReason'] as String?,
+  terms: json['terms'] == null
+      ? null
+      : BookingTerms.fromJson(json['terms'] as Map<String, dynamic>),
+  payment: json['payment'] == null
+      ? null
+      : ParticipantPayment.fromJson(json['payment'] as Map<String, dynamic>),
+  deposit: json['deposit'] == null
+      ? null
+      : ParticipantDeposit.fromJson(json['deposit'] as Map<String, dynamic>),
+  financialDispute: json['financialDispute'] == null
+      ? null
+      : FinancialDispute.fromJson(
+          json['financialDispute'] as Map<String, dynamic>,
+        ),
+  handover: json['handover'] == null
+      ? null
+      : BookingHandover.fromJson(json['handover'] as Map<String, dynamic>),
+  counterpartyContact: json['counterpartyContact'] as String?,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+);
 
 Map<String, dynamic> _$ParticipantBookingToJson(_ParticipantBooking instance) =>
     <String, dynamic>{
@@ -115,6 +272,9 @@ Map<String, dynamic> _$ParticipantBookingToJson(_ParticipantBooking instance) =>
       'expiresAt': instance.expiresAt?.toIso8601String(),
       'cancellationReason': instance.cancellationReason,
       'terms': instance.terms,
+      'payment': instance.payment,
+      'deposit': instance.deposit,
+      'financialDispute': instance.financialDispute,
       'handover': instance.handover,
       'counterpartyContact': instance.counterpartyContact,
       'createdAt': instance.createdAt.toIso8601String(),

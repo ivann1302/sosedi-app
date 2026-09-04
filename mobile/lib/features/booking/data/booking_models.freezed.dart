@@ -276,9 +276,553 @@ as bool,
 
 
 /// @nodoc
+mixin _$BookingMoneyMinor {
+
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int get pricePerDay;@JsonKey(fromJson: _exactSafeIntegerFromJson) int get rentalSubtotal;@JsonKey(fromJson: _exactSafeIntegerFromJson) int get deposit;@JsonKey(fromJson: _exactSafeIntegerFromJson) int get platformFee;@JsonKey(fromJson: _exactSafeIntegerFromJson) int get ownerPayout;@JsonKey(fromJson: _exactSafeIntegerFromJson) int get total;
+/// Create a copy of BookingMoneyMinor
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BookingMoneyMinorCopyWith<BookingMoneyMinor> get copyWith => _$BookingMoneyMinorCopyWithImpl<BookingMoneyMinor>(this as BookingMoneyMinor, _$identity);
+
+  /// Serializes this BookingMoneyMinor to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookingMoneyMinor&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.rentalSubtotal, rentalSubtotal) || other.rentalSubtotal == rentalSubtotal)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.ownerPayout, ownerPayout) || other.ownerPayout == ownerPayout)&&(identical(other.total, total) || other.total == total));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,pricePerDay,rentalSubtotal,deposit,platformFee,ownerPayout,total);
+
+@override
+String toString() {
+  return 'BookingMoneyMinor(pricePerDay: $pricePerDay, rentalSubtotal: $rentalSubtotal, deposit: $deposit, platformFee: $platformFee, ownerPayout: $ownerPayout, total: $total)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $BookingMoneyMinorCopyWith<$Res>  {
+  factory $BookingMoneyMinorCopyWith(BookingMoneyMinor value, $Res Function(BookingMoneyMinor) _then) = _$BookingMoneyMinorCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int pricePerDay,@JsonKey(fromJson: _exactSafeIntegerFromJson) int rentalSubtotal,@JsonKey(fromJson: _exactSafeIntegerFromJson) int deposit,@JsonKey(fromJson: _exactSafeIntegerFromJson) int platformFee,@JsonKey(fromJson: _exactSafeIntegerFromJson) int ownerPayout,@JsonKey(fromJson: _exactSafeIntegerFromJson) int total
+});
+
+
+
+
+}
+/// @nodoc
+class _$BookingMoneyMinorCopyWithImpl<$Res>
+    implements $BookingMoneyMinorCopyWith<$Res> {
+  _$BookingMoneyMinorCopyWithImpl(this._self, this._then);
+
+  final BookingMoneyMinor _self;
+  final $Res Function(BookingMoneyMinor) _then;
+
+/// Create a copy of BookingMoneyMinor
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? pricePerDay = null,Object? rentalSubtotal = null,Object? deposit = null,Object? platformFee = null,Object? ownerPayout = null,Object? total = null,}) {
+  return _then(_self.copyWith(
+pricePerDay: null == pricePerDay ? _self.pricePerDay : pricePerDay // ignore: cast_nullable_to_non_nullable
+as int,rentalSubtotal: null == rentalSubtotal ? _self.rentalSubtotal : rentalSubtotal // ignore: cast_nullable_to_non_nullable
+as int,deposit: null == deposit ? _self.deposit : deposit // ignore: cast_nullable_to_non_nullable
+as int,platformFee: null == platformFee ? _self.platformFee : platformFee // ignore: cast_nullable_to_non_nullable
+as int,ownerPayout: null == ownerPayout ? _self.ownerPayout : ownerPayout // ignore: cast_nullable_to_non_nullable
+as int,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [BookingMoneyMinor].
+extension BookingMoneyMinorPatterns on BookingMoneyMinor {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _BookingMoneyMinor value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _BookingMoneyMinor() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _BookingMoneyMinor value)  $default,){
+final _that = this;
+switch (_that) {
+case _BookingMoneyMinor():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _BookingMoneyMinor value)?  $default,){
+final _that = this;
+switch (_that) {
+case _BookingMoneyMinor() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int pricePerDay, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int rentalSubtotal, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int deposit, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int platformFee, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int ownerPayout, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int total)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _BookingMoneyMinor() when $default != null:
+return $default(_that.pricePerDay,_that.rentalSubtotal,_that.deposit,_that.platformFee,_that.ownerPayout,_that.total);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int pricePerDay, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int rentalSubtotal, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int deposit, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int platformFee, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int ownerPayout, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int total)  $default,) {final _that = this;
+switch (_that) {
+case _BookingMoneyMinor():
+return $default(_that.pricePerDay,_that.rentalSubtotal,_that.deposit,_that.platformFee,_that.ownerPayout,_that.total);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int pricePerDay, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int rentalSubtotal, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int deposit, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int platformFee, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int ownerPayout, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int total)?  $default,) {final _that = this;
+switch (_that) {
+case _BookingMoneyMinor() when $default != null:
+return $default(_that.pricePerDay,_that.rentalSubtotal,_that.deposit,_that.platformFee,_that.ownerPayout,_that.total);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _BookingMoneyMinor implements BookingMoneyMinor {
+  const _BookingMoneyMinor({@JsonKey(fromJson: _exactSafeIntegerFromJson) required this.pricePerDay, @JsonKey(fromJson: _exactSafeIntegerFromJson) required this.rentalSubtotal, @JsonKey(fromJson: _exactSafeIntegerFromJson) required this.deposit, @JsonKey(fromJson: _exactSafeIntegerFromJson) required this.platformFee, @JsonKey(fromJson: _exactSafeIntegerFromJson) required this.ownerPayout, @JsonKey(fromJson: _exactSafeIntegerFromJson) required this.total});
+  factory _BookingMoneyMinor.fromJson(Map<String, dynamic> json) => _$BookingMoneyMinorFromJson(json);
+
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int pricePerDay;
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int rentalSubtotal;
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int deposit;
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int platformFee;
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int ownerPayout;
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int total;
+
+/// Create a copy of BookingMoneyMinor
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$BookingMoneyMinorCopyWith<_BookingMoneyMinor> get copyWith => __$BookingMoneyMinorCopyWithImpl<_BookingMoneyMinor>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$BookingMoneyMinorToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookingMoneyMinor&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.rentalSubtotal, rentalSubtotal) || other.rentalSubtotal == rentalSubtotal)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.ownerPayout, ownerPayout) || other.ownerPayout == ownerPayout)&&(identical(other.total, total) || other.total == total));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,pricePerDay,rentalSubtotal,deposit,platformFee,ownerPayout,total);
+
+@override
+String toString() {
+  return 'BookingMoneyMinor(pricePerDay: $pricePerDay, rentalSubtotal: $rentalSubtotal, deposit: $deposit, platformFee: $platformFee, ownerPayout: $ownerPayout, total: $total)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$BookingMoneyMinorCopyWith<$Res> implements $BookingMoneyMinorCopyWith<$Res> {
+  factory _$BookingMoneyMinorCopyWith(_BookingMoneyMinor value, $Res Function(_BookingMoneyMinor) _then) = __$BookingMoneyMinorCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int pricePerDay,@JsonKey(fromJson: _exactSafeIntegerFromJson) int rentalSubtotal,@JsonKey(fromJson: _exactSafeIntegerFromJson) int deposit,@JsonKey(fromJson: _exactSafeIntegerFromJson) int platformFee,@JsonKey(fromJson: _exactSafeIntegerFromJson) int ownerPayout,@JsonKey(fromJson: _exactSafeIntegerFromJson) int total
+});
+
+
+
+
+}
+/// @nodoc
+class __$BookingMoneyMinorCopyWithImpl<$Res>
+    implements _$BookingMoneyMinorCopyWith<$Res> {
+  __$BookingMoneyMinorCopyWithImpl(this._self, this._then);
+
+  final _BookingMoneyMinor _self;
+  final $Res Function(_BookingMoneyMinor) _then;
+
+/// Create a copy of BookingMoneyMinor
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? pricePerDay = null,Object? rentalSubtotal = null,Object? deposit = null,Object? platformFee = null,Object? ownerPayout = null,Object? total = null,}) {
+  return _then(_BookingMoneyMinor(
+pricePerDay: null == pricePerDay ? _self.pricePerDay : pricePerDay // ignore: cast_nullable_to_non_nullable
+as int,rentalSubtotal: null == rentalSubtotal ? _self.rentalSubtotal : rentalSubtotal // ignore: cast_nullable_to_non_nullable
+as int,deposit: null == deposit ? _self.deposit : deposit // ignore: cast_nullable_to_non_nullable
+as int,platformFee: null == platformFee ? _self.platformFee : platformFee // ignore: cast_nullable_to_non_nullable
+as int,ownerPayout: null == ownerPayout ? _self.ownerPayout : ownerPayout // ignore: cast_nullable_to_non_nullable
+as int,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$BookingDepositTerms {
+
+ String get policyVersion;@JsonKey(fromJson: _exactSafeIntegerFromJson) int get disputeWindowSeconds;
+/// Create a copy of BookingDepositTerms
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BookingDepositTermsCopyWith<BookingDepositTerms> get copyWith => _$BookingDepositTermsCopyWithImpl<BookingDepositTerms>(this as BookingDepositTerms, _$identity);
+
+  /// Serializes this BookingDepositTerms to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookingDepositTerms&&(identical(other.policyVersion, policyVersion) || other.policyVersion == policyVersion)&&(identical(other.disputeWindowSeconds, disputeWindowSeconds) || other.disputeWindowSeconds == disputeWindowSeconds));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,policyVersion,disputeWindowSeconds);
+
+@override
+String toString() {
+  return 'BookingDepositTerms(policyVersion: $policyVersion, disputeWindowSeconds: $disputeWindowSeconds)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $BookingDepositTermsCopyWith<$Res>  {
+  factory $BookingDepositTermsCopyWith(BookingDepositTerms value, $Res Function(BookingDepositTerms) _then) = _$BookingDepositTermsCopyWithImpl;
+@useResult
+$Res call({
+ String policyVersion,@JsonKey(fromJson: _exactSafeIntegerFromJson) int disputeWindowSeconds
+});
+
+
+
+
+}
+/// @nodoc
+class _$BookingDepositTermsCopyWithImpl<$Res>
+    implements $BookingDepositTermsCopyWith<$Res> {
+  _$BookingDepositTermsCopyWithImpl(this._self, this._then);
+
+  final BookingDepositTerms _self;
+  final $Res Function(BookingDepositTerms) _then;
+
+/// Create a copy of BookingDepositTerms
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? policyVersion = null,Object? disputeWindowSeconds = null,}) {
+  return _then(_self.copyWith(
+policyVersion: null == policyVersion ? _self.policyVersion : policyVersion // ignore: cast_nullable_to_non_nullable
+as String,disputeWindowSeconds: null == disputeWindowSeconds ? _self.disputeWindowSeconds : disputeWindowSeconds // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [BookingDepositTerms].
+extension BookingDepositTermsPatterns on BookingDepositTerms {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _BookingDepositTerms value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _BookingDepositTerms() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _BookingDepositTerms value)  $default,){
+final _that = this;
+switch (_that) {
+case _BookingDepositTerms():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _BookingDepositTerms value)?  $default,){
+final _that = this;
+switch (_that) {
+case _BookingDepositTerms() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String policyVersion, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int disputeWindowSeconds)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _BookingDepositTerms() when $default != null:
+return $default(_that.policyVersion,_that.disputeWindowSeconds);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String policyVersion, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int disputeWindowSeconds)  $default,) {final _that = this;
+switch (_that) {
+case _BookingDepositTerms():
+return $default(_that.policyVersion,_that.disputeWindowSeconds);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String policyVersion, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int disputeWindowSeconds)?  $default,) {final _that = this;
+switch (_that) {
+case _BookingDepositTerms() when $default != null:
+return $default(_that.policyVersion,_that.disputeWindowSeconds);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _BookingDepositTerms implements BookingDepositTerms {
+  const _BookingDepositTerms({required this.policyVersion, @JsonKey(fromJson: _exactSafeIntegerFromJson) required this.disputeWindowSeconds});
+  factory _BookingDepositTerms.fromJson(Map<String, dynamic> json) => _$BookingDepositTermsFromJson(json);
+
+@override final  String policyVersion;
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int disputeWindowSeconds;
+
+/// Create a copy of BookingDepositTerms
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$BookingDepositTermsCopyWith<_BookingDepositTerms> get copyWith => __$BookingDepositTermsCopyWithImpl<_BookingDepositTerms>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$BookingDepositTermsToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookingDepositTerms&&(identical(other.policyVersion, policyVersion) || other.policyVersion == policyVersion)&&(identical(other.disputeWindowSeconds, disputeWindowSeconds) || other.disputeWindowSeconds == disputeWindowSeconds));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,policyVersion,disputeWindowSeconds);
+
+@override
+String toString() {
+  return 'BookingDepositTerms(policyVersion: $policyVersion, disputeWindowSeconds: $disputeWindowSeconds)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$BookingDepositTermsCopyWith<$Res> implements $BookingDepositTermsCopyWith<$Res> {
+  factory _$BookingDepositTermsCopyWith(_BookingDepositTerms value, $Res Function(_BookingDepositTerms) _then) = __$BookingDepositTermsCopyWithImpl;
+@override @useResult
+$Res call({
+ String policyVersion,@JsonKey(fromJson: _exactSafeIntegerFromJson) int disputeWindowSeconds
+});
+
+
+
+
+}
+/// @nodoc
+class __$BookingDepositTermsCopyWithImpl<$Res>
+    implements _$BookingDepositTermsCopyWith<$Res> {
+  __$BookingDepositTermsCopyWithImpl(this._self, this._then);
+
+  final _BookingDepositTerms _self;
+  final $Res Function(_BookingDepositTerms) _then;
+
+/// Create a copy of BookingDepositTerms
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? policyVersion = null,Object? disputeWindowSeconds = null,}) {
+  return _then(_BookingDepositTerms(
+policyVersion: null == policyVersion ? _self.policyVersion : policyVersion // ignore: cast_nullable_to_non_nullable
+as String,disputeWindowSeconds: null == disputeWindowSeconds ? _self.disputeWindowSeconds : disputeWindowSeconds // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$BookingTerms {
 
- String get itemTitle; String? get lenderDisplayName; double get pricePerDay; int get days; double get rentalSubtotal; double? get depositAmount; double get platformFee; double get ownerPayout; double get total; String get currency; String get paymentScenario; String get listingVersion; String? get offerVersion; String? get cancellationPolicyVersion;
+ String get itemTitle; String? get lenderDisplayName; double get pricePerDay; int get days; double get rentalSubtotal; double? get depositAmount; double get platformFee; double get ownerPayout; double get total; String get currency; String get paymentScenario; BookingMoneyMinor? get moneyMinor; BookingDepositTerms? get depositTerms; String get listingVersion; String? get offerVersion; String? get cancellationPolicyVersion;
 /// Create a copy of BookingTerms
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -291,16 +835,16 @@ $BookingTermsCopyWith<BookingTerms> get copyWith => _$BookingTermsCopyWithImpl<B
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookingTerms&&(identical(other.itemTitle, itemTitle) || other.itemTitle == itemTitle)&&(identical(other.lenderDisplayName, lenderDisplayName) || other.lenderDisplayName == lenderDisplayName)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.days, days) || other.days == days)&&(identical(other.rentalSubtotal, rentalSubtotal) || other.rentalSubtotal == rentalSubtotal)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.ownerPayout, ownerPayout) || other.ownerPayout == ownerPayout)&&(identical(other.total, total) || other.total == total)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.paymentScenario, paymentScenario) || other.paymentScenario == paymentScenario)&&(identical(other.listingVersion, listingVersion) || other.listingVersion == listingVersion)&&(identical(other.offerVersion, offerVersion) || other.offerVersion == offerVersion)&&(identical(other.cancellationPolicyVersion, cancellationPolicyVersion) || other.cancellationPolicyVersion == cancellationPolicyVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookingTerms&&(identical(other.itemTitle, itemTitle) || other.itemTitle == itemTitle)&&(identical(other.lenderDisplayName, lenderDisplayName) || other.lenderDisplayName == lenderDisplayName)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.days, days) || other.days == days)&&(identical(other.rentalSubtotal, rentalSubtotal) || other.rentalSubtotal == rentalSubtotal)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.ownerPayout, ownerPayout) || other.ownerPayout == ownerPayout)&&(identical(other.total, total) || other.total == total)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.paymentScenario, paymentScenario) || other.paymentScenario == paymentScenario)&&(identical(other.moneyMinor, moneyMinor) || other.moneyMinor == moneyMinor)&&(identical(other.depositTerms, depositTerms) || other.depositTerms == depositTerms)&&(identical(other.listingVersion, listingVersion) || other.listingVersion == listingVersion)&&(identical(other.offerVersion, offerVersion) || other.offerVersion == offerVersion)&&(identical(other.cancellationPolicyVersion, cancellationPolicyVersion) || other.cancellationPolicyVersion == cancellationPolicyVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,itemTitle,lenderDisplayName,pricePerDay,days,rentalSubtotal,depositAmount,platformFee,ownerPayout,total,currency,paymentScenario,listingVersion,offerVersion,cancellationPolicyVersion);
+int get hashCode => Object.hash(runtimeType,itemTitle,lenderDisplayName,pricePerDay,days,rentalSubtotal,depositAmount,platformFee,ownerPayout,total,currency,paymentScenario,moneyMinor,depositTerms,listingVersion,offerVersion,cancellationPolicyVersion);
 
 @override
 String toString() {
-  return 'BookingTerms(itemTitle: $itemTitle, lenderDisplayName: $lenderDisplayName, pricePerDay: $pricePerDay, days: $days, rentalSubtotal: $rentalSubtotal, depositAmount: $depositAmount, platformFee: $platformFee, ownerPayout: $ownerPayout, total: $total, currency: $currency, paymentScenario: $paymentScenario, listingVersion: $listingVersion, offerVersion: $offerVersion, cancellationPolicyVersion: $cancellationPolicyVersion)';
+  return 'BookingTerms(itemTitle: $itemTitle, lenderDisplayName: $lenderDisplayName, pricePerDay: $pricePerDay, days: $days, rentalSubtotal: $rentalSubtotal, depositAmount: $depositAmount, platformFee: $platformFee, ownerPayout: $ownerPayout, total: $total, currency: $currency, paymentScenario: $paymentScenario, moneyMinor: $moneyMinor, depositTerms: $depositTerms, listingVersion: $listingVersion, offerVersion: $offerVersion, cancellationPolicyVersion: $cancellationPolicyVersion)';
 }
 
 
@@ -311,11 +855,11 @@ abstract mixin class $BookingTermsCopyWith<$Res>  {
   factory $BookingTermsCopyWith(BookingTerms value, $Res Function(BookingTerms) _then) = _$BookingTermsCopyWithImpl;
 @useResult
 $Res call({
- String itemTitle, String? lenderDisplayName, double pricePerDay, int days, double rentalSubtotal, double? depositAmount, double platformFee, double ownerPayout, double total, String currency, String paymentScenario, String listingVersion, String? offerVersion, String? cancellationPolicyVersion
+ String itemTitle, String? lenderDisplayName, double pricePerDay, int days, double rentalSubtotal, double? depositAmount, double platformFee, double ownerPayout, double total, String currency, String paymentScenario, BookingMoneyMinor? moneyMinor, BookingDepositTerms? depositTerms, String listingVersion, String? offerVersion, String? cancellationPolicyVersion
 });
 
 
-
+$BookingMoneyMinorCopyWith<$Res>? get moneyMinor;$BookingDepositTermsCopyWith<$Res>? get depositTerms;
 
 }
 /// @nodoc
@@ -328,7 +872,7 @@ class _$BookingTermsCopyWithImpl<$Res>
 
 /// Create a copy of BookingTerms
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? itemTitle = null,Object? lenderDisplayName = freezed,Object? pricePerDay = null,Object? days = null,Object? rentalSubtotal = null,Object? depositAmount = freezed,Object? platformFee = null,Object? ownerPayout = null,Object? total = null,Object? currency = null,Object? paymentScenario = null,Object? listingVersion = null,Object? offerVersion = freezed,Object? cancellationPolicyVersion = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? itemTitle = null,Object? lenderDisplayName = freezed,Object? pricePerDay = null,Object? days = null,Object? rentalSubtotal = null,Object? depositAmount = freezed,Object? platformFee = null,Object? ownerPayout = null,Object? total = null,Object? currency = null,Object? paymentScenario = null,Object? moneyMinor = freezed,Object? depositTerms = freezed,Object? listingVersion = null,Object? offerVersion = freezed,Object? cancellationPolicyVersion = freezed,}) {
   return _then(_self.copyWith(
 itemTitle: null == itemTitle ? _self.itemTitle : itemTitle // ignore: cast_nullable_to_non_nullable
 as String,lenderDisplayName: freezed == lenderDisplayName ? _self.lenderDisplayName : lenderDisplayName // ignore: cast_nullable_to_non_nullable
@@ -341,13 +885,39 @@ as double,ownerPayout: null == ownerPayout ? _self.ownerPayout : ownerPayout // 
 as double,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
 as double,currency: null == currency ? _self.currency : currency // ignore: cast_nullable_to_non_nullable
 as String,paymentScenario: null == paymentScenario ? _self.paymentScenario : paymentScenario // ignore: cast_nullable_to_non_nullable
-as String,listingVersion: null == listingVersion ? _self.listingVersion : listingVersion // ignore: cast_nullable_to_non_nullable
+as String,moneyMinor: freezed == moneyMinor ? _self.moneyMinor : moneyMinor // ignore: cast_nullable_to_non_nullable
+as BookingMoneyMinor?,depositTerms: freezed == depositTerms ? _self.depositTerms : depositTerms // ignore: cast_nullable_to_non_nullable
+as BookingDepositTerms?,listingVersion: null == listingVersion ? _self.listingVersion : listingVersion // ignore: cast_nullable_to_non_nullable
 as String,offerVersion: freezed == offerVersion ? _self.offerVersion : offerVersion // ignore: cast_nullable_to_non_nullable
 as String?,cancellationPolicyVersion: freezed == cancellationPolicyVersion ? _self.cancellationPolicyVersion : cancellationPolicyVersion // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
+/// Create a copy of BookingTerms
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$BookingMoneyMinorCopyWith<$Res>? get moneyMinor {
+    if (_self.moneyMinor == null) {
+    return null;
+  }
 
+  return $BookingMoneyMinorCopyWith<$Res>(_self.moneyMinor!, (value) {
+    return _then(_self.copyWith(moneyMinor: value));
+  });
+}/// Create a copy of BookingTerms
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$BookingDepositTermsCopyWith<$Res>? get depositTerms {
+    if (_self.depositTerms == null) {
+    return null;
+  }
+
+  return $BookingDepositTermsCopyWith<$Res>(_self.depositTerms!, (value) {
+    return _then(_self.copyWith(depositTerms: value));
+  });
+}
 }
 
 
@@ -429,10 +999,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String itemTitle,  String? lenderDisplayName,  double pricePerDay,  int days,  double rentalSubtotal,  double? depositAmount,  double platformFee,  double ownerPayout,  double total,  String currency,  String paymentScenario,  String listingVersion,  String? offerVersion,  String? cancellationPolicyVersion)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String itemTitle,  String? lenderDisplayName,  double pricePerDay,  int days,  double rentalSubtotal,  double? depositAmount,  double platformFee,  double ownerPayout,  double total,  String currency,  String paymentScenario,  BookingMoneyMinor? moneyMinor,  BookingDepositTerms? depositTerms,  String listingVersion,  String? offerVersion,  String? cancellationPolicyVersion)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BookingTerms() when $default != null:
-return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.days,_that.rentalSubtotal,_that.depositAmount,_that.platformFee,_that.ownerPayout,_that.total,_that.currency,_that.paymentScenario,_that.listingVersion,_that.offerVersion,_that.cancellationPolicyVersion);case _:
+return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.days,_that.rentalSubtotal,_that.depositAmount,_that.platformFee,_that.ownerPayout,_that.total,_that.currency,_that.paymentScenario,_that.moneyMinor,_that.depositTerms,_that.listingVersion,_that.offerVersion,_that.cancellationPolicyVersion);case _:
   return orElse();
 
 }
@@ -450,10 +1020,10 @@ return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String itemTitle,  String? lenderDisplayName,  double pricePerDay,  int days,  double rentalSubtotal,  double? depositAmount,  double platformFee,  double ownerPayout,  double total,  String currency,  String paymentScenario,  String listingVersion,  String? offerVersion,  String? cancellationPolicyVersion)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String itemTitle,  String? lenderDisplayName,  double pricePerDay,  int days,  double rentalSubtotal,  double? depositAmount,  double platformFee,  double ownerPayout,  double total,  String currency,  String paymentScenario,  BookingMoneyMinor? moneyMinor,  BookingDepositTerms? depositTerms,  String listingVersion,  String? offerVersion,  String? cancellationPolicyVersion)  $default,) {final _that = this;
 switch (_that) {
 case _BookingTerms():
-return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.days,_that.rentalSubtotal,_that.depositAmount,_that.platformFee,_that.ownerPayout,_that.total,_that.currency,_that.paymentScenario,_that.listingVersion,_that.offerVersion,_that.cancellationPolicyVersion);case _:
+return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.days,_that.rentalSubtotal,_that.depositAmount,_that.platformFee,_that.ownerPayout,_that.total,_that.currency,_that.paymentScenario,_that.moneyMinor,_that.depositTerms,_that.listingVersion,_that.offerVersion,_that.cancellationPolicyVersion);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -470,10 +1040,10 @@ return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String itemTitle,  String? lenderDisplayName,  double pricePerDay,  int days,  double rentalSubtotal,  double? depositAmount,  double platformFee,  double ownerPayout,  double total,  String currency,  String paymentScenario,  String listingVersion,  String? offerVersion,  String? cancellationPolicyVersion)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String itemTitle,  String? lenderDisplayName,  double pricePerDay,  int days,  double rentalSubtotal,  double? depositAmount,  double platformFee,  double ownerPayout,  double total,  String currency,  String paymentScenario,  BookingMoneyMinor? moneyMinor,  BookingDepositTerms? depositTerms,  String listingVersion,  String? offerVersion,  String? cancellationPolicyVersion)?  $default,) {final _that = this;
 switch (_that) {
 case _BookingTerms() when $default != null:
-return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.days,_that.rentalSubtotal,_that.depositAmount,_that.platformFee,_that.ownerPayout,_that.total,_that.currency,_that.paymentScenario,_that.listingVersion,_that.offerVersion,_that.cancellationPolicyVersion);case _:
+return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.days,_that.rentalSubtotal,_that.depositAmount,_that.platformFee,_that.ownerPayout,_that.total,_that.currency,_that.paymentScenario,_that.moneyMinor,_that.depositTerms,_that.listingVersion,_that.offerVersion,_that.cancellationPolicyVersion);case _:
   return null;
 
 }
@@ -485,7 +1055,7 @@ return $default(_that.itemTitle,_that.lenderDisplayName,_that.pricePerDay,_that.
 @JsonSerializable()
 
 class _BookingTerms implements BookingTerms {
-  const _BookingTerms({required this.itemTitle, required this.lenderDisplayName, required this.pricePerDay, required this.days, required this.rentalSubtotal, required this.depositAmount, required this.platformFee, required this.ownerPayout, required this.total, required this.currency, this.paymentScenario = 'PAY_ON_HANDOVER', required this.listingVersion, required this.offerVersion, required this.cancellationPolicyVersion});
+  const _BookingTerms({required this.itemTitle, required this.lenderDisplayName, required this.pricePerDay, required this.days, required this.rentalSubtotal, required this.depositAmount, required this.platformFee, required this.ownerPayout, required this.total, required this.currency, this.paymentScenario = 'PAY_ON_HANDOVER', this.moneyMinor, this.depositTerms, required this.listingVersion, required this.offerVersion, required this.cancellationPolicyVersion});
   factory _BookingTerms.fromJson(Map<String, dynamic> json) => _$BookingTermsFromJson(json);
 
 @override final  String itemTitle;
@@ -499,6 +1069,8 @@ class _BookingTerms implements BookingTerms {
 @override final  double total;
 @override final  String currency;
 @override@JsonKey() final  String paymentScenario;
+@override final  BookingMoneyMinor? moneyMinor;
+@override final  BookingDepositTerms? depositTerms;
 @override final  String listingVersion;
 @override final  String? offerVersion;
 @override final  String? cancellationPolicyVersion;
@@ -516,16 +1088,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookingTerms&&(identical(other.itemTitle, itemTitle) || other.itemTitle == itemTitle)&&(identical(other.lenderDisplayName, lenderDisplayName) || other.lenderDisplayName == lenderDisplayName)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.days, days) || other.days == days)&&(identical(other.rentalSubtotal, rentalSubtotal) || other.rentalSubtotal == rentalSubtotal)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.ownerPayout, ownerPayout) || other.ownerPayout == ownerPayout)&&(identical(other.total, total) || other.total == total)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.paymentScenario, paymentScenario) || other.paymentScenario == paymentScenario)&&(identical(other.listingVersion, listingVersion) || other.listingVersion == listingVersion)&&(identical(other.offerVersion, offerVersion) || other.offerVersion == offerVersion)&&(identical(other.cancellationPolicyVersion, cancellationPolicyVersion) || other.cancellationPolicyVersion == cancellationPolicyVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookingTerms&&(identical(other.itemTitle, itemTitle) || other.itemTitle == itemTitle)&&(identical(other.lenderDisplayName, lenderDisplayName) || other.lenderDisplayName == lenderDisplayName)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.days, days) || other.days == days)&&(identical(other.rentalSubtotal, rentalSubtotal) || other.rentalSubtotal == rentalSubtotal)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount)&&(identical(other.platformFee, platformFee) || other.platformFee == platformFee)&&(identical(other.ownerPayout, ownerPayout) || other.ownerPayout == ownerPayout)&&(identical(other.total, total) || other.total == total)&&(identical(other.currency, currency) || other.currency == currency)&&(identical(other.paymentScenario, paymentScenario) || other.paymentScenario == paymentScenario)&&(identical(other.moneyMinor, moneyMinor) || other.moneyMinor == moneyMinor)&&(identical(other.depositTerms, depositTerms) || other.depositTerms == depositTerms)&&(identical(other.listingVersion, listingVersion) || other.listingVersion == listingVersion)&&(identical(other.offerVersion, offerVersion) || other.offerVersion == offerVersion)&&(identical(other.cancellationPolicyVersion, cancellationPolicyVersion) || other.cancellationPolicyVersion == cancellationPolicyVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,itemTitle,lenderDisplayName,pricePerDay,days,rentalSubtotal,depositAmount,platformFee,ownerPayout,total,currency,paymentScenario,listingVersion,offerVersion,cancellationPolicyVersion);
+int get hashCode => Object.hash(runtimeType,itemTitle,lenderDisplayName,pricePerDay,days,rentalSubtotal,depositAmount,platformFee,ownerPayout,total,currency,paymentScenario,moneyMinor,depositTerms,listingVersion,offerVersion,cancellationPolicyVersion);
 
 @override
 String toString() {
-  return 'BookingTerms(itemTitle: $itemTitle, lenderDisplayName: $lenderDisplayName, pricePerDay: $pricePerDay, days: $days, rentalSubtotal: $rentalSubtotal, depositAmount: $depositAmount, platformFee: $platformFee, ownerPayout: $ownerPayout, total: $total, currency: $currency, paymentScenario: $paymentScenario, listingVersion: $listingVersion, offerVersion: $offerVersion, cancellationPolicyVersion: $cancellationPolicyVersion)';
+  return 'BookingTerms(itemTitle: $itemTitle, lenderDisplayName: $lenderDisplayName, pricePerDay: $pricePerDay, days: $days, rentalSubtotal: $rentalSubtotal, depositAmount: $depositAmount, platformFee: $platformFee, ownerPayout: $ownerPayout, total: $total, currency: $currency, paymentScenario: $paymentScenario, moneyMinor: $moneyMinor, depositTerms: $depositTerms, listingVersion: $listingVersion, offerVersion: $offerVersion, cancellationPolicyVersion: $cancellationPolicyVersion)';
 }
 
 
@@ -536,11 +1108,11 @@ abstract mixin class _$BookingTermsCopyWith<$Res> implements $BookingTermsCopyWi
   factory _$BookingTermsCopyWith(_BookingTerms value, $Res Function(_BookingTerms) _then) = __$BookingTermsCopyWithImpl;
 @override @useResult
 $Res call({
- String itemTitle, String? lenderDisplayName, double pricePerDay, int days, double rentalSubtotal, double? depositAmount, double platformFee, double ownerPayout, double total, String currency, String paymentScenario, String listingVersion, String? offerVersion, String? cancellationPolicyVersion
+ String itemTitle, String? lenderDisplayName, double pricePerDay, int days, double rentalSubtotal, double? depositAmount, double platformFee, double ownerPayout, double total, String currency, String paymentScenario, BookingMoneyMinor? moneyMinor, BookingDepositTerms? depositTerms, String listingVersion, String? offerVersion, String? cancellationPolicyVersion
 });
 
 
-
+@override $BookingMoneyMinorCopyWith<$Res>? get moneyMinor;@override $BookingDepositTermsCopyWith<$Res>? get depositTerms;
 
 }
 /// @nodoc
@@ -553,7 +1125,7 @@ class __$BookingTermsCopyWithImpl<$Res>
 
 /// Create a copy of BookingTerms
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? itemTitle = null,Object? lenderDisplayName = freezed,Object? pricePerDay = null,Object? days = null,Object? rentalSubtotal = null,Object? depositAmount = freezed,Object? platformFee = null,Object? ownerPayout = null,Object? total = null,Object? currency = null,Object? paymentScenario = null,Object? listingVersion = null,Object? offerVersion = freezed,Object? cancellationPolicyVersion = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? itemTitle = null,Object? lenderDisplayName = freezed,Object? pricePerDay = null,Object? days = null,Object? rentalSubtotal = null,Object? depositAmount = freezed,Object? platformFee = null,Object? ownerPayout = null,Object? total = null,Object? currency = null,Object? paymentScenario = null,Object? moneyMinor = freezed,Object? depositTerms = freezed,Object? listingVersion = null,Object? offerVersion = freezed,Object? cancellationPolicyVersion = freezed,}) {
   return _then(_BookingTerms(
 itemTitle: null == itemTitle ? _self.itemTitle : itemTitle // ignore: cast_nullable_to_non_nullable
 as String,lenderDisplayName: freezed == lenderDisplayName ? _self.lenderDisplayName : lenderDisplayName // ignore: cast_nullable_to_non_nullable
@@ -566,9 +1138,1407 @@ as double,ownerPayout: null == ownerPayout ? _self.ownerPayout : ownerPayout // 
 as double,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
 as double,currency: null == currency ? _self.currency : currency // ignore: cast_nullable_to_non_nullable
 as String,paymentScenario: null == paymentScenario ? _self.paymentScenario : paymentScenario // ignore: cast_nullable_to_non_nullable
-as String,listingVersion: null == listingVersion ? _self.listingVersion : listingVersion // ignore: cast_nullable_to_non_nullable
+as String,moneyMinor: freezed == moneyMinor ? _self.moneyMinor : moneyMinor // ignore: cast_nullable_to_non_nullable
+as BookingMoneyMinor?,depositTerms: freezed == depositTerms ? _self.depositTerms : depositTerms // ignore: cast_nullable_to_non_nullable
+as BookingDepositTerms?,listingVersion: null == listingVersion ? _self.listingVersion : listingVersion // ignore: cast_nullable_to_non_nullable
 as String,offerVersion: freezed == offerVersion ? _self.offerVersion : offerVersion // ignore: cast_nullable_to_non_nullable
 as String?,cancellationPolicyVersion: freezed == cancellationPolicyVersion ? _self.cancellationPolicyVersion : cancellationPolicyVersion // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+/// Create a copy of BookingTerms
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$BookingMoneyMinorCopyWith<$Res>? get moneyMinor {
+    if (_self.moneyMinor == null) {
+    return null;
+  }
+
+  return $BookingMoneyMinorCopyWith<$Res>(_self.moneyMinor!, (value) {
+    return _then(_self.copyWith(moneyMinor: value));
+  });
+}/// Create a copy of BookingTerms
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$BookingDepositTermsCopyWith<$Res>? get depositTerms {
+    if (_self.depositTerms == null) {
+    return null;
+  }
+
+  return $BookingDepositTermsCopyWith<$Res>(_self.depositTerms!, (value) {
+    return _then(_self.copyWith(depositTerms: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$ParticipantPayment {
+
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int get amountMinor; String get status;
+/// Create a copy of ParticipantPayment
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ParticipantPaymentCopyWith<ParticipantPayment> get copyWith => _$ParticipantPaymentCopyWithImpl<ParticipantPayment>(this as ParticipantPayment, _$identity);
+
+  /// Serializes this ParticipantPayment to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParticipantPayment&&(identical(other.amountMinor, amountMinor) || other.amountMinor == amountMinor)&&(identical(other.status, status) || other.status == status));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,amountMinor,status);
+
+@override
+String toString() {
+  return 'ParticipantPayment(amountMinor: $amountMinor, status: $status)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ParticipantPaymentCopyWith<$Res>  {
+  factory $ParticipantPaymentCopyWith(ParticipantPayment value, $Res Function(ParticipantPayment) _then) = _$ParticipantPaymentCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int amountMinor, String status
+});
+
+
+
+
+}
+/// @nodoc
+class _$ParticipantPaymentCopyWithImpl<$Res>
+    implements $ParticipantPaymentCopyWith<$Res> {
+  _$ParticipantPaymentCopyWithImpl(this._self, this._then);
+
+  final ParticipantPayment _self;
+  final $Res Function(ParticipantPayment) _then;
+
+/// Create a copy of ParticipantPayment
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? amountMinor = null,Object? status = null,}) {
+  return _then(_self.copyWith(
+amountMinor: null == amountMinor ? _self.amountMinor : amountMinor // ignore: cast_nullable_to_non_nullable
+as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ParticipantPayment].
+extension ParticipantPaymentPatterns on ParticipantPayment {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ParticipantPayment value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ParticipantPayment() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ParticipantPayment value)  $default,){
+final _that = this;
+switch (_that) {
+case _ParticipantPayment():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ParticipantPayment value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ParticipantPayment() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int amountMinor,  String status)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ParticipantPayment() when $default != null:
+return $default(_that.amountMinor,_that.status);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int amountMinor,  String status)  $default,) {final _that = this;
+switch (_that) {
+case _ParticipantPayment():
+return $default(_that.amountMinor,_that.status);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int amountMinor,  String status)?  $default,) {final _that = this;
+switch (_that) {
+case _ParticipantPayment() when $default != null:
+return $default(_that.amountMinor,_that.status);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ParticipantPayment implements ParticipantPayment {
+  const _ParticipantPayment({@JsonKey(fromJson: _exactSafeIntegerFromJson) required this.amountMinor, required this.status});
+  factory _ParticipantPayment.fromJson(Map<String, dynamic> json) => _$ParticipantPaymentFromJson(json);
+
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int amountMinor;
+@override final  String status;
+
+/// Create a copy of ParticipantPayment
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ParticipantPaymentCopyWith<_ParticipantPayment> get copyWith => __$ParticipantPaymentCopyWithImpl<_ParticipantPayment>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ParticipantPaymentToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParticipantPayment&&(identical(other.amountMinor, amountMinor) || other.amountMinor == amountMinor)&&(identical(other.status, status) || other.status == status));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,amountMinor,status);
+
+@override
+String toString() {
+  return 'ParticipantPayment(amountMinor: $amountMinor, status: $status)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ParticipantPaymentCopyWith<$Res> implements $ParticipantPaymentCopyWith<$Res> {
+  factory _$ParticipantPaymentCopyWith(_ParticipantPayment value, $Res Function(_ParticipantPayment) _then) = __$ParticipantPaymentCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int amountMinor, String status
+});
+
+
+
+
+}
+/// @nodoc
+class __$ParticipantPaymentCopyWithImpl<$Res>
+    implements _$ParticipantPaymentCopyWith<$Res> {
+  __$ParticipantPaymentCopyWithImpl(this._self, this._then);
+
+  final _ParticipantPayment _self;
+  final $Res Function(_ParticipantPayment) _then;
+
+/// Create a copy of ParticipantPayment
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? amountMinor = null,Object? status = null,}) {
+  return _then(_ParticipantPayment(
+amountMinor: null == amountMinor ? _self.amountMinor : amountMinor // ignore: cast_nullable_to_non_nullable
+as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$ParticipantDeposit {
+
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int get amountMinor; String get status;@JsonKey(fromJson: _exactSafeIntegerFromJson) int get refundedMinor;@JsonKey(fromJson: _exactSafeIntegerFromJson) int get releasedToLenderMinor; String get policyVersion; DateTime? get disputeWindowEndsAt;
+/// Create a copy of ParticipantDeposit
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ParticipantDepositCopyWith<ParticipantDeposit> get copyWith => _$ParticipantDepositCopyWithImpl<ParticipantDeposit>(this as ParticipantDeposit, _$identity);
+
+  /// Serializes this ParticipantDeposit to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParticipantDeposit&&(identical(other.amountMinor, amountMinor) || other.amountMinor == amountMinor)&&(identical(other.status, status) || other.status == status)&&(identical(other.refundedMinor, refundedMinor) || other.refundedMinor == refundedMinor)&&(identical(other.releasedToLenderMinor, releasedToLenderMinor) || other.releasedToLenderMinor == releasedToLenderMinor)&&(identical(other.policyVersion, policyVersion) || other.policyVersion == policyVersion)&&(identical(other.disputeWindowEndsAt, disputeWindowEndsAt) || other.disputeWindowEndsAt == disputeWindowEndsAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,amountMinor,status,refundedMinor,releasedToLenderMinor,policyVersion,disputeWindowEndsAt);
+
+@override
+String toString() {
+  return 'ParticipantDeposit(amountMinor: $amountMinor, status: $status, refundedMinor: $refundedMinor, releasedToLenderMinor: $releasedToLenderMinor, policyVersion: $policyVersion, disputeWindowEndsAt: $disputeWindowEndsAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ParticipantDepositCopyWith<$Res>  {
+  factory $ParticipantDepositCopyWith(ParticipantDeposit value, $Res Function(ParticipantDeposit) _then) = _$ParticipantDepositCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int amountMinor, String status,@JsonKey(fromJson: _exactSafeIntegerFromJson) int refundedMinor,@JsonKey(fromJson: _exactSafeIntegerFromJson) int releasedToLenderMinor, String policyVersion, DateTime? disputeWindowEndsAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$ParticipantDepositCopyWithImpl<$Res>
+    implements $ParticipantDepositCopyWith<$Res> {
+  _$ParticipantDepositCopyWithImpl(this._self, this._then);
+
+  final ParticipantDeposit _self;
+  final $Res Function(ParticipantDeposit) _then;
+
+/// Create a copy of ParticipantDeposit
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? amountMinor = null,Object? status = null,Object? refundedMinor = null,Object? releasedToLenderMinor = null,Object? policyVersion = null,Object? disputeWindowEndsAt = freezed,}) {
+  return _then(_self.copyWith(
+amountMinor: null == amountMinor ? _self.amountMinor : amountMinor // ignore: cast_nullable_to_non_nullable
+as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,refundedMinor: null == refundedMinor ? _self.refundedMinor : refundedMinor // ignore: cast_nullable_to_non_nullable
+as int,releasedToLenderMinor: null == releasedToLenderMinor ? _self.releasedToLenderMinor : releasedToLenderMinor // ignore: cast_nullable_to_non_nullable
+as int,policyVersion: null == policyVersion ? _self.policyVersion : policyVersion // ignore: cast_nullable_to_non_nullable
+as String,disputeWindowEndsAt: freezed == disputeWindowEndsAt ? _self.disputeWindowEndsAt : disputeWindowEndsAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ParticipantDeposit].
+extension ParticipantDepositPatterns on ParticipantDeposit {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ParticipantDeposit value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ParticipantDeposit() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ParticipantDeposit value)  $default,){
+final _that = this;
+switch (_that) {
+case _ParticipantDeposit():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ParticipantDeposit value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ParticipantDeposit() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int amountMinor,  String status, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int refundedMinor, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int releasedToLenderMinor,  String policyVersion,  DateTime? disputeWindowEndsAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ParticipantDeposit() when $default != null:
+return $default(_that.amountMinor,_that.status,_that.refundedMinor,_that.releasedToLenderMinor,_that.policyVersion,_that.disputeWindowEndsAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int amountMinor,  String status, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int refundedMinor, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int releasedToLenderMinor,  String policyVersion,  DateTime? disputeWindowEndsAt)  $default,) {final _that = this;
+switch (_that) {
+case _ParticipantDeposit():
+return $default(_that.amountMinor,_that.status,_that.refundedMinor,_that.releasedToLenderMinor,_that.policyVersion,_that.disputeWindowEndsAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _exactSafeIntegerFromJson)  int amountMinor,  String status, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int refundedMinor, @JsonKey(fromJson: _exactSafeIntegerFromJson)  int releasedToLenderMinor,  String policyVersion,  DateTime? disputeWindowEndsAt)?  $default,) {final _that = this;
+switch (_that) {
+case _ParticipantDeposit() when $default != null:
+return $default(_that.amountMinor,_that.status,_that.refundedMinor,_that.releasedToLenderMinor,_that.policyVersion,_that.disputeWindowEndsAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ParticipantDeposit implements ParticipantDeposit {
+  const _ParticipantDeposit({@JsonKey(fromJson: _exactSafeIntegerFromJson) required this.amountMinor, required this.status, @JsonKey(fromJson: _exactSafeIntegerFromJson) required this.refundedMinor, @JsonKey(fromJson: _exactSafeIntegerFromJson) required this.releasedToLenderMinor, required this.policyVersion, required this.disputeWindowEndsAt});
+  factory _ParticipantDeposit.fromJson(Map<String, dynamic> json) => _$ParticipantDepositFromJson(json);
+
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int amountMinor;
+@override final  String status;
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int refundedMinor;
+@override@JsonKey(fromJson: _exactSafeIntegerFromJson) final  int releasedToLenderMinor;
+@override final  String policyVersion;
+@override final  DateTime? disputeWindowEndsAt;
+
+/// Create a copy of ParticipantDeposit
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ParticipantDepositCopyWith<_ParticipantDeposit> get copyWith => __$ParticipantDepositCopyWithImpl<_ParticipantDeposit>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ParticipantDepositToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParticipantDeposit&&(identical(other.amountMinor, amountMinor) || other.amountMinor == amountMinor)&&(identical(other.status, status) || other.status == status)&&(identical(other.refundedMinor, refundedMinor) || other.refundedMinor == refundedMinor)&&(identical(other.releasedToLenderMinor, releasedToLenderMinor) || other.releasedToLenderMinor == releasedToLenderMinor)&&(identical(other.policyVersion, policyVersion) || other.policyVersion == policyVersion)&&(identical(other.disputeWindowEndsAt, disputeWindowEndsAt) || other.disputeWindowEndsAt == disputeWindowEndsAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,amountMinor,status,refundedMinor,releasedToLenderMinor,policyVersion,disputeWindowEndsAt);
+
+@override
+String toString() {
+  return 'ParticipantDeposit(amountMinor: $amountMinor, status: $status, refundedMinor: $refundedMinor, releasedToLenderMinor: $releasedToLenderMinor, policyVersion: $policyVersion, disputeWindowEndsAt: $disputeWindowEndsAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ParticipantDepositCopyWith<$Res> implements $ParticipantDepositCopyWith<$Res> {
+  factory _$ParticipantDepositCopyWith(_ParticipantDeposit value, $Res Function(_ParticipantDeposit) _then) = __$ParticipantDepositCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(fromJson: _exactSafeIntegerFromJson) int amountMinor, String status,@JsonKey(fromJson: _exactSafeIntegerFromJson) int refundedMinor,@JsonKey(fromJson: _exactSafeIntegerFromJson) int releasedToLenderMinor, String policyVersion, DateTime? disputeWindowEndsAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$ParticipantDepositCopyWithImpl<$Res>
+    implements _$ParticipantDepositCopyWith<$Res> {
+  __$ParticipantDepositCopyWithImpl(this._self, this._then);
+
+  final _ParticipantDeposit _self;
+  final $Res Function(_ParticipantDeposit) _then;
+
+/// Create a copy of ParticipantDeposit
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? amountMinor = null,Object? status = null,Object? refundedMinor = null,Object? releasedToLenderMinor = null,Object? policyVersion = null,Object? disputeWindowEndsAt = freezed,}) {
+  return _then(_ParticipantDeposit(
+amountMinor: null == amountMinor ? _self.amountMinor : amountMinor // ignore: cast_nullable_to_non_nullable
+as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,refundedMinor: null == refundedMinor ? _self.refundedMinor : refundedMinor // ignore: cast_nullable_to_non_nullable
+as int,releasedToLenderMinor: null == releasedToLenderMinor ? _self.releasedToLenderMinor : releasedToLenderMinor // ignore: cast_nullable_to_non_nullable
+as int,policyVersion: null == policyVersion ? _self.policyVersion : policyVersion // ignore: cast_nullable_to_non_nullable
+as String,disputeWindowEndsAt: freezed == disputeWindowEndsAt ? _self.disputeWindowEndsAt : disputeWindowEndsAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FinancialDisputeEvidence {
+
+ String get id; String get sha256; DateTime get createdAt;
+/// Create a copy of FinancialDisputeEvidence
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FinancialDisputeEvidenceCopyWith<FinancialDisputeEvidence> get copyWith => _$FinancialDisputeEvidenceCopyWithImpl<FinancialDisputeEvidence>(this as FinancialDisputeEvidence, _$identity);
+
+  /// Serializes this FinancialDisputeEvidence to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FinancialDisputeEvidence&&(identical(other.id, id) || other.id == id)&&(identical(other.sha256, sha256) || other.sha256 == sha256)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,sha256,createdAt);
+
+@override
+String toString() {
+  return 'FinancialDisputeEvidence(id: $id, sha256: $sha256, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FinancialDisputeEvidenceCopyWith<$Res>  {
+  factory $FinancialDisputeEvidenceCopyWith(FinancialDisputeEvidence value, $Res Function(FinancialDisputeEvidence) _then) = _$FinancialDisputeEvidenceCopyWithImpl;
+@useResult
+$Res call({
+ String id, String sha256, DateTime createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$FinancialDisputeEvidenceCopyWithImpl<$Res>
+    implements $FinancialDisputeEvidenceCopyWith<$Res> {
+  _$FinancialDisputeEvidenceCopyWithImpl(this._self, this._then);
+
+  final FinancialDisputeEvidence _self;
+  final $Res Function(FinancialDisputeEvidence) _then;
+
+/// Create a copy of FinancialDisputeEvidence
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? sha256 = null,Object? createdAt = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,sha256: null == sha256 ? _self.sha256 : sha256 // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FinancialDisputeEvidence].
+extension FinancialDisputeEvidencePatterns on FinancialDisputeEvidence {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FinancialDisputeEvidence value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FinancialDisputeEvidence() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FinancialDisputeEvidence value)  $default,){
+final _that = this;
+switch (_that) {
+case _FinancialDisputeEvidence():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FinancialDisputeEvidence value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FinancialDisputeEvidence() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String sha256,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FinancialDisputeEvidence() when $default != null:
+return $default(_that.id,_that.sha256,_that.createdAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String sha256,  DateTime createdAt)  $default,) {final _that = this;
+switch (_that) {
+case _FinancialDisputeEvidence():
+return $default(_that.id,_that.sha256,_that.createdAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String sha256,  DateTime createdAt)?  $default,) {final _that = this;
+switch (_that) {
+case _FinancialDisputeEvidence() when $default != null:
+return $default(_that.id,_that.sha256,_that.createdAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FinancialDisputeEvidence implements FinancialDisputeEvidence {
+  const _FinancialDisputeEvidence({required this.id, required this.sha256, required this.createdAt});
+  factory _FinancialDisputeEvidence.fromJson(Map<String, dynamic> json) => _$FinancialDisputeEvidenceFromJson(json);
+
+@override final  String id;
+@override final  String sha256;
+@override final  DateTime createdAt;
+
+/// Create a copy of FinancialDisputeEvidence
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FinancialDisputeEvidenceCopyWith<_FinancialDisputeEvidence> get copyWith => __$FinancialDisputeEvidenceCopyWithImpl<_FinancialDisputeEvidence>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FinancialDisputeEvidenceToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FinancialDisputeEvidence&&(identical(other.id, id) || other.id == id)&&(identical(other.sha256, sha256) || other.sha256 == sha256)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,sha256,createdAt);
+
+@override
+String toString() {
+  return 'FinancialDisputeEvidence(id: $id, sha256: $sha256, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FinancialDisputeEvidenceCopyWith<$Res> implements $FinancialDisputeEvidenceCopyWith<$Res> {
+  factory _$FinancialDisputeEvidenceCopyWith(_FinancialDisputeEvidence value, $Res Function(_FinancialDisputeEvidence) _then) = __$FinancialDisputeEvidenceCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String sha256, DateTime createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$FinancialDisputeEvidenceCopyWithImpl<$Res>
+    implements _$FinancialDisputeEvidenceCopyWith<$Res> {
+  __$FinancialDisputeEvidenceCopyWithImpl(this._self, this._then);
+
+  final _FinancialDisputeEvidence _self;
+  final $Res Function(_FinancialDisputeEvidence) _then;
+
+/// Create a copy of FinancialDisputeEvidence
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sha256 = null,Object? createdAt = null,}) {
+  return _then(_FinancialDisputeEvidence(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,sha256: null == sha256 ? _self.sha256 : sha256 // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FinancialDispute {
+
+ String get id; String get bookingId; String get openedById; String get reason; String? get description; String get status; DateTime get openedAt; DateTime? get resolvedAt; List<FinancialDisputeEvidence> get evidence;
+/// Create a copy of FinancialDispute
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FinancialDisputeCopyWith<FinancialDispute> get copyWith => _$FinancialDisputeCopyWithImpl<FinancialDispute>(this as FinancialDispute, _$identity);
+
+  /// Serializes this FinancialDispute to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FinancialDispute&&(identical(other.id, id) || other.id == id)&&(identical(other.bookingId, bookingId) || other.bookingId == bookingId)&&(identical(other.openedById, openedById) || other.openedById == openedById)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.description, description) || other.description == description)&&(identical(other.status, status) || other.status == status)&&(identical(other.openedAt, openedAt) || other.openedAt == openedAt)&&(identical(other.resolvedAt, resolvedAt) || other.resolvedAt == resolvedAt)&&const DeepCollectionEquality().equals(other.evidence, evidence));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,bookingId,openedById,reason,description,status,openedAt,resolvedAt,const DeepCollectionEquality().hash(evidence));
+
+@override
+String toString() {
+  return 'FinancialDispute(id: $id, bookingId: $bookingId, openedById: $openedById, reason: $reason, description: $description, status: $status, openedAt: $openedAt, resolvedAt: $resolvedAt, evidence: $evidence)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FinancialDisputeCopyWith<$Res>  {
+  factory $FinancialDisputeCopyWith(FinancialDispute value, $Res Function(FinancialDispute) _then) = _$FinancialDisputeCopyWithImpl;
+@useResult
+$Res call({
+ String id, String bookingId, String openedById, String reason, String? description, String status, DateTime openedAt, DateTime? resolvedAt, List<FinancialDisputeEvidence> evidence
+});
+
+
+
+
+}
+/// @nodoc
+class _$FinancialDisputeCopyWithImpl<$Res>
+    implements $FinancialDisputeCopyWith<$Res> {
+  _$FinancialDisputeCopyWithImpl(this._self, this._then);
+
+  final FinancialDispute _self;
+  final $Res Function(FinancialDispute) _then;
+
+/// Create a copy of FinancialDispute
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? bookingId = null,Object? openedById = null,Object? reason = null,Object? description = freezed,Object? status = null,Object? openedAt = null,Object? resolvedAt = freezed,Object? evidence = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,bookingId: null == bookingId ? _self.bookingId : bookingId // ignore: cast_nullable_to_non_nullable
+as String,openedById: null == openedById ? _self.openedById : openedById // ignore: cast_nullable_to_non_nullable
+as String,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,openedAt: null == openedAt ? _self.openedAt : openedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,resolvedAt: freezed == resolvedAt ? _self.resolvedAt : resolvedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,evidence: null == evidence ? _self.evidence : evidence // ignore: cast_nullable_to_non_nullable
+as List<FinancialDisputeEvidence>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FinancialDispute].
+extension FinancialDisputePatterns on FinancialDispute {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FinancialDispute value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FinancialDispute() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FinancialDispute value)  $default,){
+final _that = this;
+switch (_that) {
+case _FinancialDispute():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FinancialDispute value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FinancialDispute() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String bookingId,  String openedById,  String reason,  String? description,  String status,  DateTime openedAt,  DateTime? resolvedAt,  List<FinancialDisputeEvidence> evidence)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FinancialDispute() when $default != null:
+return $default(_that.id,_that.bookingId,_that.openedById,_that.reason,_that.description,_that.status,_that.openedAt,_that.resolvedAt,_that.evidence);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String bookingId,  String openedById,  String reason,  String? description,  String status,  DateTime openedAt,  DateTime? resolvedAt,  List<FinancialDisputeEvidence> evidence)  $default,) {final _that = this;
+switch (_that) {
+case _FinancialDispute():
+return $default(_that.id,_that.bookingId,_that.openedById,_that.reason,_that.description,_that.status,_that.openedAt,_that.resolvedAt,_that.evidence);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String bookingId,  String openedById,  String reason,  String? description,  String status,  DateTime openedAt,  DateTime? resolvedAt,  List<FinancialDisputeEvidence> evidence)?  $default,) {final _that = this;
+switch (_that) {
+case _FinancialDispute() when $default != null:
+return $default(_that.id,_that.bookingId,_that.openedById,_that.reason,_that.description,_that.status,_that.openedAt,_that.resolvedAt,_that.evidence);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FinancialDispute implements FinancialDispute {
+  const _FinancialDispute({required this.id, required this.bookingId, required this.openedById, required this.reason, required this.description, required this.status, required this.openedAt, required this.resolvedAt, required final  List<FinancialDisputeEvidence> evidence}): _evidence = evidence;
+  factory _FinancialDispute.fromJson(Map<String, dynamic> json) => _$FinancialDisputeFromJson(json);
+
+@override final  String id;
+@override final  String bookingId;
+@override final  String openedById;
+@override final  String reason;
+@override final  String? description;
+@override final  String status;
+@override final  DateTime openedAt;
+@override final  DateTime? resolvedAt;
+ final  List<FinancialDisputeEvidence> _evidence;
+@override List<FinancialDisputeEvidence> get evidence {
+  if (_evidence is EqualUnmodifiableListView) return _evidence;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_evidence);
+}
+
+
+/// Create a copy of FinancialDispute
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FinancialDisputeCopyWith<_FinancialDispute> get copyWith => __$FinancialDisputeCopyWithImpl<_FinancialDispute>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FinancialDisputeToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FinancialDispute&&(identical(other.id, id) || other.id == id)&&(identical(other.bookingId, bookingId) || other.bookingId == bookingId)&&(identical(other.openedById, openedById) || other.openedById == openedById)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.description, description) || other.description == description)&&(identical(other.status, status) || other.status == status)&&(identical(other.openedAt, openedAt) || other.openedAt == openedAt)&&(identical(other.resolvedAt, resolvedAt) || other.resolvedAt == resolvedAt)&&const DeepCollectionEquality().equals(other._evidence, _evidence));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,bookingId,openedById,reason,description,status,openedAt,resolvedAt,const DeepCollectionEquality().hash(_evidence));
+
+@override
+String toString() {
+  return 'FinancialDispute(id: $id, bookingId: $bookingId, openedById: $openedById, reason: $reason, description: $description, status: $status, openedAt: $openedAt, resolvedAt: $resolvedAt, evidence: $evidence)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FinancialDisputeCopyWith<$Res> implements $FinancialDisputeCopyWith<$Res> {
+  factory _$FinancialDisputeCopyWith(_FinancialDispute value, $Res Function(_FinancialDispute) _then) = __$FinancialDisputeCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String bookingId, String openedById, String reason, String? description, String status, DateTime openedAt, DateTime? resolvedAt, List<FinancialDisputeEvidence> evidence
+});
+
+
+
+
+}
+/// @nodoc
+class __$FinancialDisputeCopyWithImpl<$Res>
+    implements _$FinancialDisputeCopyWith<$Res> {
+  __$FinancialDisputeCopyWithImpl(this._self, this._then);
+
+  final _FinancialDispute _self;
+  final $Res Function(_FinancialDispute) _then;
+
+/// Create a copy of FinancialDispute
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? bookingId = null,Object? openedById = null,Object? reason = null,Object? description = freezed,Object? status = null,Object? openedAt = null,Object? resolvedAt = freezed,Object? evidence = null,}) {
+  return _then(_FinancialDispute(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,bookingId: null == bookingId ? _self.bookingId : bookingId // ignore: cast_nullable_to_non_nullable
+as String,openedById: null == openedById ? _self.openedById : openedById // ignore: cast_nullable_to_non_nullable
+as String,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,openedAt: null == openedAt ? _self.openedAt : openedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,resolvedAt: freezed == resolvedAt ? _self.resolvedAt : resolvedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,evidence: null == evidence ? _self._evidence : evidence // ignore: cast_nullable_to_non_nullable
+as List<FinancialDisputeEvidence>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FakeCheckoutResult {
+
+ String get outcome; String? get errorCode;
+/// Create a copy of FakeCheckoutResult
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FakeCheckoutResultCopyWith<FakeCheckoutResult> get copyWith => _$FakeCheckoutResultCopyWithImpl<FakeCheckoutResult>(this as FakeCheckoutResult, _$identity);
+
+  /// Serializes this FakeCheckoutResult to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FakeCheckoutResult&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,outcome,errorCode);
+
+@override
+String toString() {
+  return 'FakeCheckoutResult(outcome: $outcome, errorCode: $errorCode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FakeCheckoutResultCopyWith<$Res>  {
+  factory $FakeCheckoutResultCopyWith(FakeCheckoutResult value, $Res Function(FakeCheckoutResult) _then) = _$FakeCheckoutResultCopyWithImpl;
+@useResult
+$Res call({
+ String outcome, String? errorCode
+});
+
+
+
+
+}
+/// @nodoc
+class _$FakeCheckoutResultCopyWithImpl<$Res>
+    implements $FakeCheckoutResultCopyWith<$Res> {
+  _$FakeCheckoutResultCopyWithImpl(this._self, this._then);
+
+  final FakeCheckoutResult _self;
+  final $Res Function(FakeCheckoutResult) _then;
+
+/// Create a copy of FakeCheckoutResult
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? outcome = null,Object? errorCode = freezed,}) {
+  return _then(_self.copyWith(
+outcome: null == outcome ? _self.outcome : outcome // ignore: cast_nullable_to_non_nullable
+as String,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FakeCheckoutResult].
+extension FakeCheckoutResultPatterns on FakeCheckoutResult {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FakeCheckoutResult value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FakeCheckoutResult() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FakeCheckoutResult value)  $default,){
+final _that = this;
+switch (_that) {
+case _FakeCheckoutResult():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FakeCheckoutResult value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FakeCheckoutResult() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String outcome,  String? errorCode)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FakeCheckoutResult() when $default != null:
+return $default(_that.outcome,_that.errorCode);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String outcome,  String? errorCode)  $default,) {final _that = this;
+switch (_that) {
+case _FakeCheckoutResult():
+return $default(_that.outcome,_that.errorCode);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String outcome,  String? errorCode)?  $default,) {final _that = this;
+switch (_that) {
+case _FakeCheckoutResult() when $default != null:
+return $default(_that.outcome,_that.errorCode);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FakeCheckoutResult implements FakeCheckoutResult {
+  const _FakeCheckoutResult({required this.outcome, this.errorCode});
+  factory _FakeCheckoutResult.fromJson(Map<String, dynamic> json) => _$FakeCheckoutResultFromJson(json);
+
+@override final  String outcome;
+@override final  String? errorCode;
+
+/// Create a copy of FakeCheckoutResult
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FakeCheckoutResultCopyWith<_FakeCheckoutResult> get copyWith => __$FakeCheckoutResultCopyWithImpl<_FakeCheckoutResult>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FakeCheckoutResultToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FakeCheckoutResult&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,outcome,errorCode);
+
+@override
+String toString() {
+  return 'FakeCheckoutResult(outcome: $outcome, errorCode: $errorCode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FakeCheckoutResultCopyWith<$Res> implements $FakeCheckoutResultCopyWith<$Res> {
+  factory _$FakeCheckoutResultCopyWith(_FakeCheckoutResult value, $Res Function(_FakeCheckoutResult) _then) = __$FakeCheckoutResultCopyWithImpl;
+@override @useResult
+$Res call({
+ String outcome, String? errorCode
+});
+
+
+
+
+}
+/// @nodoc
+class __$FakeCheckoutResultCopyWithImpl<$Res>
+    implements _$FakeCheckoutResultCopyWith<$Res> {
+  __$FakeCheckoutResultCopyWithImpl(this._self, this._then);
+
+  final _FakeCheckoutResult _self;
+  final $Res Function(_FakeCheckoutResult) _then;
+
+/// Create a copy of FakeCheckoutResult
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? outcome = null,Object? errorCode = freezed,}) {
+  return _then(_FakeCheckoutResult(
+outcome: null == outcome ? _self.outcome : outcome // ignore: cast_nullable_to_non_nullable
+as String,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -1121,7 +3091,7 @@ as String,
 /// @nodoc
 mixin _$ParticipantBooking {
 
- String get id; String get itemId; String get actorRole; DateTime get startDate; DateTime get endDate; String get status; BookingNextAction get nextAction; DateTime? get expiresAt; String? get cancellationReason; BookingTerms? get terms; BookingHandover? get handover; String? get counterpartyContact; DateTime get createdAt;
+ String get id; String get itemId; String get actorRole; DateTime get startDate; DateTime get endDate; String get status; BookingNextAction get nextAction; DateTime? get expiresAt; String? get cancellationReason; BookingTerms? get terms; ParticipantPayment? get payment; ParticipantDeposit? get deposit; FinancialDispute? get financialDispute; BookingHandover? get handover; String? get counterpartyContact; DateTime get createdAt;
 /// Create a copy of ParticipantBooking
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1134,16 +3104,16 @@ $ParticipantBookingCopyWith<ParticipantBooking> get copyWith => _$ParticipantBoo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParticipantBooking&&(identical(other.id, id) || other.id == id)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.actorRole, actorRole) || other.actorRole == actorRole)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.status, status) || other.status == status)&&(identical(other.nextAction, nextAction) || other.nextAction == nextAction)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.terms, terms) || other.terms == terms)&&(identical(other.handover, handover) || other.handover == handover)&&(identical(other.counterpartyContact, counterpartyContact) || other.counterpartyContact == counterpartyContact)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParticipantBooking&&(identical(other.id, id) || other.id == id)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.actorRole, actorRole) || other.actorRole == actorRole)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.status, status) || other.status == status)&&(identical(other.nextAction, nextAction) || other.nextAction == nextAction)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.terms, terms) || other.terms == terms)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.financialDispute, financialDispute) || other.financialDispute == financialDispute)&&(identical(other.handover, handover) || other.handover == handover)&&(identical(other.counterpartyContact, counterpartyContact) || other.counterpartyContact == counterpartyContact)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,itemId,actorRole,startDate,endDate,status,nextAction,expiresAt,cancellationReason,terms,handover,counterpartyContact,createdAt);
+int get hashCode => Object.hash(runtimeType,id,itemId,actorRole,startDate,endDate,status,nextAction,expiresAt,cancellationReason,terms,payment,deposit,financialDispute,handover,counterpartyContact,createdAt);
 
 @override
 String toString() {
-  return 'ParticipantBooking(id: $id, itemId: $itemId, actorRole: $actorRole, startDate: $startDate, endDate: $endDate, status: $status, nextAction: $nextAction, expiresAt: $expiresAt, cancellationReason: $cancellationReason, terms: $terms, handover: $handover, counterpartyContact: $counterpartyContact, createdAt: $createdAt)';
+  return 'ParticipantBooking(id: $id, itemId: $itemId, actorRole: $actorRole, startDate: $startDate, endDate: $endDate, status: $status, nextAction: $nextAction, expiresAt: $expiresAt, cancellationReason: $cancellationReason, terms: $terms, payment: $payment, deposit: $deposit, financialDispute: $financialDispute, handover: $handover, counterpartyContact: $counterpartyContact, createdAt: $createdAt)';
 }
 
 
@@ -1154,11 +3124,11 @@ abstract mixin class $ParticipantBookingCopyWith<$Res>  {
   factory $ParticipantBookingCopyWith(ParticipantBooking value, $Res Function(ParticipantBooking) _then) = _$ParticipantBookingCopyWithImpl;
 @useResult
 $Res call({
- String id, String itemId, String actorRole, DateTime startDate, DateTime endDate, String status, BookingNextAction nextAction, DateTime? expiresAt, String? cancellationReason, BookingTerms? terms, BookingHandover? handover, String? counterpartyContact, DateTime createdAt
+ String id, String itemId, String actorRole, DateTime startDate, DateTime endDate, String status, BookingNextAction nextAction, DateTime? expiresAt, String? cancellationReason, BookingTerms? terms, ParticipantPayment? payment, ParticipantDeposit? deposit, FinancialDispute? financialDispute, BookingHandover? handover, String? counterpartyContact, DateTime createdAt
 });
 
 
-$BookingNextActionCopyWith<$Res> get nextAction;$BookingTermsCopyWith<$Res>? get terms;$BookingHandoverCopyWith<$Res>? get handover;
+$BookingNextActionCopyWith<$Res> get nextAction;$BookingTermsCopyWith<$Res>? get terms;$ParticipantPaymentCopyWith<$Res>? get payment;$ParticipantDepositCopyWith<$Res>? get deposit;$FinancialDisputeCopyWith<$Res>? get financialDispute;$BookingHandoverCopyWith<$Res>? get handover;
 
 }
 /// @nodoc
@@ -1171,7 +3141,7 @@ class _$ParticipantBookingCopyWithImpl<$Res>
 
 /// Create a copy of ParticipantBooking
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? itemId = null,Object? actorRole = null,Object? startDate = null,Object? endDate = null,Object? status = null,Object? nextAction = null,Object? expiresAt = freezed,Object? cancellationReason = freezed,Object? terms = freezed,Object? handover = freezed,Object? counterpartyContact = freezed,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? itemId = null,Object? actorRole = null,Object? startDate = null,Object? endDate = null,Object? status = null,Object? nextAction = null,Object? expiresAt = freezed,Object? cancellationReason = freezed,Object? terms = freezed,Object? payment = freezed,Object? deposit = freezed,Object? financialDispute = freezed,Object? handover = freezed,Object? counterpartyContact = freezed,Object? createdAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
@@ -1183,7 +3153,10 @@ as String,nextAction: null == nextAction ? _self.nextAction : nextAction // igno
 as BookingNextAction,expiresAt: freezed == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,cancellationReason: freezed == cancellationReason ? _self.cancellationReason : cancellationReason // ignore: cast_nullable_to_non_nullable
 as String?,terms: freezed == terms ? _self.terms : terms // ignore: cast_nullable_to_non_nullable
-as BookingTerms?,handover: freezed == handover ? _self.handover : handover // ignore: cast_nullable_to_non_nullable
+as BookingTerms?,payment: freezed == payment ? _self.payment : payment // ignore: cast_nullable_to_non_nullable
+as ParticipantPayment?,deposit: freezed == deposit ? _self.deposit : deposit // ignore: cast_nullable_to_non_nullable
+as ParticipantDeposit?,financialDispute: freezed == financialDispute ? _self.financialDispute : financialDispute // ignore: cast_nullable_to_non_nullable
+as FinancialDispute?,handover: freezed == handover ? _self.handover : handover // ignore: cast_nullable_to_non_nullable
 as BookingHandover?,counterpartyContact: freezed == counterpartyContact ? _self.counterpartyContact : counterpartyContact // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
@@ -1209,6 +3182,42 @@ $BookingTermsCopyWith<$Res>? get terms {
 
   return $BookingTermsCopyWith<$Res>(_self.terms!, (value) {
     return _then(_self.copyWith(terms: value));
+  });
+}/// Create a copy of ParticipantBooking
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ParticipantPaymentCopyWith<$Res>? get payment {
+    if (_self.payment == null) {
+    return null;
+  }
+
+  return $ParticipantPaymentCopyWith<$Res>(_self.payment!, (value) {
+    return _then(_self.copyWith(payment: value));
+  });
+}/// Create a copy of ParticipantBooking
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ParticipantDepositCopyWith<$Res>? get deposit {
+    if (_self.deposit == null) {
+    return null;
+  }
+
+  return $ParticipantDepositCopyWith<$Res>(_self.deposit!, (value) {
+    return _then(_self.copyWith(deposit: value));
+  });
+}/// Create a copy of ParticipantBooking
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FinancialDisputeCopyWith<$Res>? get financialDispute {
+    if (_self.financialDispute == null) {
+    return null;
+  }
+
+  return $FinancialDisputeCopyWith<$Res>(_self.financialDispute!, (value) {
+    return _then(_self.copyWith(financialDispute: value));
   });
 }/// Create a copy of ParticipantBooking
 /// with the given fields replaced by the non-null parameter values.
@@ -1304,10 +3313,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String itemId,  String actorRole,  DateTime startDate,  DateTime endDate,  String status,  BookingNextAction nextAction,  DateTime? expiresAt,  String? cancellationReason,  BookingTerms? terms,  BookingHandover? handover,  String? counterpartyContact,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String itemId,  String actorRole,  DateTime startDate,  DateTime endDate,  String status,  BookingNextAction nextAction,  DateTime? expiresAt,  String? cancellationReason,  BookingTerms? terms,  ParticipantPayment? payment,  ParticipantDeposit? deposit,  FinancialDispute? financialDispute,  BookingHandover? handover,  String? counterpartyContact,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ParticipantBooking() when $default != null:
-return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endDate,_that.status,_that.nextAction,_that.expiresAt,_that.cancellationReason,_that.terms,_that.handover,_that.counterpartyContact,_that.createdAt);case _:
+return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endDate,_that.status,_that.nextAction,_that.expiresAt,_that.cancellationReason,_that.terms,_that.payment,_that.deposit,_that.financialDispute,_that.handover,_that.counterpartyContact,_that.createdAt);case _:
   return orElse();
 
 }
@@ -1325,10 +3334,10 @@ return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endD
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String itemId,  String actorRole,  DateTime startDate,  DateTime endDate,  String status,  BookingNextAction nextAction,  DateTime? expiresAt,  String? cancellationReason,  BookingTerms? terms,  BookingHandover? handover,  String? counterpartyContact,  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String itemId,  String actorRole,  DateTime startDate,  DateTime endDate,  String status,  BookingNextAction nextAction,  DateTime? expiresAt,  String? cancellationReason,  BookingTerms? terms,  ParticipantPayment? payment,  ParticipantDeposit? deposit,  FinancialDispute? financialDispute,  BookingHandover? handover,  String? counterpartyContact,  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _ParticipantBooking():
-return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endDate,_that.status,_that.nextAction,_that.expiresAt,_that.cancellationReason,_that.terms,_that.handover,_that.counterpartyContact,_that.createdAt);case _:
+return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endDate,_that.status,_that.nextAction,_that.expiresAt,_that.cancellationReason,_that.terms,_that.payment,_that.deposit,_that.financialDispute,_that.handover,_that.counterpartyContact,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1345,10 +3354,10 @@ return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endD
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String itemId,  String actorRole,  DateTime startDate,  DateTime endDate,  String status,  BookingNextAction nextAction,  DateTime? expiresAt,  String? cancellationReason,  BookingTerms? terms,  BookingHandover? handover,  String? counterpartyContact,  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String itemId,  String actorRole,  DateTime startDate,  DateTime endDate,  String status,  BookingNextAction nextAction,  DateTime? expiresAt,  String? cancellationReason,  BookingTerms? terms,  ParticipantPayment? payment,  ParticipantDeposit? deposit,  FinancialDispute? financialDispute,  BookingHandover? handover,  String? counterpartyContact,  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ParticipantBooking() when $default != null:
-return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endDate,_that.status,_that.nextAction,_that.expiresAt,_that.cancellationReason,_that.terms,_that.handover,_that.counterpartyContact,_that.createdAt);case _:
+return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endDate,_that.status,_that.nextAction,_that.expiresAt,_that.cancellationReason,_that.terms,_that.payment,_that.deposit,_that.financialDispute,_that.handover,_that.counterpartyContact,_that.createdAt);case _:
   return null;
 
 }
@@ -1360,7 +3369,7 @@ return $default(_that.id,_that.itemId,_that.actorRole,_that.startDate,_that.endD
 @JsonSerializable()
 
 class _ParticipantBooking implements ParticipantBooking {
-  const _ParticipantBooking({required this.id, required this.itemId, required this.actorRole, required this.startDate, required this.endDate, required this.status, required this.nextAction, required this.expiresAt, required this.cancellationReason, required this.terms, required this.handover, required this.counterpartyContact, required this.createdAt});
+  const _ParticipantBooking({required this.id, required this.itemId, required this.actorRole, required this.startDate, required this.endDate, required this.status, required this.nextAction, required this.expiresAt, required this.cancellationReason, required this.terms, this.payment, this.deposit, this.financialDispute, required this.handover, required this.counterpartyContact, required this.createdAt});
   factory _ParticipantBooking.fromJson(Map<String, dynamic> json) => _$ParticipantBookingFromJson(json);
 
 @override final  String id;
@@ -1373,6 +3382,9 @@ class _ParticipantBooking implements ParticipantBooking {
 @override final  DateTime? expiresAt;
 @override final  String? cancellationReason;
 @override final  BookingTerms? terms;
+@override final  ParticipantPayment? payment;
+@override final  ParticipantDeposit? deposit;
+@override final  FinancialDispute? financialDispute;
 @override final  BookingHandover? handover;
 @override final  String? counterpartyContact;
 @override final  DateTime createdAt;
@@ -1390,16 +3402,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParticipantBooking&&(identical(other.id, id) || other.id == id)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.actorRole, actorRole) || other.actorRole == actorRole)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.status, status) || other.status == status)&&(identical(other.nextAction, nextAction) || other.nextAction == nextAction)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.terms, terms) || other.terms == terms)&&(identical(other.handover, handover) || other.handover == handover)&&(identical(other.counterpartyContact, counterpartyContact) || other.counterpartyContact == counterpartyContact)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParticipantBooking&&(identical(other.id, id) || other.id == id)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.actorRole, actorRole) || other.actorRole == actorRole)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.status, status) || other.status == status)&&(identical(other.nextAction, nextAction) || other.nextAction == nextAction)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.cancellationReason, cancellationReason) || other.cancellationReason == cancellationReason)&&(identical(other.terms, terms) || other.terms == terms)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.deposit, deposit) || other.deposit == deposit)&&(identical(other.financialDispute, financialDispute) || other.financialDispute == financialDispute)&&(identical(other.handover, handover) || other.handover == handover)&&(identical(other.counterpartyContact, counterpartyContact) || other.counterpartyContact == counterpartyContact)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,itemId,actorRole,startDate,endDate,status,nextAction,expiresAt,cancellationReason,terms,handover,counterpartyContact,createdAt);
+int get hashCode => Object.hash(runtimeType,id,itemId,actorRole,startDate,endDate,status,nextAction,expiresAt,cancellationReason,terms,payment,deposit,financialDispute,handover,counterpartyContact,createdAt);
 
 @override
 String toString() {
-  return 'ParticipantBooking(id: $id, itemId: $itemId, actorRole: $actorRole, startDate: $startDate, endDate: $endDate, status: $status, nextAction: $nextAction, expiresAt: $expiresAt, cancellationReason: $cancellationReason, terms: $terms, handover: $handover, counterpartyContact: $counterpartyContact, createdAt: $createdAt)';
+  return 'ParticipantBooking(id: $id, itemId: $itemId, actorRole: $actorRole, startDate: $startDate, endDate: $endDate, status: $status, nextAction: $nextAction, expiresAt: $expiresAt, cancellationReason: $cancellationReason, terms: $terms, payment: $payment, deposit: $deposit, financialDispute: $financialDispute, handover: $handover, counterpartyContact: $counterpartyContact, createdAt: $createdAt)';
 }
 
 
@@ -1410,11 +3422,11 @@ abstract mixin class _$ParticipantBookingCopyWith<$Res> implements $ParticipantB
   factory _$ParticipantBookingCopyWith(_ParticipantBooking value, $Res Function(_ParticipantBooking) _then) = __$ParticipantBookingCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String itemId, String actorRole, DateTime startDate, DateTime endDate, String status, BookingNextAction nextAction, DateTime? expiresAt, String? cancellationReason, BookingTerms? terms, BookingHandover? handover, String? counterpartyContact, DateTime createdAt
+ String id, String itemId, String actorRole, DateTime startDate, DateTime endDate, String status, BookingNextAction nextAction, DateTime? expiresAt, String? cancellationReason, BookingTerms? terms, ParticipantPayment? payment, ParticipantDeposit? deposit, FinancialDispute? financialDispute, BookingHandover? handover, String? counterpartyContact, DateTime createdAt
 });
 
 
-@override $BookingNextActionCopyWith<$Res> get nextAction;@override $BookingTermsCopyWith<$Res>? get terms;@override $BookingHandoverCopyWith<$Res>? get handover;
+@override $BookingNextActionCopyWith<$Res> get nextAction;@override $BookingTermsCopyWith<$Res>? get terms;@override $ParticipantPaymentCopyWith<$Res>? get payment;@override $ParticipantDepositCopyWith<$Res>? get deposit;@override $FinancialDisputeCopyWith<$Res>? get financialDispute;@override $BookingHandoverCopyWith<$Res>? get handover;
 
 }
 /// @nodoc
@@ -1427,7 +3439,7 @@ class __$ParticipantBookingCopyWithImpl<$Res>
 
 /// Create a copy of ParticipantBooking
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? itemId = null,Object? actorRole = null,Object? startDate = null,Object? endDate = null,Object? status = null,Object? nextAction = null,Object? expiresAt = freezed,Object? cancellationReason = freezed,Object? terms = freezed,Object? handover = freezed,Object? counterpartyContact = freezed,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? itemId = null,Object? actorRole = null,Object? startDate = null,Object? endDate = null,Object? status = null,Object? nextAction = null,Object? expiresAt = freezed,Object? cancellationReason = freezed,Object? terms = freezed,Object? payment = freezed,Object? deposit = freezed,Object? financialDispute = freezed,Object? handover = freezed,Object? counterpartyContact = freezed,Object? createdAt = null,}) {
   return _then(_ParticipantBooking(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
@@ -1439,7 +3451,10 @@ as String,nextAction: null == nextAction ? _self.nextAction : nextAction // igno
 as BookingNextAction,expiresAt: freezed == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,cancellationReason: freezed == cancellationReason ? _self.cancellationReason : cancellationReason // ignore: cast_nullable_to_non_nullable
 as String?,terms: freezed == terms ? _self.terms : terms // ignore: cast_nullable_to_non_nullable
-as BookingTerms?,handover: freezed == handover ? _self.handover : handover // ignore: cast_nullable_to_non_nullable
+as BookingTerms?,payment: freezed == payment ? _self.payment : payment // ignore: cast_nullable_to_non_nullable
+as ParticipantPayment?,deposit: freezed == deposit ? _self.deposit : deposit // ignore: cast_nullable_to_non_nullable
+as ParticipantDeposit?,financialDispute: freezed == financialDispute ? _self.financialDispute : financialDispute // ignore: cast_nullable_to_non_nullable
+as FinancialDispute?,handover: freezed == handover ? _self.handover : handover // ignore: cast_nullable_to_non_nullable
 as BookingHandover?,counterpartyContact: freezed == counterpartyContact ? _self.counterpartyContact : counterpartyContact // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
@@ -1466,6 +3481,42 @@ $BookingTermsCopyWith<$Res>? get terms {
 
   return $BookingTermsCopyWith<$Res>(_self.terms!, (value) {
     return _then(_self.copyWith(terms: value));
+  });
+}/// Create a copy of ParticipantBooking
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ParticipantPaymentCopyWith<$Res>? get payment {
+    if (_self.payment == null) {
+    return null;
+  }
+
+  return $ParticipantPaymentCopyWith<$Res>(_self.payment!, (value) {
+    return _then(_self.copyWith(payment: value));
+  });
+}/// Create a copy of ParticipantBooking
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ParticipantDepositCopyWith<$Res>? get deposit {
+    if (_self.deposit == null) {
+    return null;
+  }
+
+  return $ParticipantDepositCopyWith<$Res>(_self.deposit!, (value) {
+    return _then(_self.copyWith(deposit: value));
+  });
+}/// Create a copy of ParticipantBooking
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FinancialDisputeCopyWith<$Res>? get financialDispute {
+    if (_self.financialDispute == null) {
+    return null;
+  }
+
+  return $FinancialDisputeCopyWith<$Res>(_self.financialDispute!, (value) {
+    return _then(_self.copyWith(financialDispute: value));
   });
 }/// Create a copy of ParticipantBooking
 /// with the given fields replaced by the non-null parameter values.

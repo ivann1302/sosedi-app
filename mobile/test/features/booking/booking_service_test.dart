@@ -94,6 +94,244 @@ void main() {
     expect(bookings.single.terms?.days, 2);
     expect(bookings.single.terms?.total, 900);
     expect(bookings.single.handover, isNull);
+    expect(bookings.single.payment, isNull);
+    expect(bookings.single.deposit, isNull);
+    expect(bookings.single.financialDispute, isNull);
+  });
+
+  test('parses exact minor booking, payment and deposit summaries', () {
+    final parsed = ParticipantBooking.fromJson(fakeBookingJson());
+
+    expect(parsed.terms?.moneyMinor?.pricePerDay, 45000);
+    expect(parsed.terms?.moneyMinor?.rentalSubtotal, 90000);
+    expect(parsed.terms?.moneyMinor?.deposit, 5000);
+    expect(parsed.terms?.moneyMinor?.platformFee, 900);
+    expect(parsed.terms?.moneyMinor?.ownerPayout, 89100);
+    expect(parsed.terms?.moneyMinor?.total, 95000);
+    expect(parsed.payment?.amountMinor, 95000);
+    expect(parsed.payment?.status, 'SUCCEEDED');
+    expect(parsed.deposit?.amountMinor, 5000);
+    expect(parsed.deposit?.status, 'HELD');
+    expect(parsed.deposit?.refundedMinor, 0);
+    expect(parsed.deposit?.releasedToLenderMinor, 0);
+    expect(parsed.deposit?.policyVersion, 'fake-deposit-v1');
+    expect(
+      parsed.deposit?.disputeWindowEndsAt,
+      DateTime.parse('2026-08-03T12:00:00.000Z'),
+    );
+
+    final fractional = fakeBookingJson();
+    final terms = fractional['terms']! as Map<String, Object?>;
+    final money = terms['moneyMinor']! as Map<String, Object?>;
+    terms['moneyMinor'] = <String, Object?>{...money, 'total': 95000.5};
+    expect(
+      () => ParticipantBooking.fromJson(fractional),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('sends fake checkout outcomes with a caller-owned stable key', () async {
+    final outcomes = <String>[];
+    final adapter = CallbackAdapter((options) {
+      expect(options.method, 'POST');
+      expect(options.path, '/dev/fake-safe-deal/bookings/booking-1/checkout');
+      expect(options.headers['Idempotency-Key'], 'stable-checkout-id');
+      final outcome =
+          (options.data! as Map<String, dynamic>)['outcome']! as String;
+      outcomes.add(outcome);
+      return jsonResponse({
+        'success': true,
+        'data': {
+          'outcome': switch (outcome) {
+            'SUCCESS' => 'SUCCEEDED',
+            'DECLINE' => 'DECLINED',
+            _ => 'TIMEOUT',
+          },
+          if (outcome == 'DECLINE') 'errorCode': 'FAKE_DECLINED',
+        },
+        'error': null,
+      });
+    });
+    final service = BookingService(Dio()..httpClientAdapter = adapter);
+
+    final results = <FakeCheckoutResult>[];
+    for (final outcome in ['SUCCESS', 'DECLINE', 'TIMEOUT']) {
+      results.add(
+        await service.fakeCheckout(
+          bookingId: 'booking-1',
+          outcome: outcome,
+          requestId: 'stable-checkout-id',
+        ),
+      );
+    }
+
+    expect(outcomes, ['SUCCESS', 'DECLINE', 'TIMEOUT']);
+    expect(results.map((value) => value.outcome), [
+      'SUCCEEDED',
+      'DECLINED',
+      'TIMEOUT',
+    ]);
+  });
+
+  test(
+    'composes the participant financial dispute into booking details',
+    () async {
+      var requestIndex = 0;
+      final adapter = CallbackAdapter((options) {
+        requestIndex += 1;
+        if (requestIndex == 1) {
+          expect(options.path, '/bookings/booking-1');
+          return jsonResponse({
+            'success': true,
+            'data': fakeBookingJson(),
+            'error': null,
+          });
+        }
+        expect(options.path, '/bookings/booking-1/dispute');
+        return jsonResponse({
+          'success': true,
+          'data': financialDisputeJson(),
+          'error': null,
+        });
+      });
+      final service = BookingService(Dio()..httpClientAdapter = adapter);
+
+      final result = await service.getDetails('booking-1');
+
+      expect(result.financialDispute?.id, 'dispute-1');
+      expect(result.financialDispute?.reason, 'ITEM_DAMAGED');
+      expect(result.financialDispute?.evidence.single.sha256, 'abc123');
+      expect(adapter.requests, hasLength(2));
+    },
+  );
+
+  test('treats only a participant dispute 404 as no dispute', () async {
+    final adapter = CallbackAdapter((options) {
+      if (options.path == '/bookings/booking-1') {
+        return jsonResponse({
+          'success': true,
+          'data': fakeBookingJson(),
+          'error': null,
+        });
+      }
+      return jsonResponse({
+        'success': false,
+        'data': null,
+        'error': {'code': 'NOT_FOUND', 'message': 'Спор не найден'},
+      }, statusCode: 404);
+    });
+    final service = BookingService(Dio()..httpClientAdapter = adapter);
+
+    final result = await service.getDetails('booking-1');
+
+    expect(result.financialDispute, isNull);
+  });
+
+  test('does not swallow a non-404 dispute loading failure', () async {
+    final adapter = CallbackAdapter((options) {
+      if (options.path == '/bookings/booking-1') {
+        return jsonResponse({
+          'success': true,
+          'data': fakeBookingJson(),
+          'error': null,
+        });
+      }
+      return jsonResponse({
+        'success': false,
+        'data': null,
+        'error': {'code': 'TEMPORARY', 'message': 'Повторите позже'},
+      }, statusCode: 503);
+    });
+    final service = BookingService(Dio()..httpClientAdapter = adapter);
+
+    await expectLater(
+      service.getDetails('booking-1'),
+      throwsA(
+        isA<ApiException>().having((error) => error.code, 'code', 'TEMPORARY'),
+      ),
+    );
+  });
+
+  test('opens a financial dispute through the dedicated endpoint', () async {
+    final adapter = CallbackAdapter((options) {
+      expect(options.method, 'POST');
+      expect(options.path, '/bookings/booking-1/disputes');
+      expect(options.data, {
+        'reason': 'ITEM_LOST',
+        'description': 'Вещь не была возвращена после завершения аренды.',
+      });
+      return jsonResponse({
+        'success': true,
+        'data': financialDisputeJson(),
+        'error': null,
+      });
+    });
+    final service = BookingService(Dio()..httpClientAdapter = adapter);
+
+    final dispute = await service.openFinancialDispute(
+      bookingId: 'booking-1',
+      reason: 'ITEM_LOST',
+      description: '  Вещь не была возвращена после завершения аренды.  ',
+    );
+
+    expect(dispute.id, 'dispute-1');
+  });
+
+  test('uploads and attaches private dispute evidence', () async {
+    var requestIndex = 0;
+    final adapter = CallbackAdapter((options) {
+      requestIndex += 1;
+      if (requestIndex == 1) {
+        expect(options.path, '/uploads/presigned-url');
+        expect(options.data, {
+          'purpose': 'DISPUTE_EVIDENCE',
+          'disputeId': 'dispute-1',
+          'fileName': 'dispute-evidence.jpg',
+          'contentType': 'image/jpeg',
+          'sizeBytes': 3,
+        });
+        return jsonResponse({
+          'success': true,
+          'data': {
+            'intentId': 'intent-1',
+            'uploadUrl': 'https://storage.test/private-dispute-upload',
+            'fields': {'key': 'quarantine/dispute.jpg'},
+          },
+          'error': null,
+        });
+      }
+      if (requestIndex == 2) {
+        expect(options.path, 'https://storage.test/private-dispute-upload');
+        expect(options.extra['skipAuth'], isTrue);
+        return ResponseBody.fromString('', 204);
+      }
+      expect(options.path, '/bookings/booking-1/disputes/dispute-1/evidence');
+      expect(options.data, {'intentId': 'intent-1'});
+      return jsonResponse({
+        'success': true,
+        'data': {
+          'id': 'evidence-new',
+          'sha256': 'def456',
+          'createdAt': '2026-08-03T10:00:00.000Z',
+        },
+        'error': null,
+      });
+    });
+    final service = BookingService(Dio()..httpClientAdapter = adapter);
+    final photo = XFile.fromData(
+      Uint8List.fromList([1, 2, 3]),
+      name: 'damage.jpg',
+      mimeType: 'image/jpeg',
+    );
+
+    final evidence = await service.addDisputeEvidence(
+      bookingId: 'booking-1',
+      disputeId: 'dispute-1',
+      photo: photo,
+    );
+
+    expect(evidence.id, 'evidence-new');
+    expect(adapter.requests, hasLength(3));
   });
 
   test('sends one caller-owned request ID for a booking command', () async {
@@ -428,6 +666,67 @@ Map<String, Object?> bookingJson() => {
   'handover': null,
   'counterpartyContact': null,
   'createdAt': '2026-07-29T12:00:00.000Z',
+};
+
+Map<String, Object?> fakeBookingJson() => {
+  ...bookingJson(),
+  'status': 'RETURNED',
+  'expiresAt': null,
+  'terms': {
+    'itemTitle': 'Перфоратор',
+    'lenderDisplayName': 'Иван',
+    'pricePerDay': 450,
+    'days': 2,
+    'rentalSubtotal': 900,
+    'depositAmount': 50,
+    'platformFee': 9,
+    'ownerPayout': 891,
+    'total': 950,
+    'currency': 'RUB',
+    'paymentScenario': 'FAKE_SAFE_DEAL',
+    'moneyMinor': {
+      'pricePerDay': 45000,
+      'rentalSubtotal': 90000,
+      'deposit': 5000,
+      'platformFee': 900,
+      'ownerPayout': 89100,
+      'total': 95000,
+    },
+    'depositTerms': {
+      'policyVersion': 'fake-deposit-v1',
+      'disputeWindowSeconds': 86400,
+    },
+    'listingVersion': '2026-07-28:2',
+    'offerVersion': '2026-08-01.1',
+    'cancellationPolicyVersion': '2026-08-01.2',
+  },
+  'payment': {'amountMinor': 95000, 'status': 'SUCCEEDED'},
+  'deposit': {
+    'amountMinor': 5000,
+    'status': 'HELD',
+    'refundedMinor': 0,
+    'releasedToLenderMinor': 0,
+    'policyVersion': 'fake-deposit-v1',
+    'disputeWindowEndsAt': '2026-08-03T12:00:00.000Z',
+  },
+};
+
+Map<String, Object?> financialDisputeJson() => {
+  'id': 'dispute-1',
+  'bookingId': 'booking-1',
+  'openedById': 'borrower-1',
+  'reason': 'ITEM_DAMAGED',
+  'description': 'После возврата обнаружена новая трещина.',
+  'status': 'OPEN',
+  'openedAt': '2026-08-03T10:00:00.000Z',
+  'resolvedAt': null,
+  'evidence': [
+    {
+      'id': 'evidence-1',
+      'sha256': 'abc123',
+      'createdAt': '2026-08-03T10:01:00.000Z',
+    },
+  ],
 };
 
 Map<String, Object?> bookingMessageJson() => {

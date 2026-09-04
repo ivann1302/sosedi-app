@@ -3,12 +3,50 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'booking_models.freezed.dart';
 part 'booking_models.g.dart';
 
+const _maximumSafeInteger = 9007199254740991;
+
+int _exactSafeIntegerFromJson(Object value) {
+  if (value is! int ||
+      value < -_maximumSafeInteger ||
+      value > _maximumSafeInteger) {
+    throw const FormatException('Expected a safe integer');
+  }
+  return value;
+}
+
 @freezed
 abstract class ItemAvailability with _$ItemAvailability {
   const factory ItemAvailability({required bool available}) = _ItemAvailability;
 
   factory ItemAvailability.fromJson(Map<String, dynamic> json) =>
       _$ItemAvailabilityFromJson(json);
+}
+
+@freezed
+abstract class BookingMoneyMinor with _$BookingMoneyMinor {
+  const factory BookingMoneyMinor({
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int pricePerDay,
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int rentalSubtotal,
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int deposit,
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int platformFee,
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int ownerPayout,
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int total,
+  }) = _BookingMoneyMinor;
+
+  factory BookingMoneyMinor.fromJson(Map<String, dynamic> json) =>
+      _$BookingMoneyMinorFromJson(json);
+}
+
+@freezed
+abstract class BookingDepositTerms with _$BookingDepositTerms {
+  const factory BookingDepositTerms({
+    required String policyVersion,
+    @JsonKey(fromJson: _exactSafeIntegerFromJson)
+    required int disputeWindowSeconds,
+  }) = _BookingDepositTerms;
+
+  factory BookingDepositTerms.fromJson(Map<String, dynamic> json) =>
+      _$BookingDepositTermsFromJson(json);
 }
 
 @freezed
@@ -25,6 +63,8 @@ abstract class BookingTerms with _$BookingTerms {
     required double total,
     required String currency,
     @Default('PAY_ON_HANDOVER') String paymentScenario,
+    BookingMoneyMinor? moneyMinor,
+    BookingDepositTerms? depositTerms,
     required String listingVersion,
     required String? offerVersion,
     required String? cancellationPolicyVersion,
@@ -32,6 +72,74 @@ abstract class BookingTerms with _$BookingTerms {
 
   factory BookingTerms.fromJson(Map<String, dynamic> json) =>
       _$BookingTermsFromJson(json);
+}
+
+@freezed
+abstract class ParticipantPayment with _$ParticipantPayment {
+  const factory ParticipantPayment({
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int amountMinor,
+    required String status,
+  }) = _ParticipantPayment;
+
+  factory ParticipantPayment.fromJson(Map<String, dynamic> json) =>
+      _$ParticipantPaymentFromJson(json);
+}
+
+@freezed
+abstract class ParticipantDeposit with _$ParticipantDeposit {
+  const factory ParticipantDeposit({
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int amountMinor,
+    required String status,
+    @JsonKey(fromJson: _exactSafeIntegerFromJson) required int refundedMinor,
+    @JsonKey(fromJson: _exactSafeIntegerFromJson)
+    required int releasedToLenderMinor,
+    required String policyVersion,
+    required DateTime? disputeWindowEndsAt,
+  }) = _ParticipantDeposit;
+
+  factory ParticipantDeposit.fromJson(Map<String, dynamic> json) =>
+      _$ParticipantDepositFromJson(json);
+}
+
+@freezed
+abstract class FinancialDisputeEvidence with _$FinancialDisputeEvidence {
+  const factory FinancialDisputeEvidence({
+    required String id,
+    required String sha256,
+    required DateTime createdAt,
+  }) = _FinancialDisputeEvidence;
+
+  factory FinancialDisputeEvidence.fromJson(Map<String, dynamic> json) =>
+      _$FinancialDisputeEvidenceFromJson(json);
+}
+
+@freezed
+abstract class FinancialDispute with _$FinancialDispute {
+  const factory FinancialDispute({
+    required String id,
+    required String bookingId,
+    required String openedById,
+    required String reason,
+    required String? description,
+    required String status,
+    required DateTime openedAt,
+    required DateTime? resolvedAt,
+    required List<FinancialDisputeEvidence> evidence,
+  }) = _FinancialDispute;
+
+  factory FinancialDispute.fromJson(Map<String, dynamic> json) =>
+      _$FinancialDisputeFromJson(json);
+}
+
+@freezed
+abstract class FakeCheckoutResult with _$FakeCheckoutResult {
+  const factory FakeCheckoutResult({
+    required String outcome,
+    String? errorCode,
+  }) = _FakeCheckoutResult;
+
+  factory FakeCheckoutResult.fromJson(Map<String, dynamic> json) =>
+      _$FakeCheckoutResultFromJson(json);
 }
 
 @freezed
@@ -72,6 +180,9 @@ abstract class ParticipantBooking with _$ParticipantBooking {
     required DateTime? expiresAt,
     required String? cancellationReason,
     required BookingTerms? terms,
+    ParticipantPayment? payment,
+    ParticipantDeposit? deposit,
+    FinancialDispute? financialDispute,
     required BookingHandover? handover,
     required String? counterpartyContact,
     required DateTime createdAt,

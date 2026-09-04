@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/permissions/app_permissions.dart';
 import '../../../core/permissions/permission_prompt.dart';
@@ -16,7 +15,6 @@ import '../../safety/presentation/report_dialog.dart';
 import '../data/booking_models.dart';
 import '../data/booking_service.dart';
 import '../domain/booking_action_controller.dart';
-import '../domain/demo_payment_controller.dart';
 import 'booking_list_screen.dart';
 
 final bookingEvidencePickerProvider = Provider<BookingEvidencePicker>((ref) {
@@ -343,6 +341,83 @@ class BookingDetailsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _runFakeCheckout(
+    BuildContext context,
+    WidgetRef ref,
+    ParticipantBooking booking,
+    String outcome,
+  ) async {
+    final result = await ref
+        .read(bookingActionProvider.notifier)
+        .fakeCheckout(bookingId: booking.id, outcome: outcome);
+    if (result == null || !context.mounted) return;
+    final message = switch (result.outcome) {
+      'SUCCEEDED' => 'Тестовая оплата подтверждена сервером',
+      'DECLINED' => 'Тестовая оплата отклонена',
+      _ => 'Тестовая оплата не завершена. Можно повторить.',
+    };
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<XFile?> _pickDisputePhoto(BuildContext context, WidgetRef ref) async {
+    final allowed = await requestPermissionFromUserAction(
+      context: context,
+      ref: ref,
+      permission: AppPermission.photos,
+    );
+    if (!allowed || !context.mounted) return null;
+    return ref.read(bookingEvidencePickerProvider).pick();
+  }
+
+  Future<void> _openFinancialDispute(
+    BuildContext context,
+    WidgetRef ref,
+    ParticipantBooking booking,
+  ) async {
+    final submission = await showDialog<_DisputeInput>(
+      context: context,
+      builder: (_) => const _FinancialDisputeDialog(),
+    );
+    if (submission == null || !context.mounted) return;
+    final dispute = await ref
+        .read(bookingActionProvider.notifier)
+        .openFinancialDispute(
+          bookingId: booking.id,
+          reason: submission.reason,
+          description: submission.description,
+        );
+    if (dispute == null || !submission.addPhoto || !context.mounted) return;
+    final photo = await _pickDisputePhoto(context, ref);
+    if (photo == null || !context.mounted) return;
+    await ref
+        .read(bookingActionProvider.notifier)
+        .addDisputeEvidence(
+          bookingId: booking.id,
+          disputeId: dispute.id,
+          photo: photo,
+        );
+  }
+
+  Future<void> _addDisputeEvidence(
+    BuildContext context,
+    WidgetRef ref,
+    ParticipantBooking booking,
+  ) async {
+    final dispute = booking.financialDispute;
+    if (dispute == null) return;
+    final photo = await _pickDisputePhoto(context, ref);
+    if (photo == null || !context.mounted) return;
+    await ref
+        .read(bookingActionProvider.notifier)
+        .addDisputeEvidence(
+          bookingId: booking.id,
+          disputeId: dispute.id,
+          photo: photo,
+        );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final booking = ref.watch(bookingDetailsProvider(bookingId));
@@ -426,6 +501,12 @@ class BookingDetailsScreen extends ConsumerWidget {
             onOpenReview: () => context.push('/bookings/$bookingId/review'),
             onRetryReviews: () =>
                 ref.invalidate(bookingReviewsProvider(bookingId)),
+            onFakeCheckout: (outcome) =>
+                _runFakeCheckout(context, ref, value, outcome),
+            onOpenFinancialDispute: () =>
+                _openFinancialDispute(context, ref, value),
+            onAddDisputeEvidence: () =>
+                _addDisputeEvidence(context, ref, value),
           ),
         ),
       ),
@@ -452,6 +533,9 @@ class _Content extends StatelessWidget {
     required this.onOpenChat,
     required this.onOpenReview,
     required this.onRetryReviews,
+    required this.onFakeCheckout,
+    required this.onOpenFinancialDispute,
+    required this.onAddDisputeEvidence,
   });
 
   final ParticipantBooking booking;
@@ -471,6 +555,9 @@ class _Content extends StatelessWidget {
   final VoidCallback onOpenChat;
   final VoidCallback onOpenReview;
   final VoidCallback onRetryReviews;
+  final ValueChanged<String> onFakeCheckout;
+  final VoidCallback onOpenFinancialDispute;
+  final VoidCallback onAddDisputeEvidence;
 
   @override
   Widget build(BuildContext context) {
@@ -526,12 +613,18 @@ class _Content extends StatelessWidget {
             value: terms.lenderDisplayName ?? 'Имя не указано',
           ),
           _Row(
-            label: '${_money(terms.pricePerDay)} ₽ × ${terms.days} дн.',
-            value: '${_money(terms.rentalSubtotal)} ₽',
+            label:
+                '${_bookingMoney(terms.moneyMinor?.pricePerDay, terms.pricePerDay)} ₽ × ${terms.days} дн.',
+            value:
+                '${_bookingMoney(terms.moneyMinor?.rentalSubtotal, terms.rentalSubtotal)} ₽',
           ),
           _Row(
             label: 'Залог',
-            value: terms.depositAmount == null
+            value: terms.moneyMinor != null
+                ? (terms.moneyMinor!.deposit == 0
+                      ? 'Нет'
+                      : '${_minorMoney(terms.moneyMinor!.deposit)} ₽')
+                : terms.depositAmount == null
                 ? 'Нет'
                 : '${_money(terms.depositAmount!)} ₽',
           ),
@@ -539,13 +632,18 @@ class _Content extends StatelessWidget {
             label: terms.paymentScenario == 'PAY_ON_HANDOVER'
                 ? 'Комиссия Sosedi (офлайн-пилот)'
                 : 'Комиссия Sosedi',
-            value: '${_money(terms.platformFee)} ₽',
+            value:
+                '${_bookingMoney(terms.moneyMinor?.platformFee, terms.platformFee)} ₽',
           ),
           _Row(
             label: 'Выплата владельцу',
-            value: '${_money(terms.ownerPayout)} ₽',
+            value:
+                '${_bookingMoney(terms.moneyMinor?.ownerPayout, terms.ownerPayout)} ₽',
           ),
-          _Row(label: 'Итого', value: '${_money(terms.total)} ₽'),
+          _Row(
+            label: 'Итого',
+            value: '${_bookingMoney(terms.moneyMinor?.total, terms.total)} ₽',
+          ),
           _Row(label: 'Валюта', value: terms.currency),
           _Row(
             label: 'Оплата',
@@ -570,15 +668,23 @@ class _Content extends StatelessWidget {
             ],
           ),
         ],
-        if (AppConfig.demoStubsEnabled &&
+        if (terms?.paymentScenario == 'FAKE_SAFE_DEAL' &&
             booking.actorRole == 'BORROWER' &&
             booking.status == 'CONFIRMED' &&
-            terms != null) ...[
+            booking.payment?.status != 'SUCCEEDED') ...[
           const SizedBox(height: 16),
-          _DemoPaymentCard(
-            bookingId: booking.id,
-            total: terms.total,
-            currency: terms.currency,
+          _FakeCheckoutCard(
+            isLoading: action.isLoading,
+            onOutcome: onFakeCheckout,
+          ),
+        ],
+        if (booking.deposit != null) ...[
+          const Divider(height: 32),
+          _DepositCard(
+            booking: booking,
+            isLoading: action.isLoading,
+            onOpenDispute: onOpenFinancialDispute,
+            onAddEvidence: onAddDisputeEvidence,
           ),
         ],
         if (booking.handover != null) ...[
@@ -696,32 +802,14 @@ class _Content extends StatelessWidget {
   }
 }
 
-class _DemoPaymentCard extends ConsumerWidget {
-  const _DemoPaymentCard({
-    required this.bookingId,
-    required this.total,
-    required this.currency,
-  });
+class _FakeCheckoutCard extends StatelessWidget {
+  const _FakeCheckoutCard({required this.isLoading, required this.onOutcome});
 
-  final String bookingId;
-  final double total;
-  final String currency;
+  final bool isLoading;
+  final ValueChanged<String> onOutcome;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final payment = demoPaymentProvider(bookingId);
-    final result = ref.watch(payment);
-    final status = switch (result) {
-      DemoPaymentResult.idle => null,
-      DemoPaymentResult.processing => 'Обработка тестовой оплаты…',
-      DemoPaymentResult.succeeded => 'Тестовая оплата успешна',
-      DemoPaymentResult.declined => 'Тестовый отказ оплаты',
-    };
-    final isProcessing = result == DemoPaymentResult.processing;
-    final statusIcon = result == DemoPaymentResult.succeeded
-        ? Icons.check_circle_outline
-        : Icons.error_outline;
-
+  Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -733,55 +821,203 @@ class _DemoPaymentCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Демонстрация оплаты',
+              'Тестовый сценарий оплаты',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 6),
             const Text(
-              'Демонстрация. Деньги не списываются, серверное состояние '
-              'брони не меняется и гарантий оплаты нет.',
+              'Только для проверки: деньги не списываются. Результат '
+              'сохраняется сервером в этой брони.',
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Сумма: ${_money(total)} $currency',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            if (status != null) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  if (isProcessing)
-                    const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    Icon(statusIcon),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(status)),
-                ],
-              ),
-            ],
             const SizedBox(height: 12),
-            FilledButton(
-              onPressed: isProcessing
-                  ? null
-                  : () => ref.read(payment.notifier).succeed(),
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.outlineVariant,
-                foregroundColor: Theme.of(context).colorScheme.onSurface,
-              ),
-              child: Text(isProcessing ? 'Обработка…' : 'Успешная оплата'),
-            ),
-            OutlinedButton(
-              onPressed: isProcessing
-                  ? null
-                  : () => ref.read(payment.notifier).decline(),
-              child: const Text('Отказ оплаты'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton(
+                  onPressed: isLoading ? null : () => onOutcome('SUCCESS'),
+                  child: const Text('Успех'),
+                ),
+                OutlinedButton(
+                  onPressed: isLoading ? null : () => onOutcome('DECLINE'),
+                  child: const Text('Отказ'),
+                ),
+                OutlinedButton(
+                  onPressed: isLoading ? null : () => onOutcome('TIMEOUT'),
+                  child: const Text('Таймаут'),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DepositCard extends StatelessWidget {
+  const _DepositCard({
+    required this.booking,
+    required this.isLoading,
+    required this.onOpenDispute,
+    required this.onAddEvidence,
+  });
+
+  final ParticipantBooking booking;
+  final bool isLoading;
+  final VoidCallback onOpenDispute;
+  final VoidCallback onAddEvidence;
+
+  @override
+  Widget build(BuildContext context) {
+    final deposit = booking.deposit!;
+    final dispute = booking.financialDispute;
+    final deadline = deposit.disputeWindowEndsAt;
+    final canOpen =
+        booking.status == 'RETURNED' &&
+        deposit.status == 'HELD' &&
+        dispute == null &&
+        deadline != null &&
+        DateTime.now().isBefore(deadline);
+    final canAddEvidence =
+        dispute != null &&
+        (dispute.status == 'OPEN' || dispute.status == 'UNDER_REVIEW');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Залог', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        _Row(label: 'Сумма', value: '${_minorMoney(deposit.amountMinor)} ₽'),
+        _Row(label: 'Статус', value: _depositStatus(deposit.status)),
+        if (deadline != null)
+          _Row(label: 'Открыть спор до', value: _time(deadline)),
+        if (dispute != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Финансовый спор',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          _Row(label: 'Причина', value: _disputeReason(dispute.reason)),
+          _Row(label: 'Статус спора', value: _disputeStatus(dispute.status)),
+          if (dispute.description != null) Text(dispute.description!),
+          if (dispute.evidence.isNotEmpty)
+            Text('Фото: ${dispute.evidence.length}'),
+        ],
+        if (canOpen)
+          FilledButton(
+            onPressed: isLoading ? null : onOpenDispute,
+            child: const Text('Открыть финансовый спор'),
+          ),
+        if (canAddEvidence)
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onAddEvidence,
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            label: const Text('Добавить фото к спору'),
+          ),
+      ],
+    );
+  }
+}
+
+class _DisputeInput {
+  const _DisputeInput({
+    required this.reason,
+    required this.description,
+    required this.addPhoto,
+  });
+
+  final String reason;
+  final String description;
+  final bool addPhoto;
+}
+
+class _FinancialDisputeDialog extends StatefulWidget {
+  const _FinancialDisputeDialog();
+
+  @override
+  State<_FinancialDisputeDialog> createState() =>
+      _FinancialDisputeDialogState();
+}
+
+class _FinancialDisputeDialogState extends State<_FinancialDisputeDialog> {
+  final _formKey = GlobalKey<FormState>();
+  var _reason = 'ITEM_DAMAGED';
+  var _description = '';
+  var _addPhoto = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Открыть финансовый спор'),
+      scrollable: true,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              initialValue: _reason,
+              decoration: const InputDecoration(labelText: 'Причина'),
+              items: const [
+                DropdownMenuItem(
+                  value: 'ITEM_DAMAGED',
+                  child: Text('Вещь повреждена'),
+                ),
+                DropdownMenuItem(
+                  value: 'ITEM_LOST',
+                  child: Text('Вещь потеряна'),
+                ),
+                DropdownMenuItem(value: 'OTHER', child: Text('Другое')),
+              ],
+              onChanged: (value) => setState(() => _reason = value ?? _reason),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              minLines: 3,
+              maxLines: 6,
+              maxLength: 2000,
+              decoration: const InputDecoration(
+                labelText: 'Факты',
+                hintText: 'Опишите факты без платёжных и паспортных данных',
+              ),
+              onChanged: (value) => _description = value,
+              validator: (value) {
+                final length = value?.trim().length ?? 0;
+                if (length < 10 || length > 2000) {
+                  return 'Введите от 10 до 2000 символов';
+                }
+                return null;
+              },
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _addPhoto,
+              onChanged: (value) => setState(() => _addPhoto = value ?? false),
+              title: const Text('Добавить фото после открытия'),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Отмена'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState?.validate() != true) return;
+            Navigator.pop(
+              context,
+              _DisputeInput(
+                reason: _reason,
+                description: _description.trim(),
+                addPhoto: _addPhoto,
+              ),
+            );
+          },
+          child: const Text('Открыть спор'),
+        ),
+      ],
     );
   }
 }
@@ -1157,6 +1393,41 @@ class _Row extends StatelessWidget {
 String _money(double value) => value == value.roundToDouble()
     ? value.toInt().toString()
     : value.toStringAsFixed(2);
+
+String _minorMoney(int value) {
+  final whole = value ~/ 100;
+  final fraction = (value % 100).abs();
+  return fraction == 0
+      ? whole.toString()
+      : '$whole,${fraction.toString().padLeft(2, '0')}';
+}
+
+String _bookingMoney(int? minor, double legacy) =>
+    minor == null ? _money(legacy) : _minorMoney(minor);
+
+String _depositStatus(String status) => switch (status) {
+  'PENDING' => 'Ожидает тестовой оплаты',
+  'HELD' => 'Удерживается',
+  'DISPUTED' => 'Открыт спор',
+  'RESOLVING' => 'Возврат/выплата обрабатывается',
+  'RESOLVED' => 'Возвращён/распределён',
+  'CANCELLED' => 'Отменён',
+  _ => status,
+};
+
+String _disputeReason(String reason) => switch (reason) {
+  'ITEM_DAMAGED' => 'Вещь повреждена',
+  'ITEM_LOST' => 'Вещь потеряна',
+  'OTHER' => 'Другое',
+  _ => reason,
+};
+
+String _disputeStatus(String status) => switch (status) {
+  'OPEN' => 'Открыт',
+  'UNDER_REVIEW' => 'На рассмотрении',
+  'RESOLVED' => 'Решён',
+  _ => status,
+};
 
 String _time(DateTime value) =>
     '${bookingDate(value.toLocal())} '

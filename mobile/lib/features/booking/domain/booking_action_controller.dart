@@ -38,6 +38,69 @@ class BookingActionController extends AsyncNotifier<String?> {
     );
   }
 
+  Future<FakeCheckoutResult?> fakeCheckout({
+    required String bookingId,
+    required String outcome,
+  }) async {
+    FakeCheckoutResult? result;
+    await _run(
+      actionKey: 'fake-checkout:$bookingId:$outcome',
+      bookingId: bookingId,
+      command: (requestId) async {
+        result = await ref
+            .read(bookingServiceProvider)
+            .fakeCheckout(
+              bookingId: bookingId,
+              outcome: outcome,
+              requestId: requestId,
+            );
+      },
+    );
+    return result;
+  }
+
+  Future<FinancialDispute?> openFinancialDispute({
+    required String bookingId,
+    required String reason,
+    required String description,
+  }) async {
+    FinancialDispute? dispute;
+    await _run(
+      actionKey: 'financial-dispute:$bookingId',
+      bookingId: bookingId,
+      command: (_) async {
+        dispute = await ref
+            .read(bookingServiceProvider)
+            .openFinancialDispute(
+              bookingId: bookingId,
+              reason: reason,
+              description: description,
+            );
+      },
+    );
+    return dispute;
+  }
+
+  Future<void> addDisputeEvidence({
+    required String bookingId,
+    required String disputeId,
+    required XFile photo,
+  }) async {
+    await _run(
+      actionKey: 'financial-dispute-evidence:$bookingId:$disputeId',
+      bookingId: bookingId,
+      command: (_) async {
+        await ref
+            .read(bookingServiceProvider)
+            .addDisputeEvidence(
+              bookingId: bookingId,
+              disputeId: disputeId,
+              photo: photo,
+            );
+      },
+    );
+  }
+
   Future<BookingIssueReceipt?> reportIssue({
     required String bookingId,
     required String reason,

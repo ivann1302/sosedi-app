@@ -122,7 +122,72 @@ class BookingService {
       body,
       (json) => ParticipantBooking.fromJson(json! as Map<String, dynamic>),
     );
-    return _data(envelope, 'Не удалось загрузить бронирование');
+    final booking = _data(envelope, 'Не удалось загрузить бронирование');
+    if (booking.deposit == null) {
+      return booking;
+    }
+    final dispute = await _getFinancialDisputeOrNull(id);
+    return booking.copyWith(financialDispute: dispute);
+  }
+
+  Future<FakeCheckoutResult> fakeCheckout({
+    required String bookingId,
+    required String outcome,
+    required String requestId,
+  }) async {
+    final body = await _post(
+      '/dev/fake-safe-deal/bookings/$bookingId/checkout',
+      data: {'outcome': outcome},
+      options: Options(headers: {'Idempotency-Key': requestId}),
+      fallback: 'Не удалось выполнить тестовую оплату',
+    );
+    final envelope = ApiEnvelope<FakeCheckoutResult>.fromJson(
+      body,
+      (json) => FakeCheckoutResult.fromJson(json! as Map<String, dynamic>),
+    );
+    return _data(envelope, 'Не удалось выполнить тестовую оплату');
+  }
+
+  Future<FinancialDispute> openFinancialDispute({
+    required String bookingId,
+    required String reason,
+    required String description,
+  }) async {
+    final body = await _post(
+      '/bookings/$bookingId/disputes',
+      data: {'reason': reason, 'description': description.trim()},
+      fallback: 'Не удалось открыть финансовый спор',
+    );
+    final envelope = ApiEnvelope<FinancialDispute>.fromJson(
+      body,
+      (json) => FinancialDispute.fromJson(json! as Map<String, dynamic>),
+    );
+    return _data(envelope, 'Не удалось открыть финансовый спор');
+  }
+
+  Future<FinancialDisputeEvidence> addDisputeEvidence({
+    required String bookingId,
+    required String disputeId,
+    required XFile photo,
+  }) async {
+    final intentId = await _uploadEvidenceIntent(
+      purpose: 'DISPUTE_EVIDENCE',
+      entityField: 'disputeId',
+      entityId: disputeId,
+      defaultFileName: 'dispute-evidence',
+      photo: photo,
+    );
+    final body = await _post(
+      '/bookings/$bookingId/disputes/$disputeId/evidence',
+      data: {'intentId': intentId},
+      fallback: 'Не удалось прикрепить снимок к спору',
+    );
+    final envelope = ApiEnvelope<FinancialDisputeEvidence>.fromJson(
+      body,
+      (json) =>
+          FinancialDisputeEvidence.fromJson(json! as Map<String, dynamic>),
+    );
+    return _data(envelope, 'Не удалось прикрепить снимок к спору');
   }
 
   Future<BookingMessagePage> listMessages(
@@ -305,6 +370,22 @@ class BookingService {
   }
 
   Future<String> _uploadBookingEvidence(String bookingId, XFile photo) async {
+    return _uploadEvidenceIntent(
+      purpose: 'BOOKING_EVIDENCE',
+      entityField: 'bookingId',
+      entityId: bookingId,
+      defaultFileName: 'booking-evidence',
+      photo: photo,
+    );
+  }
+
+  Future<String> _uploadEvidenceIntent({
+    required String purpose,
+    required String entityField,
+    required String entityId,
+    required String defaultFileName,
+    required XFile photo,
+  }) async {
     final bytes = await photo.readAsBytes();
     if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
       throw const ApiException(
@@ -314,13 +395,13 @@ class BookingService {
     }
     final contentType = _contentType(photo);
     final fileName = photo.name.isEmpty
-        ? 'booking-evidence.${_extension(contentType)}'
+        ? '$defaultFileName.${_extension(contentType)}'
         : photo.name;
     final body = await _post(
       '/uploads/presigned-url',
       data: {
-        'purpose': 'BOOKING_EVIDENCE',
-        'bookingId': bookingId,
+        'purpose': purpose,
+        entityField: entityId,
         'fileName': fileName,
         'contentType': contentType,
         'sizeBytes': bytes.length,
@@ -355,6 +436,33 @@ class BookingService {
       );
     }
     return upload.intentId;
+  }
+
+  Future<FinancialDispute?> _getFinancialDisputeOrNull(String bookingId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/bookings/$bookingId/dispute',
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const ApiException(
+          code: 'INVALID_RESPONSE',
+          message: 'Не удалось прочитать финансовый спор',
+        );
+      }
+      final envelope = ApiEnvelope<FinancialDispute>.fromJson(
+        body,
+        (json) => FinancialDispute.fromJson(json! as Map<String, dynamic>),
+      );
+      return _data(envelope, 'Не удалось загрузить финансовый спор');
+    } on ApiException {
+      rethrow;
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
+      throw _dioException(error, 'Не удалось загрузить финансовый спор');
+    }
   }
 
   Future<void> _command(
