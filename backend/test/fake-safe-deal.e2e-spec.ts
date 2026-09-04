@@ -181,6 +181,26 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
         },
       },
     });
+    await request(httpServer())
+      .post(`/api/v1/bookings/${maximumBookingId}/confirm`)
+      .set('Authorization', lenderAuthorization)
+      .expect(200);
+    await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${maximumBookingId}/checkout`)
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'maximum-checkout-success')
+      .send({ outcome: 'SUCCESS' })
+      .expect(200);
+    await expect(
+      prisma.payment.findUniqueOrThrow({
+        where: { bookingId: maximumBookingId },
+      }),
+    ).resolves.toMatchObject({
+      amount: new Prisma.Decimal(30_100_000),
+      status: 'SUCCEEDED',
+      checkoutUrl: null,
+      rawPayload: null,
+    });
 
     const itemResponse = await request(httpServer())
       .post('/api/v1/items')
@@ -266,20 +286,202 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       counterpartyContact: null,
     });
 
-    await prisma.payment.create({
-      data: {
-        bookingId,
-        userId: borrower.id,
-        amount: 150,
-      },
+    await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${bookingId}/checkout`)
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'pending-checkout')
+      .send({ outcome: 'SUCCESS' })
+      .expect(409);
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/confirm`)
+      .set('Authorization', lenderAuthorization)
+      .expect(200);
+    await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${bookingId}/checkout`)
+      .set('Authorization', lenderAuthorization)
+      .set('Idempotency-Key', 'lender-checkout')
+      .send({ outcome: 'SUCCESS' })
+      .expect(404);
+    await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${bookingId}/checkout`)
+      .set('Authorization', borrowerAuthorization)
+      .send({ outcome: 'SUCCESS' })
+      .expect(400);
+
+    const declined = await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${bookingId}/checkout`)
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'checkout-declined')
+      .send({ outcome: 'DECLINE' })
+      .expect(200);
+    expect(asRecord(asRecord(declined.body).data)).toEqual({
+      outcome: 'DECLINED',
+      errorCode: 'FAKE_DECLINED',
     });
+    const timedOut = await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${bookingId}/checkout`)
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'checkout-timeout')
+      .send({ outcome: 'TIMEOUT' })
+      .expect(200);
+    expect(asRecord(asRecord(timedOut.body).data)).toEqual({
+      outcome: 'TIMEOUT',
+    });
+    await expect(prisma.payment.count({ where: { bookingId } })).resolves.toBe(
+      0,
+    );
+    await expect(
+      prisma.depositOperation.count({ where: { deposit: { bookingId } } }),
+    ).resolves.toBe(0);
+    await expect(
+      prisma.bookingDeposit.findUniqueOrThrow({ where: { bookingId } }),
+    ).resolves.toMatchObject({ status: DepositStatus.PENDING });
+
+    const succeeded = await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${bookingId}/checkout`)
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'checkout-success')
+      .send({ outcome: 'SUCCESS' })
+      .expect(200);
+    const repeated = await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${bookingId}/checkout`)
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'checkout-success')
+      .send({ outcome: 'SUCCESS' })
+      .expect(200);
+    expect(asRecord(asRecord(repeated.body).data)).toEqual(
+      asRecord(asRecord(succeeded.body).data),
+    );
+    await request(httpServer())
+      .post(`/api/v1/dev/fake-safe-deal/bookings/${bookingId}/checkout`)
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'checkout-success')
+      .send({ outcome: 'DECLINE' })
+      .expect(409);
+
     const withPayment = await request(httpServer())
       .get(`/api/v1/bookings/${bookingId}`)
       .set('Authorization', borrowerAuthorization)
       .expect(200);
     expect(asRecord(asRecord(withPayment.body).data)).toMatchObject({
-      payment: { amountMinor: 15_000, status: 'PENDING' },
+      status: 'CONFIRMED',
+      payment: { amountMinor: 15_000, status: 'SUCCEEDED' },
+      deposit: { amountMinor: 5_000, status: DepositStatus.HELD },
     });
+    await expect(prisma.payment.count({ where: { bookingId } })).resolves.toBe(
+      1,
+    );
+    await expect(
+      prisma.depositOperation.count({ where: { deposit: { bookingId } } }),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.booking.findUniqueOrThrow({ where: { id: bookingId } }),
+    ).resolves.toMatchObject({ status: 'CONFIRMED' });
+
+    await request(httpServer())
+      .post(`/api/v1/bookings/${bookingId}/cancel`)
+      .set('Authorization', borrowerAuthorization)
+      .expect(200);
+    await expect(
+      prisma.bookingDeposit.findUniqueOrThrow({ where: { bookingId } }),
+    ).resolves.toMatchObject({ status: DepositStatus.RESOLVING });
+    await expect(
+      prisma.depositOperation.findMany({
+        where: { deposit: { bookingId } },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ).resolves.toMatchObject([
+      { kind: 'HOLD', status: 'SUCCEEDED', amount: new Prisma.Decimal(50) },
+      { kind: 'REFUND', status: 'PENDING', amount: new Prisma.Decimal(50) },
+    ]);
+
+    const pendingCancellation = await request(httpServer())
+      .post('/api/v1/bookings')
+      .set('Authorization', borrowerAuthorization)
+      .send({
+        itemId,
+        startDate: '2026-11-01',
+        endDate: '2026-11-01',
+        offerVersion: 'e2e-approved-offer-1',
+        cancellationPolicyVersion: 'e2e-approved-cancellation-1',
+        offerAccepted: true,
+        rentalRulesAccepted: true,
+      })
+      .expect(201);
+    const pendingCancellationId = String(
+      asRecord(asRecord(pendingCancellation.body).data).id,
+    );
+    await request(httpServer())
+      .post(`/api/v1/bookings/${pendingCancellationId}/confirm`)
+      .set('Authorization', lenderAuthorization)
+      .expect(200);
+    await request(httpServer())
+      .post(`/api/v1/bookings/${pendingCancellationId}/cancel`)
+      .set('Authorization', borrowerAuthorization)
+      .expect(200);
+    await expect(
+      prisma.bookingDeposit.findUniqueOrThrow({
+        where: { bookingId: pendingCancellationId },
+      }),
+    ).resolves.toMatchObject({ status: DepositStatus.CANCELLED });
+    await expect(
+      prisma.depositOperation.count({
+        where: { deposit: { bookingId: pendingCancellationId } },
+      }),
+    ).resolves.toBe(0);
+
+    const noDepositItemResponse = await request(httpServer())
+      .post('/api/v1/items')
+      .set('Authorization', lenderAuthorization)
+      .send({
+        ...baseItem,
+        title: 'Проектор без залога',
+        depositAmountMinor: 0,
+      })
+      .expect(201);
+    const noDepositItemId = String(
+      asRecord(asRecord(noDepositItemResponse.body).data).id,
+    );
+    await prisma.item.update({
+      where: { id: noDepositItemId },
+      data: { status: ItemStatus.APPROVED },
+    });
+    const noDepositBookingResponse = await request(httpServer())
+      .post('/api/v1/bookings')
+      .set('Authorization', borrowerAuthorization)
+      .send({
+        itemId: noDepositItemId,
+        startDate: '2026-11-02',
+        endDate: '2026-11-02',
+        offerVersion: 'e2e-approved-offer-1',
+        cancellationPolicyVersion: 'e2e-approved-cancellation-1',
+        offerAccepted: true,
+        rentalRulesAccepted: true,
+      })
+      .expect(201);
+    const noDepositBookingId = String(
+      asRecord(asRecord(noDepositBookingResponse.body).data).id,
+    );
+    await request(httpServer())
+      .post(`/api/v1/bookings/${noDepositBookingId}/confirm`)
+      .set('Authorization', lenderAuthorization)
+      .expect(200);
+    await request(httpServer())
+      .post(
+        `/api/v1/dev/fake-safe-deal/bookings/${noDepositBookingId}/checkout`,
+      )
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'no-deposit-checkout')
+      .send({ outcome: 'SUCCESS' })
+      .expect(200);
+    await expect(
+      prisma.payment.count({ where: { bookingId: noDepositBookingId } }),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.bookingDeposit.count({
+        where: { bookingId: noDepositBookingId },
+      }),
+    ).resolves.toBe(0);
   });
 
   afterAll(async () => {

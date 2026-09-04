@@ -172,6 +172,19 @@ describe('Booking availability (e2e)', () => {
     await resetTestState(app);
   });
 
+  it('does not disclose fake checkout routes in offline mode', async () => {
+    const { firstBorrower } = await createFixture();
+
+    await request(httpServer())
+      .post(
+        '/api/v1/dev/fake-safe-deal/bookings/11111111-1111-4111-8111-111111111111/checkout',
+      )
+      .set('Authorization', await authorization(firstBorrower))
+      .set('Idempotency-Key', 'offline-checkout')
+      .send({ outcome: 'SUCCESS' })
+      .expect(404);
+  });
+
   it('rejects direct booking API access while approved terms are unavailable', async () => {
     const { firstBorrower, item } = await createFixture();
     const borrowerAuthorization = await authorization(firstBorrower);

@@ -9,9 +9,11 @@ describe('BookingExpiryService', () => {
   it('idempotently cancels only expired pending bookings with a reason', async () => {
     const updateMany = jest.fn().mockResolvedValue({ count: 1 });
     const createOutbox = jest.fn().mockResolvedValue({ id: 'event-1' });
+    const cancelDeposits = jest.fn().mockResolvedValue({ count: 1 });
     const tx = {
       $executeRaw: jest.fn().mockResolvedValue(1),
       booking: { updateMany },
+      bookingDeposit: { updateMany: cancelDeposits },
       bookingMessage: {
         create: jest.fn().mockResolvedValue({ id: 'message-1' }),
       },
@@ -51,6 +53,14 @@ describe('BookingExpiryService', () => {
       },
     });
     expect(updateMany).toHaveBeenCalledTimes(2);
+    expect(cancelDeposits).toHaveBeenCalledWith({
+      where: {
+        bookingId: 'booking-1',
+        status: 'PENDING',
+      },
+      data: { status: 'CANCELLED' },
+    });
+    expect(cancelDeposits).toHaveBeenCalledTimes(2);
     expect(createOutbox).toHaveBeenCalledTimes(2);
   });
 });

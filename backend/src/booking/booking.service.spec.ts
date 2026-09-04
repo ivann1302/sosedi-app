@@ -5,7 +5,13 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BookingStatus, ItemStatus, Prisma } from '@prisma/client';
+import {
+  BookingStatus,
+  DepositOperationKind,
+  DepositStatus,
+  ItemStatus,
+  Prisma,
+} from '@prisma/client';
 import { TooManyRequestsException } from '../common/http/too-many-requests.exception';
 import { PaymentPolicyService } from '../payments/payment-policy.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -35,6 +41,20 @@ function acceptedRequest(
 
 function offlinePaymentPolicy(): PaymentPolicyService {
   const policy = new PaymentPolicyService(new ConfigService());
+  policy.onModuleInit();
+  return policy;
+}
+
+function fakePaymentPolicy(): PaymentPolicyService {
+  const policy = new PaymentPolicyService(
+    new ConfigService({
+      NODE_ENV: 'test',
+      PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
+      FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '10000000',
+      FAKE_SAFE_DEAL_POLICY_VERSION: 'fake-deposit-v1',
+      FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
+    }),
+  );
   policy.onModuleInit();
   return policy;
 }
@@ -426,6 +446,7 @@ describe('BookingService', () => {
       updatedAt: new Date('2026-07-29T10:00:00.000Z'),
     };
     const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const cancelCompetingDeposits = jest.fn().mockResolvedValue({ count: 1 });
     const createMany = jest.fn().mockResolvedValue({ count: 2 });
     const createSystemMessages = jest.fn().mockResolvedValue({ count: 2 });
     const tx = {
@@ -445,6 +466,7 @@ describe('BookingService', () => {
         }),
         updateMany,
       },
+      bookingDeposit: { updateMany: cancelCompetingDeposits },
       bookingMessage: { createMany: createSystemMessages },
       notificationOutboxEvent: { createMany },
       bookingTransitionHistory: {
@@ -479,6 +501,13 @@ describe('BookingService', () => {
         cancellationReason: BOOKING_COMPETING_CANCELLATION_REASON,
         expiresAt: null,
       },
+    });
+    expect(cancelCompetingDeposits).toHaveBeenCalledWith({
+      where: {
+        bookingId: { in: ['booking-2'] },
+        status: 'PENDING',
+      },
+      data: { status: 'CANCELLED' },
     });
     expect(createMany).toHaveBeenCalledTimes(1);
     expect(createSystemMessages).toHaveBeenCalledWith({
@@ -536,6 +565,128 @@ describe('BookingService', () => {
       await expect(
         service.confirm('lender-1', 'booking-1'),
       ).rejects.toBeInstanceOf(error);
+    },
+  );
+
+  it.each([
+    [DepositStatus.PENDING, DepositStatus.CANCELLED, false],
+    [DepositStatus.HELD, DepositStatus.RESOLVING, true],
+  ] as const)(
+    'cancels a confirmed fake booking with %s deposit',
+    async (depositStatus, expectedStatus, expectsRefund) => {
+      const booking = {
+        id: 'booking-1',
+        itemId: 'item-1',
+        borrowerId: 'borrower-1',
+        lenderId: 'lender-1',
+        startDate: new Date('2026-08-01T00:00:00.000Z'),
+        endDate: new Date('2026-08-01T00:00:00.000Z'),
+        totalAmount: new Prisma.Decimal(150),
+        status: BookingStatus.CONFIRMED,
+        expiresAt: null,
+        cancellationReason: null,
+        disputeOpenedAt: null,
+        termsSnapshot: {
+          itemTitle: 'Проектор',
+          lenderId: 'lender-1',
+          lenderDisplayName: null,
+          pricePerDay: 100,
+          days: 1,
+          rentalSubtotal: 100,
+          depositAmount: 50,
+          platformFee: 1,
+          ownerPayout: 99,
+          total: 150,
+          currency: 'RUB',
+          paymentScenario: 'FAKE_SAFE_DEAL',
+          moneyMinor: {
+            pricePerDay: 10_000,
+            rentalSubtotal: 10_000,
+            deposit: 5_000,
+            platformFee: 100,
+            ownerPayout: 9_900,
+            total: 15_000,
+          },
+          depositTerms: {
+            policyVersion: 'fake-deposit-v1',
+            disputeWindowSeconds: 86_400,
+          },
+          handover: {
+            area: 'Центр',
+            address: 'Приватный адрес',
+            latitude: 54.7,
+            longitude: 20.5,
+          },
+          listingVersion: 'listing-v1',
+          offerVersion: 'offer-v1',
+          cancellationPolicyVersion: 'rules-v1',
+          acceptance: {
+            actorId: 'borrower-1',
+            acceptedAt: '2026-07-29T10:00:00.000Z',
+            method: 'BOOKING_SUBMIT_CHECKBOX',
+            offerVersion: 'offer-v1',
+            cancellationPolicyVersion: 'rules-v1',
+          },
+        },
+        deposit: {
+          id: 'deposit-1',
+          amount: new Prisma.Decimal(50),
+          status: depositStatus,
+        },
+        createdAt: new Date('2026-07-29T10:00:00.000Z'),
+        updatedAt: new Date('2026-07-29T10:00:00.000Z'),
+      };
+      const updateDeposit = jest.fn().mockResolvedValue({ id: 'deposit-1' });
+      const createOperation = jest.fn(
+        (args: { data: Record<string, unknown> }) => {
+          void args;
+          return Promise.resolve({ id: 'operation-1' });
+        },
+      );
+      const tx = {
+        $executeRaw: jest.fn().mockResolvedValue(1),
+        booking: {
+          findFirst: jest.fn().mockResolvedValue(booking),
+          update: jest.fn().mockResolvedValue({
+            ...booking,
+            status: BookingStatus.CANCELLED,
+            cancellationReason: 'BORROWER_CANCELLED',
+          }),
+        },
+        bookingDeposit: { update: updateDeposit },
+        depositOperation: { create: createOperation },
+        bookingMessage: { create: jest.fn().mockResolvedValue({}) },
+        bookingTransitionHistory: { create: jest.fn().mockResolvedValue({}) },
+        notificationOutboxEvent: { create: jest.fn().mockResolvedValue({}) },
+      };
+      const prisma = {
+        $transaction: jest.fn(
+          <T>(callback: (client: typeof tx) => Promise<T>) => callback(tx),
+        ),
+      };
+      const service = new BookingService(
+        prisma as unknown as PrismaService,
+        new ConfigService(),
+        fakePaymentPolicy(),
+      );
+
+      await expect(
+        service.cancelPending('borrower-1', 'booking-1'),
+      ).resolves.toMatchObject({ status: BookingStatus.CANCELLED });
+      expect(updateDeposit).toHaveBeenCalledWith({
+        where: { id: 'deposit-1' },
+        data: { status: expectedStatus },
+      });
+      if (expectsRefund) {
+        expect(createOperation.mock.calls[0]?.[0].data).toMatchObject({
+          depositId: 'deposit-1',
+          kind: DepositOperationKind.REFUND,
+          amount: new Prisma.Decimal(50),
+          idempotencyKey: 'deposit:deposit-1:pre-handover-refund',
+        });
+      } else {
+        expect(createOperation).not.toHaveBeenCalled();
+      }
     },
   );
 });

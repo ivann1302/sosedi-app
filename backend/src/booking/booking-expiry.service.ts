@@ -4,7 +4,11 @@ import {
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { BookingMessageAuthorRole, BookingStatus } from '@prisma/client';
+import {
+  BookingMessageAuthorRole,
+  BookingStatus,
+  DepositStatus,
+} from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingEventType, bookingEventKey } from './booking-events';
@@ -69,6 +73,13 @@ export class BookingExpiryService
         if (result.count === 0) {
           return 0;
         }
+        await tx.bookingDeposit.updateMany({
+          where: {
+            bookingId: candidate.id,
+            status: DepositStatus.PENDING,
+          },
+          data: { status: DepositStatus.CANCELLED },
+        });
         await tx.bookingMessage.create({
           data: {
             bookingId: candidate.id,

@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import {
   BookingMessageAuthorRole,
   BookingStatus,
+  DepositOperationKind,
+  DepositOperationStatus,
   DepositStatus,
   ItemStatus,
   Prisma,
@@ -472,6 +474,15 @@ export class BookingService {
               expiresAt: null,
             },
           });
+          await tx.bookingDeposit.updateMany({
+            where: {
+              bookingId: {
+                in: competitors.map((candidate) => candidate.id),
+              },
+              status: DepositStatus.PENDING,
+            },
+            data: { status: DepositStatus.CANCELLED },
+          });
         }
         await tx.bookingMessage.createMany({
           data: [
@@ -589,6 +600,7 @@ export class BookingService {
           id: bookingId,
           OR: [{ borrowerId: actorId }, { lenderId: actorId }],
         },
+        include: { deposit: true },
       });
       if (!booking) {
         throw new NotFoundException('Бронирование не найдено');
@@ -604,15 +616,44 @@ export class BookingService {
       ) {
         return booking;
       }
-      if (
-        booking.status !== BookingStatus.PENDING ||
-        !booking.expiresAt ||
-        booking.expiresAt <= new Date()
-      ) {
+      const isPending =
+        booking.status === BookingStatus.PENDING &&
+        booking.expiresAt !== null &&
+        booking.expiresAt > new Date();
+      let isConfirmedFake = false;
+      if (booking.status === BookingStatus.CONFIRMED) {
+        const days =
+          Math.floor(
+            (booking.endDate.getTime() - booking.startDate.getTime()) /
+              86_400_000,
+          ) + 1;
+        const snapshot = readBoundBookingTermsSnapshot(booking.termsSnapshot, {
+          borrowerId: booking.borrowerId,
+          lenderId: booking.lenderId,
+          days,
+          totalAmount: booking.totalAmount.toNumber(),
+        });
+        isConfirmedFake = snapshot?.paymentScenario === 'FAKE_SAFE_DEAL';
+        if (isConfirmedFake) {
+          this.paymentPolicy.requireFakeSafeDeal();
+        }
+      }
+      if (!isPending && !isConfirmedFake) {
         throw new ConflictException({
           code: 'INVALID_BOOKING_TRANSITION',
           message:
             'До утверждения cancellation policy можно отменить только ожидающую заявку',
+        });
+      }
+      if (
+        isConfirmedFake &&
+        booking.deposit &&
+        booking.deposit.status !== DepositStatus.PENDING &&
+        booking.deposit.status !== DepositStatus.HELD
+      ) {
+        throw new ConflictException({
+          code: 'INVALID_DEPOSIT_TRANSITION',
+          message: 'Залог нельзя вернуть до передачи вещи',
         });
       }
 
@@ -624,6 +665,27 @@ export class BookingService {
           expiresAt: null,
         },
       });
+      if (booking.deposit?.status === DepositStatus.PENDING) {
+        await tx.bookingDeposit.update({
+          where: { id: booking.deposit.id },
+          data: { status: DepositStatus.CANCELLED },
+        });
+      }
+      if (booking.deposit?.status === DepositStatus.HELD) {
+        await tx.bookingDeposit.update({
+          where: { id: booking.deposit.id },
+          data: { status: DepositStatus.RESOLVING },
+        });
+        await tx.depositOperation.create({
+          data: {
+            depositId: booking.deposit.id,
+            kind: DepositOperationKind.REFUND,
+            amount: booking.deposit.amount,
+            status: DepositOperationStatus.PENDING,
+            idempotencyKey: `deposit:${booking.deposit.id}:pre-handover-refund`,
+          },
+        });
+      }
       await tx.bookingMessage.create({
         data: {
           bookingId: booking.id,
@@ -639,7 +701,7 @@ export class BookingService {
           actorId,
           actorType: isBorrower ? 'BORROWER' : 'LENDER',
           command: 'CANCEL',
-          oldStatus: BookingStatus.PENDING,
+          oldStatus: booking.status,
           newStatus: BookingStatus.CANCELLED,
           reason,
           requestId,
