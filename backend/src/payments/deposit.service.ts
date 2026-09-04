@@ -9,10 +9,12 @@ import {
   DepositOperationKind,
   DepositOperationStatus,
   DepositStatus,
+  DisputeStatus,
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
 import { readBoundBookingTermsSnapshot } from '../booking/booking-terms';
+import { BookingEventType, bookingEventKey } from '../booking/booking-events';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   decimalToMinor,
@@ -25,6 +27,29 @@ import {
   type ProviderOperationResult,
 } from './fake-safe-deal.provider';
 import { PaymentPolicyService } from './payment-policy.service';
+
+type SettlementAmounts = {
+  status: DepositStatus;
+  amount: Prisma.Decimal;
+  refundedAmount: Prisma.Decimal;
+  releasedToLenderAmount: Prisma.Decimal;
+};
+
+export function assertDepositSettledForCompletionOrPayout(
+  deposit: SettlementAmounts | null,
+): void {
+  if (!deposit) {
+    return;
+  }
+  if (
+    deposit.status !== DepositStatus.RESOLVED ||
+    decimalToMinor(deposit.refundedAmount) +
+      decimalToMinor(deposit.releasedToLenderAmount) !==
+      decimalToMinor(deposit.amount)
+  ) {
+    throw new ConflictException('Deposit is not fully settled');
+  }
+}
 
 @Injectable()
 export class DepositService {
@@ -180,5 +205,64 @@ export class DepositService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
     );
+  }
+
+  async completeAfterDepositSettled(
+    bookingId: string,
+    now = new Date(),
+  ): Promise<number> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${bookingId}))`;
+      const booking = await tx.booking.findUnique({
+        where: { id: bookingId },
+        include: {
+          deposit: true,
+          financialDispute: { select: { status: true } },
+        },
+      });
+      if (!booking || booking.status === BookingStatus.COMPLETED) {
+        return 0;
+      }
+      if (
+        booking.status !== BookingStatus.RETURNED ||
+        !booking.deposit?.disputeWindowEndsAt ||
+        booking.deposit.disputeWindowEndsAt > now ||
+        (booking.financialDispute &&
+          booking.financialDispute.status !== DisputeStatus.RESOLVED)
+      ) {
+        return 0;
+      }
+      assertDepositSettledForCompletionOrPayout(booking.deposit);
+
+      const completed = await tx.booking.updateMany({
+        where: { id: bookingId, status: BookingStatus.RETURNED },
+        data: { status: BookingStatus.COMPLETED },
+      });
+      if (completed.count === 0) {
+        return 0;
+      }
+      await tx.bookingTransitionHistory.create({
+        data: {
+          bookingId,
+          actorId: null,
+          actorType: 'SYSTEM',
+          command: 'COMPLETE_AFTER_DEPOSIT_SETTLED',
+          oldStatus: BookingStatus.RETURNED,
+          newStatus: BookingStatus.COMPLETED,
+          requestId: `deposit:${booking.deposit.id}:complete`,
+        },
+      });
+      await tx.notificationOutboxEvent.create({
+        data: {
+          bookingId,
+          eventType: BookingEventType.COMPLETED,
+          deduplicationKey: bookingEventKey(
+            bookingId,
+            BookingEventType.COMPLETED,
+          ),
+        },
+      });
+      return 1;
+    });
   }
 }

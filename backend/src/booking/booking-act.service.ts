@@ -9,12 +9,15 @@ import {
   BookingActStage,
   BookingMessageAuthorRole,
   BookingStatus,
+  DepositStatus,
+  PaymentStatus,
   Prisma,
 } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingEventType, bookingEventKey } from './booking-events';
+import { readBoundBookingTermsSnapshot } from './booking-terms';
 import {
   BookingActResponseDto,
   BookingReadinessResponseDto,
@@ -172,7 +175,19 @@ export class BookingActService {
           },
           include: {
             ...actInclude,
-            booking: { select: { status: true } },
+            booking: {
+              select: {
+                status: true,
+                borrowerId: true,
+                lenderId: true,
+                startDate: true,
+                endDate: true,
+                totalAmount: true,
+                termsSnapshot: true,
+                payment: { select: { status: true } },
+                deposit: { select: { id: true, status: true } },
+              },
+            },
           },
         });
         if (!act) {
@@ -191,6 +206,42 @@ export class BookingActService {
         }
         this.ensureStageState(act.stage, act.booking.status);
 
+        const days =
+          Math.floor(
+            (act.booking.endDate.getTime() - act.booking.startDate.getTime()) /
+              86_400_000,
+          ) + 1;
+        const snapshot = readBoundBookingTermsSnapshot(
+          act.booking.termsSnapshot,
+          {
+            borrowerId: act.booking.borrowerId,
+            lenderId: act.booking.lenderId,
+            days,
+            totalAmount: act.booking.totalAmount.toNumber(),
+          },
+        );
+        if (act.booking.termsSnapshot !== null && !snapshot) {
+          throw new ConflictException('Условия бронирования недействительны');
+        }
+        if (
+          act.stage === BookingActStage.HANDOVER &&
+          snapshot?.paymentScenario === 'FAKE_SAFE_DEAL'
+        ) {
+          if (act.booking.payment?.status !== PaymentStatus.SUCCEEDED) {
+            throw new ConflictException(
+              'Передача недоступна до успешной оплаты',
+            );
+          }
+          if (
+            snapshot.moneyMinor.deposit > 0 &&
+            act.booking.deposit?.status !== DepositStatus.HELD
+          ) {
+            throw new ConflictException(
+              'Передача недоступна до удержания залога',
+            );
+          }
+        }
+
         const nextStatus =
           act.stage === BookingActStage.HANDOVER
             ? BookingStatus.ACTIVE
@@ -205,6 +256,22 @@ export class BookingActService {
           data: { confirmedById: actorId, confirmedAt },
           include: actInclude,
         });
+        if (
+          act.stage === BookingActStage.RETURN &&
+          snapshot?.paymentScenario === 'FAKE_SAFE_DEAL' &&
+          snapshot.depositTerms &&
+          act.booking.deposit
+        ) {
+          await tx.bookingDeposit.update({
+            where: { id: act.booking.deposit.id },
+            data: {
+              disputeWindowEndsAt: new Date(
+                confirmedAt.getTime() +
+                  snapshot.depositTerms.disputeWindowSeconds * 1000,
+              ),
+            },
+          });
+        }
         await tx.booking.update({
           where: { id: bookingId },
           data: { status: nextStatus },

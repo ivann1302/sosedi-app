@@ -9,7 +9,10 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { DepositService } from './deposit.service';
+import {
+  assertDepositSettledForCompletionOrPayout,
+  DepositService,
+} from './deposit.service';
 import { FakeSafeDealProvider } from './fake-safe-deal.provider';
 import { PaymentPolicyService } from './payment-policy.service';
 
@@ -227,5 +230,119 @@ describe('DepositService fake checkout', () => {
       service.checkout('borrower-1', 'booking-1', 'SUCCESS', 'key-1'),
     ).rejects.toThrow('FAKE_SAFE_DEAL_REQUIRED');
     expect(transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('DepositService local completion command', () => {
+  const now = new Date('2026-09-04T12:00:00.000Z');
+
+  function completionService(status: DepositStatus, refunded = 50) {
+    const booking = {
+      id: 'booking-1',
+      status: BookingStatus.RETURNED,
+      financialDispute: null,
+      deposit: {
+        id: 'deposit-1',
+        amount: new Prisma.Decimal(50),
+        refundedAmount: new Prisma.Decimal(refunded),
+        releasedToLenderAmount: new Prisma.Decimal(0),
+        status,
+        disputeWindowEndsAt: new Date('2026-09-04T11:59:59.000Z'),
+      },
+    };
+    const updateBooking = jest.fn().mockImplementation(() => {
+      booking.status = BookingStatus.COMPLETED;
+      return Promise.resolve({ count: 1 });
+    });
+    const history: Array<Record<string, unknown>> = [];
+    const outbox: Array<Record<string, unknown>> = [];
+    const tx = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      booking: {
+        findUnique: jest.fn().mockResolvedValue(booking),
+        updateMany: updateBooking,
+      },
+      bookingTransitionHistory: {
+        create: jest
+          .fn()
+          .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+            history.push(data);
+            return Promise.resolve(data);
+          }),
+      },
+      notificationOutboxEvent: {
+        create: jest
+          .fn()
+          .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+            outbox.push(data);
+            return Promise.resolve(data);
+          }),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn(
+        (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+      ),
+    };
+    return {
+      service: new DepositService(
+        prisma as unknown as PrismaService,
+        policy(),
+        new FakeSafeDealProvider(),
+      ),
+      booking,
+      history,
+      outbox,
+    };
+  }
+
+  it('requires exact settled sums in the exported completion/payout guard', () => {
+    expect(() =>
+      assertDepositSettledForCompletionOrPayout({
+        status: DepositStatus.RESOLVED,
+        amount: new Prisma.Decimal(50),
+        refundedAmount: new Prisma.Decimal(40),
+        releasedToLenderAmount: new Prisma.Decimal(0),
+      }),
+    ).toThrow(ConflictException);
+    expect(() =>
+      assertDepositSettledForCompletionOrPayout({
+        status: DepositStatus.RESOLVED,
+        amount: new Prisma.Decimal(50),
+        refundedAmount: new Prisma.Decimal(40),
+        releasedToLenderAmount: new Prisma.Decimal(10),
+      }),
+    ).not.toThrow();
+  });
+
+  it('completes only a returned booking with fully resolved deposit', async () => {
+    const settled = completionService(DepositStatus.RESOLVED);
+
+    await expect(
+      settled.service.completeAfterDepositSettled('booking-1', now),
+    ).resolves.toBe(1);
+    expect(settled.booking.status).toBe(BookingStatus.COMPLETED);
+    expect(settled.history).toEqual([
+      expect.objectContaining({
+        bookingId: 'booking-1',
+        actorId: null,
+        actorType: 'SYSTEM',
+        command: 'COMPLETE_AFTER_DEPOSIT_SETTLED',
+        oldStatus: BookingStatus.RETURNED,
+        newStatus: BookingStatus.COMPLETED,
+      }),
+    ]);
+    expect(settled.outbox).toEqual([
+      expect.objectContaining({
+        bookingId: 'booking-1',
+        eventType: 'BOOKING_COMPLETED',
+      }),
+    ]);
+
+    const unresolved = completionService(DepositStatus.RESOLVING, 0);
+    await expect(
+      unresolved.service.completeAfterDepositSettled('booking-1', now),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(unresolved.history).toHaveLength(0);
   });
 });

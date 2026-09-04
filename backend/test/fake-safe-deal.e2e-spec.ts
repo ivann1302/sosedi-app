@@ -2,6 +2,10 @@ import { type INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import {
+  BookingActStage,
+  BookingStatus,
+  DepositOperationKind,
+  DepositOperationStatus,
   DepositStatus,
   ItemCondition,
   ItemStatus,
@@ -12,6 +16,8 @@ import {
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { configureApp } from '../src/app.setup';
+import { DepositDeadlineService } from '../src/payments/deposit-deadline.service';
+import { DepositOperationProcessor } from '../src/payments/deposit-operation.processor';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { resetTestState } from './support/test-state';
 
@@ -33,6 +39,8 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
   let app: INestApplication<App> | undefined;
   let jwt: JwtService;
   let prisma: PrismaService;
+  let deadlines: DepositDeadlineService;
+  let operations: DepositOperationProcessor;
   const previousEnv = new Map<string, string | undefined>();
 
   beforeAll(async () => {
@@ -53,6 +61,8 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
     await app.init();
     jwt = app.get(JwtService);
     prisma = app.get(PrismaService);
+    deadlines = app.get(DepositDeadlineService);
+    operations = app.get(DepositOperationProcessor);
     await prisma.depositOperation.deleteMany();
     await prisma.bookingDeposit.deleteMany();
     await resetTestState(app);
@@ -492,6 +502,145 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
         where: { bookingId: noDepositBookingId },
       }),
     ).resolves.toBe(0);
+
+    const settlementBookingResponse = await request(httpServer())
+      .post('/api/v1/bookings')
+      .set('Authorization', borrowerAuthorization)
+      .send({
+        itemId,
+        startDate: '2026-11-03',
+        endDate: '2026-11-03',
+        offerVersion: 'e2e-approved-offer-1',
+        cancellationPolicyVersion: 'e2e-approved-cancellation-1',
+        offerAccepted: true,
+        rentalRulesAccepted: true,
+      })
+      .expect(201);
+    const settlementBookingId = String(
+      asRecord(asRecord(settlementBookingResponse.body).data).id,
+    );
+    await request(httpServer())
+      .post(`/api/v1/bookings/${settlementBookingId}/confirm`)
+      .set('Authorization', lenderAuthorization)
+      .expect(200);
+
+    const handoverAct = await prisma.bookingAct.create({
+      data: {
+        bookingId: settlementBookingId,
+        authorId: lender.id,
+        stage: BookingActStage.HANDOVER,
+        readinessIsWorking: true,
+        readinessIsComplete: true,
+        readinessVisibleDefects: 'Нет дефектов',
+        readinessDeclaredAt: new Date(),
+      },
+    });
+    await request(httpServer())
+      .post(
+        `/api/v1/bookings/${settlementBookingId}/acts/${handoverAct.id}/confirm`,
+      )
+      .set('Authorization', borrowerAuthorization)
+      .expect(409);
+    await request(httpServer())
+      .post(
+        `/api/v1/dev/fake-safe-deal/bookings/${settlementBookingId}/checkout`,
+      )
+      .set('Authorization', borrowerAuthorization)
+      .set('Idempotency-Key', 'settlement-checkout')
+      .send({ outcome: 'SUCCESS' })
+      .expect(200);
+    await request(httpServer())
+      .post(
+        `/api/v1/bookings/${settlementBookingId}/acts/${handoverAct.id}/confirm`,
+      )
+      .set('Authorization', borrowerAuthorization)
+      .expect(200);
+
+    const returnAct = await prisma.bookingAct.create({
+      data: {
+        bookingId: settlementBookingId,
+        authorId: borrower.id,
+        stage: BookingActStage.RETURN,
+      },
+    });
+    const confirmedReturn = await request(httpServer())
+      .post(
+        `/api/v1/bookings/${settlementBookingId}/acts/${returnAct.id}/confirm`,
+      )
+      .set('Authorization', lenderAuthorization)
+      .expect(200);
+    const returnConfirmedAt = new Date(
+      String(asRecord(asRecord(confirmedReturn.body).data).confirmedAt),
+    );
+    const expectedDeadline = new Date(
+      returnConfirmedAt.getTime() + 86_400 * 1000,
+    );
+    await expect(
+      prisma.bookingDeposit.findUniqueOrThrow({
+        where: { bookingId: settlementBookingId },
+      }),
+    ).resolves.toMatchObject({
+      status: DepositStatus.HELD,
+      disputeWindowEndsAt: expectedDeadline,
+    });
+
+    await expect(deadlines.processDue(expectedDeadline)).resolves.toBe(1);
+    await expect(deadlines.processDue(expectedDeadline)).resolves.toBe(0);
+    await expect(
+      operations.processPending(expectedDeadline),
+    ).resolves.toBeGreaterThanOrEqual(1);
+    await expect(operations.processPending(expectedDeadline)).resolves.toBe(0);
+
+    await expect(
+      prisma.booking.findUniqueOrThrow({
+        where: { id: settlementBookingId },
+        include: { deposit: true },
+      }),
+    ).resolves.toMatchObject({
+      status: BookingStatus.COMPLETED,
+      deposit: {
+        status: DepositStatus.RESOLVED,
+        amount: new Prisma.Decimal(50),
+        refundedAmount: new Prisma.Decimal(50),
+        releasedToLenderAmount: new Prisma.Decimal(0),
+      },
+      termsSnapshot: { moneyMinor: { ownerPayout: 9_900 } },
+    });
+    await expect(
+      prisma.depositOperation.findUniqueOrThrow({
+        where: {
+          idempotencyKey: `deposit:${
+            (
+              await prisma.bookingDeposit.findUniqueOrThrow({
+                where: { bookingId: settlementBookingId },
+                select: { id: true },
+              })
+            ).id
+          }:auto-refund`,
+        },
+      }),
+    ).resolves.toMatchObject({
+      kind: DepositOperationKind.REFUND,
+      status: DepositOperationStatus.SUCCEEDED,
+      amount: new Prisma.Decimal(50),
+      attempts: 1,
+    });
+    await expect(
+      prisma.bookingTransitionHistory.count({
+        where: {
+          bookingId: settlementBookingId,
+          command: 'COMPLETE_AFTER_DEPOSIT_SETTLED',
+        },
+      }),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.notificationOutboxEvent.count({
+        where: {
+          bookingId: settlementBookingId,
+          eventType: 'BOOKING_COMPLETED',
+        },
+      }),
+    ).resolves.toBe(1);
   });
 
   afterAll(async () => {
