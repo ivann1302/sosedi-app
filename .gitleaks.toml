@@ -1,7 +1,7 @@
 [extend]
 useDefault = true
 
-[allowlist]
+[[allowlists]]
 description = "Generated dependencies and build output are not project source"
 paths = [
   '''(^|/)node_modules/''',
@@ -10,3 +10,11 @@ paths = [
   '''(^|/)coverage/''',
   '''(^|/)ios/Pods/''',
 ]
+
+[[allowlists]]
+description = "Public RFC 6238 SHA-1 test vector, not a credential"
+condition = "AND"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+paths = ['''^backend/src/admin/admin-totp\.spec\.ts$''']
+regexes = ['''^GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ$''']

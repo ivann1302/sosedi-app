@@ -1,4 +1,1 @@
-[[IgnoredVulns]]
-id = "GHSA-mh99-v99m-4gvg"
-ignoreUntil = 2026-08-31
-reason = "Temporary risk acceptance: affected brace-expansion 1.x/2.x instances are transitive dev-only dependencies of ESLint/Jest, receive no user input, and are not shipped in the production backend. Forcing 5.0.8 breaks the minimatch API used by ESLint. Owner: developer; review when upstream minimatch/Jest/ESLint update or by expiry."
+# No active vulnerability ignores. Fix findings in the dependency graph.

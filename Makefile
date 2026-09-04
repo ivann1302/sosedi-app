@@ -287,7 +287,7 @@ mobile-gen:
 security-scan:
 	@command -v osv-scanner >/dev/null || (printf '%s\n' 'Missing osv-scanner' && exit 1)
 	@command -v gitleaks >/dev/null || (printf '%s\n' 'Missing gitleaks' && exit 1)
-	osv-scanner scan source --recursive --offline --offline-vulnerabilities --no-resolve --config=backend/osv-scanner.toml .
+	osv-scanner scan source --lockfile=backend/package-lock.json --lockfile=operator/package-lock.json --lockfile=public-web/package-lock.json --lockfile=mobile/pubspec.lock --offline --offline-vulnerabilities --no-resolve --config=backend/osv-scanner.toml
 	gitleaks git --no-banner --redact --exit-code=1 .
 	gitleaks dir --no-banner --redact --exit-code=1 .
 
