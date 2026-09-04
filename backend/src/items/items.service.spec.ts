@@ -741,13 +741,16 @@ describe('ItemsService', () => {
     ['legacy null deposit', { depositAmount: null }, null],
     ['legacy zero deposit', { depositAmount: 0 }, 0],
     ['zero minor-unit deposit', { depositAmountMinor: 0 }, 0],
-  ] as const)('accepts %s in offline mode', async (_name, deposit, expected) => {
-    const { service } = createService();
+  ] as const)(
+    'accepts %s in offline mode',
+    async (_name, deposit, expected) => {
+      const { service } = createService();
 
-    await expect(
-      service.create('owner-1', validCreateItem(deposit)),
-    ).resolves.toMatchObject({ depositAmount: expected });
-  });
+      await expect(
+        service.create('owner-1', validCreateItem(deposit)),
+      ).resolves.toMatchObject({ depositAmount: expected });
+    },
+  );
 
   it('rejects a non-zero minor-unit deposit in offline mode', async () => {
     const { service } = createService();
@@ -760,7 +763,7 @@ describe('ItemsService', () => {
   it('stores the exact active-policy maximum in fake Safe Deal mode', async () => {
     const { service } = createService({
       PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
-      FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '3000000000',
+      FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '10000000',
       FAKE_SAFE_DEAL_POLICY_VERSION: 'fake-deposit-v1',
       FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
       NODE_ENV: 'test',
@@ -769,9 +772,9 @@ describe('ItemsService', () => {
     await expect(
       service.create(
         'owner-1',
-        validCreateItem({ depositAmountMinor: 3_000_000_000 }),
+        validCreateItem({ depositAmountMinor: 10_000_000 }),
       ),
-    ).resolves.toMatchObject({ depositAmount: 30_000_000 });
+    ).resolves.toMatchObject({ depositAmount: 100_000 });
   });
 
   it('rejects a minor-unit deposit above the active policy maximum', async () => {

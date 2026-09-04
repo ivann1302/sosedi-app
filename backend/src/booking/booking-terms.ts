@@ -127,6 +127,7 @@ export function readBookingTermsSnapshot(
       value.offerVersion,
       value.cancellationPolicyVersion,
     ) ||
+    (!isOffline && acceptance === null) ||
     !Number.isSafeInteger(moneyMinor.pricePerDay * value.days) ||
     moneyMinor.rentalSubtotal !== moneyMinor.pricePerDay * value.days ||
     moneyMinor.ownerPayout + moneyMinor.platformFee !==

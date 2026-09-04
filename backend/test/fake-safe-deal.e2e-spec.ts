@@ -5,6 +5,7 @@ import {
   DepositStatus,
   ItemCondition,
   ItemStatus,
+  Prisma,
   UserRole,
   type User,
 } from '@prisma/client';
@@ -16,7 +17,7 @@ import { resetTestState } from './support/test-state';
 
 const FAKE_ENV = {
   PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
-  FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '3000000000',
+  FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '10000000',
   FAKE_SAFE_DEAL_POLICY_VERSION: 'e2e-fake-deposit-v1',
   FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
 } as const;
@@ -113,17 +114,72 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       .send({ ...baseItem, depositAmount: 0, depositAmountMinor: 5_000 })
       .expect(400);
 
+    await request(httpServer())
+      .post('/api/v1/items')
+      .set('Authorization', lenderAuthorization)
+      .send({
+        ...baseItem,
+        title: 'Залог выше policy maximum',
+        depositAmountMinor: 3_000_000_000,
+      })
+      .expect(400);
+
     const maximumItemResponse = await request(httpServer())
       .post('/api/v1/items')
       .set('Authorization', lenderAuthorization)
       .send({
         ...baseItem,
-        title: 'Максимальный залог',
-        depositAmountMinor: 3_000_000_000,
+        title: 'Максимальная стоимость бронирования',
+        pricePerDay: 1_000_000,
+        depositAmountMinor: 10_000_000,
       })
       .expect(201);
-    expect(asRecord(asRecord(maximumItemResponse.body).data)).toMatchObject({
-      depositAmount: 30_000_000,
+    const maximumItemId = String(
+      asRecord(asRecord(maximumItemResponse.body).data).id,
+    );
+    await prisma.item.update({
+      where: { id: maximumItemId },
+      data: { status: ItemStatus.APPROVED },
+    });
+    const maximumBookingResponse = await request(httpServer())
+      .post('/api/v1/bookings')
+      .set('Authorization', borrowerAuthorization)
+      .send({
+        itemId: maximumItemId,
+        startDate: '2026-09-10',
+        endDate: '2026-10-09',
+        offerVersion: 'e2e-approved-offer-1',
+        cancellationPolicyVersion: 'e2e-approved-cancellation-1',
+        offerAccepted: true,
+        rentalRulesAccepted: true,
+      })
+      .expect(201);
+    const maximumBookingId = String(
+      asRecord(asRecord(maximumBookingResponse.body).data).id,
+    );
+    expect(asRecord(asRecord(maximumBookingResponse.body).data)).toMatchObject({
+      totalAmount: 30_100_000,
+    });
+    await expect(
+      prisma.booking.findUniqueOrThrow({
+        where: { id: maximumBookingId },
+        include: { deposit: true },
+      }),
+    ).resolves.toMatchObject({
+      totalAmount: new Prisma.Decimal(30_100_000),
+      deposit: {
+        amount: new Prisma.Decimal(100_000),
+        status: DepositStatus.PENDING,
+      },
+      termsSnapshot: {
+        moneyMinor: {
+          rentalSubtotal: 3_000_000_000,
+          deposit: 10_000_000,
+          platformFee: 30_000_000,
+          ownerPayout: 2_970_000_000,
+          total: 3_010_000_000,
+        },
+      },
     });
 
     const itemResponse = await request(httpServer())
@@ -227,17 +283,23 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
   });
 
   afterAll(async () => {
-    if (app) {
-      await prisma.depositOperation.deleteMany();
-      await prisma.bookingDeposit.deleteMany();
-      await resetTestState(app);
-      await app.close();
-    }
-    for (const [name, value] of previousEnv) {
-      if (value === undefined) {
-        delete process.env[name];
-      } else {
-        process.env[name] = value;
+    try {
+      if (app) {
+        try {
+          await prisma.depositOperation.deleteMany();
+          await prisma.bookingDeposit.deleteMany();
+          await resetTestState(app);
+        } finally {
+          await app.close();
+        }
+      }
+    } finally {
+      for (const [name, value] of previousEnv) {
+        if (value === undefined) {
+          delete process.env[name];
+        } else {
+          process.env[name] = value;
+        }
       }
     }
   });

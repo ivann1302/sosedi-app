@@ -40,6 +40,36 @@ const validSnapshot: BookingTermsSnapshot = {
   acceptance: null,
 };
 
+const validFakeSnapshot: BookingTermsSnapshot = {
+  ...validSnapshot,
+  depositAmount: 50,
+  platformFee: 13.5,
+  ownerPayout: 1336.5,
+  total: 1400,
+  paymentScenario: 'FAKE_SAFE_DEAL',
+  moneyMinor: {
+    pricePerDay: 45_000,
+    rentalSubtotal: 135_000,
+    deposit: 5_000,
+    platformFee: 1_350,
+    ownerPayout: 133_650,
+    total: 140_000,
+  },
+  depositTerms: {
+    policyVersion: 'fake-deposit-v1',
+    disputeWindowSeconds: 86_400,
+  },
+  offerVersion: 'offer-v1',
+  cancellationPolicyVersion: 'rental-rules-v1',
+  acceptance: {
+    actorId: 'borrower-1',
+    acceptedAt: '2026-07-30T03:50:00.000Z',
+    method: 'BOOKING_SUBMIT_CHECKBOX',
+    offerVersion: 'offer-v1',
+    cancellationPolicyVersion: 'rental-rules-v1',
+  },
+};
+
 describe('Booking terms snapshot', () => {
   it('reads a complete internally consistent immutable snapshot', () => {
     expect(readBookingTermsSnapshot(toSnapshotJson(validSnapshot))).toEqual(
@@ -89,28 +119,9 @@ describe('Booking terms snapshot', () => {
   });
 
   it('reads an internally consistent fake Safe Deal snapshot', () => {
-    const fakeSafeDeal = {
-      ...validSnapshot,
-      depositAmount: 50,
-      platformFee: 13.5,
-      ownerPayout: 1336.5,
-      total: 1400,
-      paymentScenario: 'FAKE_SAFE_DEAL',
-      moneyMinor: {
-        pricePerDay: 45_000,
-        rentalSubtotal: 135_000,
-        deposit: 5_000,
-        platformFee: 1_350,
-        ownerPayout: 133_650,
-        total: 140_000,
-      },
-      depositTerms: {
-        policyVersion: 'fake-deposit-v1',
-        disputeWindowSeconds: 86_400,
-      },
-    } as Prisma.InputJsonValue;
-
-    expect(readBookingTermsSnapshot(fakeSafeDeal)).toMatchObject({
+    expect(
+      readBookingTermsSnapshot(toSnapshotJson(validFakeSnapshot)),
+    ).toMatchObject({
       paymentScenario: 'FAKE_SAFE_DEAL',
       moneyMinor: {
         deposit: 5_000,
@@ -149,28 +160,41 @@ describe('Booking terms snapshot', () => {
     },
   ])('rejects fake Safe Deal with $name', ({ override }) => {
     const fakeSafeDeal = {
-      ...validSnapshot,
-      depositAmount: 50,
-      platformFee: 13.5,
-      ownerPayout: 1336.5,
-      total: 1400,
-      paymentScenario: 'FAKE_SAFE_DEAL',
-      moneyMinor: {
-        pricePerDay: 45_000,
-        rentalSubtotal: 135_000,
-        deposit: 5_000,
-        platformFee: 1_350,
-        ownerPayout: 133_650,
-        total: 140_000,
-      },
-      depositTerms: {
-        policyVersion: 'fake-deposit-v1',
-        disputeWindowSeconds: 86_400,
-      },
+      ...validFakeSnapshot,
       ...override,
     } as Prisma.InputJsonValue;
 
     expect(readBookingTermsSnapshot(fakeSafeDeal)).toBeNull();
+  });
+
+  it('rejects a fake Safe Deal snapshot without borrower acceptance', () => {
+    const missingAcceptance = {
+      ...validFakeSnapshot,
+      offerVersion: null,
+      cancellationPolicyVersion: null,
+      acceptance: null,
+    } as Prisma.InputJsonValue;
+
+    expect(readBookingTermsSnapshot(missingAcceptance)).toBeNull();
+  });
+
+  it('binds fake Safe Deal acceptance to the booking borrower', () => {
+    const binding = {
+      borrowerId: 'borrower-1',
+      lenderId: 'lender-1',
+      days: 3,
+      totalAmount: 1400,
+    };
+
+    expect(
+      readBoundBookingTermsSnapshot(toSnapshotJson(validFakeSnapshot), binding),
+    ).not.toBeNull();
+    expect(
+      readBoundBookingTermsSnapshot(toSnapshotJson(validFakeSnapshot), {
+        ...binding,
+        borrowerId: 'other-borrower',
+      }),
+    ).toBeNull();
   });
 
   it('retains immutable borrower acceptance for approved document versions', () => {
