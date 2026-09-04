@@ -58,6 +58,16 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
     await resetTestState(app);
   });
 
+  it('requires authentication after the fake-mode gate passes', async () => {
+    await request(httpServer())
+      .post(
+        '/api/v1/dev/fake-safe-deal/bookings/11111111-1111-4111-8111-111111111111/checkout',
+      )
+      .set('Idempotency-Key', 'unauthenticated-checkout')
+      .send({ outcome: 'SUCCESS' })
+      .expect(401);
+  });
+
   it('gates exact Item deposits and snapshots one pending Booking deposit', async () => {
     const [lender, borrower, category] = await Promise.all([
       prisma.user.create({

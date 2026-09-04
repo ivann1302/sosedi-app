@@ -4,7 +4,6 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
@@ -25,19 +24,16 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { ok, type ApiResponse } from '../common/http/api-response';
 import { DepositService } from './deposit.service';
 import { FakeCheckoutDto } from './dto/fake-checkout.dto';
+import { FakeSafeDealGuard } from './fake-safe-deal.guard';
 import type { ProviderOperationResult } from './fake-safe-deal.provider';
-import { PaymentPolicyService } from './payment-policy.service';
 
 @ApiTags('fake-safe-deal')
 @ApiBearerAuth()
 @Roles(UserRole.USER)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(FakeSafeDealGuard, JwtAuthGuard, RolesGuard)
 @Controller('dev/fake-safe-deal/bookings')
 export class FakeSafeDealController {
-  constructor(
-    private readonly deposits: DepositService,
-    private readonly paymentPolicy: PaymentPolicyService,
-  ) {}
+  constructor(private readonly deposits: DepositService) {}
 
   @ApiHeader({ name: 'Idempotency-Key', required: true })
   @ApiOkResponse()
@@ -49,11 +45,6 @@ export class FakeSafeDealController {
     @Body() dto: FakeCheckoutDto,
     @Headers('idempotency-key') idempotencyKey?: string,
   ): Promise<ApiResponse<ProviderOperationResult>> {
-    try {
-      this.paymentPolicy.requireFakeSafeDeal();
-    } catch {
-      throw new NotFoundException('Ресурс не найден');
-    }
     return ok(
       await this.deposits.checkout(
         user.id,

@@ -1,6 +1,7 @@
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { DepositService } from './deposit.service';
 import { FakeSafeDealController } from './fake-safe-deal.controller';
+import { FakeSafeDealGuard } from './fake-safe-deal.guard';
 import { FakeSafeDealProvider } from './fake-safe-deal.provider';
 import { MarketplacePolicyController } from './marketplace-policy.controller';
 import { PaymentPolicyService } from './payment-policy.service';
@@ -13,6 +14,11 @@ describe('PaymentsModule payment policy boundary', () => {
     ).toEqual([MarketplacePolicyController, FakeSafeDealController]);
     expect(
       Reflect.getMetadata(MODULE_METADATA.PROVIDERS, PaymentsModule),
-    ).toEqual([DepositService, FakeSafeDealProvider, PaymentPolicyService]);
+    ).toEqual([
+      DepositService,
+      FakeSafeDealGuard,
+      FakeSafeDealProvider,
+      PaymentPolicyService,
+    ]);
   });
 });

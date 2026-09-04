@@ -185,6 +185,13 @@ describe('Booking availability (e2e)', () => {
       .expect(404);
   });
 
+  it('hides fake checkout before auth, params, body, and header validation in offline mode', async () => {
+    await request(httpServer())
+      .post('/api/v1/dev/fake-safe-deal/bookings/not-a-uuid/checkout')
+      .send({ outcome: 'NOT_AN_OUTCOME' })
+      .expect(404);
+  });
+
   it('rejects direct booking API access while approved terms are unavailable', async () => {
     const { firstBorrower, item } = await createFixture();
     const borrowerAuthorization = await authorization(firstBorrower);
