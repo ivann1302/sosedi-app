@@ -93,7 +93,20 @@ function act(stage: BookingActStage, depositMinor = 5_000) {
 
 function createService(record = act(BookingActStage.HANDOVER)) {
   const updateDeposit = jest.fn().mockResolvedValue({ id: 'deposit-1' });
-  const updateBooking = jest.fn().mockResolvedValue({ id: 'booking-1' });
+  const updateBooking = jest
+    .fn()
+    .mockImplementation(({ data }: { data: { status: BookingStatus } }) => {
+      record.booking.status = data.status;
+      return Promise.resolve({ id: 'booking-1' });
+    });
+  const updateBookingMany = jest
+    .fn()
+    .mockImplementation(({ data }: { data: { status: BookingStatus } }) => {
+      record.booking.status = data.status;
+      return Promise.resolve({ count: 1 });
+    });
+  const history: Array<Record<string, unknown>> = [];
+  const outbox: Array<Record<string, unknown>> = [];
   const tx = {
     $executeRaw: jest.fn().mockResolvedValue(1),
     bookingAct: {
@@ -104,11 +117,36 @@ function createService(record = act(BookingActStage.HANDOVER)) {
           Promise.resolve({ ...record, ...data }),
         ),
     },
-    booking: { update: updateBooking },
+    booking: {
+      update: updateBooking,
+      updateMany: updateBookingMany,
+      findUnique: jest.fn().mockImplementation(() =>
+        Promise.resolve({
+          id: 'booking-1',
+          status: record.booking.status,
+          deposit: record.booking.deposit,
+          financialDispute: null,
+        }),
+      ),
+    },
     bookingDeposit: { update: updateDeposit },
     bookingMessage: { create: jest.fn().mockResolvedValue({}) },
-    bookingTransitionHistory: { create: jest.fn().mockResolvedValue({}) },
-    notificationOutboxEvent: { create: jest.fn().mockResolvedValue({}) },
+    bookingTransitionHistory: {
+      create: jest
+        .fn()
+        .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+          history.push(data);
+          return Promise.resolve(data);
+        }),
+    },
+    notificationOutboxEvent: {
+      create: jest
+        .fn()
+        .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+          outbox.push(data);
+          return Promise.resolve(data);
+        }),
+    },
   };
   const prisma = {
     $transaction: jest.fn((callback: (client: typeof tx) => Promise<unknown>) =>
@@ -122,6 +160,9 @@ function createService(record = act(BookingActStage.HANDOVER)) {
     ),
     updateBooking,
     updateDeposit,
+    history,
+    outbox,
+    record,
   };
 }
 
@@ -183,5 +224,22 @@ describe('BookingActService fake settlement gates', () => {
         disputeWindowEndsAt: new Date('2026-09-04T12:02:03.000Z'),
       },
     });
+  });
+
+  it('completes a paid fake zero-deposit booking in the return transaction', async () => {
+    const returned = act(BookingActStage.RETURN, 0);
+    const { service, history, outbox, record } = createService(returned);
+
+    await service.confirm('lender-1', 'booking-1', returned.id);
+
+    expect(record.booking.status).toBe(BookingStatus.COMPLETED);
+    expect(history.map((entry) => entry.command)).toEqual([
+      'CONFIRM_RETURN',
+      'COMPLETE_AFTER_RETURN',
+    ]);
+    expect(outbox.map((entry) => entry.eventType)).toEqual([
+      'BOOKING_RETURN_CONFIRMED',
+      'BOOKING_COMPLETED',
+    ]);
   });
 });

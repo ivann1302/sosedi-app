@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import {
+  BookingStatus,
   DepositOperationKind,
   DepositOperationStatus,
   DepositStatus,
@@ -7,7 +8,6 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { DepositOperationProcessor } from './deposit-operation.processor';
-import { DepositService } from './deposit.service';
 import {
   FakeSafeDealProvider,
   type ProviderOperationResult,
@@ -77,11 +77,19 @@ function createProcessor(
     amount: new Prisma.Decimal(50),
     currency: 'RUB',
     status: DepositStatus.RESOLVING,
+    disputeWindowEndsAt: new Date('2026-09-04T11:59:59.000Z'),
     refundedAmount: new Prisma.Decimal(0),
     releasedToLenderAmount: new Prisma.Decimal(0),
   };
+  const booking: { id: string; status: BookingStatus } = {
+    id: 'booking-1',
+    status: BookingStatus.RETURNED,
+  };
   const audit: Array<Record<string, unknown>> = [];
+  const history: Array<Record<string, unknown>> = [];
+  const outbox: Array<Record<string, unknown>> = [];
   let inTransaction = false;
+  let failCompletion = false;
 
   const provider = {
     executeDepositOperation: jest.fn().mockImplementation(() => {
@@ -91,8 +99,6 @@ function createProcessor(
       return Promise.resolve(result);
     }),
   };
-  const complete = jest.fn().mockResolvedValue(1);
-
   function operationRecord() {
     return { ...operation, deposit: { ...deposit } };
   }
@@ -172,6 +178,38 @@ function createProcessor(
           return Promise.resolve({ ...deposit });
         }),
     },
+    booking: {
+      findUnique: jest.fn().mockImplementation(() =>
+        Promise.resolve({
+          ...booking,
+          deposit: { ...deposit },
+          financialDispute: null,
+        }),
+      ),
+      updateMany: jest.fn().mockImplementation(() => {
+        booking.status = BookingStatus.COMPLETED;
+        return Promise.resolve({ count: 1 });
+      }),
+    },
+    bookingTransitionHistory: {
+      create: jest
+        .fn()
+        .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+          history.push(data);
+          return Promise.resolve(data);
+        }),
+    },
+    notificationOutboxEvent: {
+      create: jest
+        .fn()
+        .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+          if (failCompletion) {
+            throw new Error('outbox unavailable');
+          }
+          outbox.push(data);
+          return Promise.resolve(data);
+        }),
+    },
     adminAuditLog: {
       create: jest
         .fn()
@@ -197,9 +235,23 @@ function createProcessor(
     },
     $transaction: jest.fn(
       async (callback: (client: typeof tx) => Promise<unknown>) => {
+        const operationBefore = { ...operation };
+        const depositBefore = { ...deposit };
+        const bookingStatusBefore = booking.status;
+        const auditLength = audit.length;
+        const historyLength = history.length;
+        const outboxLength = outbox.length;
         inTransaction = true;
         try {
           return await callback(tx);
+        } catch (error) {
+          Object.assign(operation, operationBefore);
+          Object.assign(deposit, depositBefore);
+          booking.status = bookingStatusBefore;
+          audit.splice(auditLength);
+          history.splice(historyLength);
+          outbox.splice(outboxLength);
+          throw error;
         } finally {
           inTransaction = false;
         }
@@ -211,13 +263,17 @@ function createProcessor(
       prisma as unknown as PrismaService,
       fakePolicy(),
       provider as unknown as FakeSafeDealProvider,
-      { completeAfterDepositSettled: complete } as unknown as DepositService,
     ),
     operation,
     deposit,
     audit,
+    booking,
+    history,
+    outbox,
     provider: provider.executeDepositOperation,
-    complete,
+    failCompletion: () => {
+      failCompletion = true;
+    },
   };
 }
 
@@ -270,11 +326,18 @@ describe('DepositOperationProcessor', () => {
   });
 
   it('applies success once, resolves the exact sum, and invokes local completion', async () => {
-    const { processor, operation, deposit, provider, complete } =
-      createProcessor({
-        outcome: 'SUCCEEDED',
-        providerOperationId: 'fake_deposit_refund-1',
-      });
+    const {
+      processor,
+      operation,
+      deposit,
+      provider,
+      booking,
+      history,
+      outbox,
+    } = createProcessor({
+      outcome: 'SUCCEEDED',
+      providerOperationId: 'fake_deposit_refund-1',
+    });
 
     await expect(processor.processPending(now)).resolves.toBe(1);
     await expect(processor.processPending(now)).resolves.toBe(0);
@@ -292,8 +355,9 @@ describe('DepositOperationProcessor', () => {
       refundedAmount: new Prisma.Decimal(50),
       releasedToLenderAmount: new Prisma.Decimal(0),
     });
-    expect(complete).toHaveBeenCalledTimes(1);
-    expect(complete).toHaveBeenCalledWith('booking-1', now);
+    expect(booking.status).toBe(BookingStatus.COMPLETED);
+    expect(history).toHaveLength(1);
+    expect(outbox).toHaveLength(1);
   });
 
   it('lets only one worker hold the active lease while the provider is pending', async () => {
@@ -316,7 +380,7 @@ describe('DepositOperationProcessor', () => {
   });
 
   it('does not apply success after another worker replaces its lease', async () => {
-    const { processor, operation, deposit, provider, complete } =
+    const { processor, operation, deposit, provider, booking } =
       createProcessor({
         outcome: 'SUCCEEDED',
         providerOperationId: 'fake_deposit_refund-1',
@@ -332,6 +396,24 @@ describe('DepositOperationProcessor', () => {
     await expect(processor.processPending(now)).resolves.toBe(1);
     expect(operation.status).toBe(DepositOperationStatus.PENDING);
     expect(deposit.refundedAmount).toEqual(new Prisma.Decimal(0));
-    expect(complete).not.toHaveBeenCalled();
+    expect(booking.status).toBe(BookingStatus.RETURNED);
+  });
+
+  it('does not commit resolved money state when completion persistence fails', async () => {
+    const { processor, operation, deposit, failCompletion, booking, history } =
+      createProcessor({
+        outcome: 'SUCCEEDED',
+        providerOperationId: 'fake_deposit_refund-1',
+      });
+    failCompletion();
+
+    await expect(processor.processPending(now)).rejects.toThrow(
+      'outbox unavailable',
+    );
+    expect(operation.status).toBe(DepositOperationStatus.PENDING);
+    expect(deposit.status).toBe(DepositStatus.RESOLVING);
+    expect(deposit.refundedAmount).toEqual(new Prisma.Decimal(0));
+    expect(booking.status).toBe(BookingStatus.RETURNED);
+    expect(history).toHaveLength(0);
   });
 });

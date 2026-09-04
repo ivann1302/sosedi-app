@@ -502,6 +502,57 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
         where: { bookingId: noDepositBookingId },
       }),
     ).resolves.toBe(0);
+    const noDepositHandover = await prisma.bookingAct.create({
+      data: {
+        bookingId: noDepositBookingId,
+        authorId: lender.id,
+        stage: BookingActStage.HANDOVER,
+        readinessIsWorking: true,
+        readinessIsComplete: true,
+        readinessVisibleDefects: 'Нет дефектов',
+        readinessDeclaredAt: new Date(),
+      },
+    });
+    await request(httpServer())
+      .post(
+        `/api/v1/bookings/${noDepositBookingId}/acts/${noDepositHandover.id}/confirm`,
+      )
+      .set('Authorization', borrowerAuthorization)
+      .expect(200);
+    const noDepositReturn = await prisma.bookingAct.create({
+      data: {
+        bookingId: noDepositBookingId,
+        authorId: borrower.id,
+        stage: BookingActStage.RETURN,
+      },
+    });
+    await request(httpServer())
+      .post(
+        `/api/v1/bookings/${noDepositBookingId}/acts/${noDepositReturn.id}/confirm`,
+      )
+      .set('Authorization', lenderAuthorization)
+      .expect(200);
+    await expect(
+      prisma.booking.findUniqueOrThrow({
+        where: { id: noDepositBookingId },
+      }),
+    ).resolves.toMatchObject({ status: BookingStatus.COMPLETED });
+    await expect(
+      prisma.bookingTransitionHistory.count({
+        where: {
+          bookingId: noDepositBookingId,
+          command: 'COMPLETE_AFTER_RETURN',
+        },
+      }),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.notificationOutboxEvent.count({
+        where: {
+          bookingId: noDepositBookingId,
+          eventType: 'BOOKING_COMPLETED',
+        },
+      }),
+    ).resolves.toBe(1);
 
     const settlementBookingResponse = await request(httpServer())
       .post('/api/v1/bookings')

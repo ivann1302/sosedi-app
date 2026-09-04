@@ -51,6 +51,85 @@ export function assertDepositSettledForCompletionOrPayout(
   }
 }
 
+export type BookingCompletionTrigger =
+  | 'DEPOSIT_SETTLED'
+  | 'ZERO_DEPOSIT_RETURN';
+
+export async function completeBookingAfterReturnInTransaction(
+  tx: Prisma.TransactionClient,
+  bookingId: string,
+  now: Date,
+  trigger: BookingCompletionTrigger,
+): Promise<number> {
+  const booking = await tx.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      deposit: true,
+      financialDispute: { select: { status: true } },
+    },
+  });
+  if (!booking || booking.status === BookingStatus.COMPLETED) {
+    return 0;
+  }
+  if (
+    booking.status !== BookingStatus.RETURNED ||
+    (booking.financialDispute &&
+      booking.financialDispute.status !== DisputeStatus.RESOLVED)
+  ) {
+    return 0;
+  }
+
+  if (trigger === 'ZERO_DEPOSIT_RETURN') {
+    if (booking.deposit) {
+      throw new ConflictException('Unexpected deposit for zero-deposit return');
+    }
+    assertDepositSettledForCompletionOrPayout(null);
+  } else {
+    if (
+      !booking.deposit?.disputeWindowEndsAt ||
+      booking.deposit.disputeWindowEndsAt > now
+    ) {
+      return 0;
+    }
+    assertDepositSettledForCompletionOrPayout(booking.deposit);
+  }
+
+  const completed = await tx.booking.updateMany({
+    where: { id: bookingId, status: BookingStatus.RETURNED },
+    data: { status: BookingStatus.COMPLETED },
+  });
+  if (completed.count === 0) {
+    return 0;
+  }
+  const command =
+    trigger === 'ZERO_DEPOSIT_RETURN'
+      ? 'COMPLETE_AFTER_RETURN'
+      : 'COMPLETE_AFTER_DEPOSIT_SETTLED';
+  const requestId =
+    trigger === 'ZERO_DEPOSIT_RETURN'
+      ? `booking:${bookingId}:complete-after-return`
+      : `deposit:${booking.deposit!.id}:complete`;
+  await tx.bookingTransitionHistory.create({
+    data: {
+      bookingId,
+      actorId: null,
+      actorType: 'SYSTEM',
+      command,
+      oldStatus: BookingStatus.RETURNED,
+      newStatus: BookingStatus.COMPLETED,
+      requestId,
+    },
+  });
+  await tx.notificationOutboxEvent.create({
+    data: {
+      bookingId,
+      eventType: BookingEventType.COMPLETED,
+      deduplicationKey: bookingEventKey(bookingId, BookingEventType.COMPLETED),
+    },
+  });
+  return 1;
+}
+
 @Injectable()
 export class DepositService {
   constructor(
@@ -213,56 +292,12 @@ export class DepositService {
   ): Promise<number> {
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${bookingId}))`;
-      const booking = await tx.booking.findUnique({
-        where: { id: bookingId },
-        include: {
-          deposit: true,
-          financialDispute: { select: { status: true } },
-        },
-      });
-      if (!booking || booking.status === BookingStatus.COMPLETED) {
-        return 0;
-      }
-      if (
-        booking.status !== BookingStatus.RETURNED ||
-        !booking.deposit?.disputeWindowEndsAt ||
-        booking.deposit.disputeWindowEndsAt > now ||
-        (booking.financialDispute &&
-          booking.financialDispute.status !== DisputeStatus.RESOLVED)
-      ) {
-        return 0;
-      }
-      assertDepositSettledForCompletionOrPayout(booking.deposit);
-
-      const completed = await tx.booking.updateMany({
-        where: { id: bookingId, status: BookingStatus.RETURNED },
-        data: { status: BookingStatus.COMPLETED },
-      });
-      if (completed.count === 0) {
-        return 0;
-      }
-      await tx.bookingTransitionHistory.create({
-        data: {
-          bookingId,
-          actorId: null,
-          actorType: 'SYSTEM',
-          command: 'COMPLETE_AFTER_DEPOSIT_SETTLED',
-          oldStatus: BookingStatus.RETURNED,
-          newStatus: BookingStatus.COMPLETED,
-          requestId: `deposit:${booking.deposit.id}:complete`,
-        },
-      });
-      await tx.notificationOutboxEvent.create({
-        data: {
-          bookingId,
-          eventType: BookingEventType.COMPLETED,
-          deduplicationKey: bookingEventKey(
-            bookingId,
-            BookingEventType.COMPLETED,
-          ),
-        },
-      });
-      return 1;
+      return completeBookingAfterReturnInTransaction(
+        tx,
+        bookingId,
+        now,
+        'DEPOSIT_SETTLED',
+      );
     });
   }
 }

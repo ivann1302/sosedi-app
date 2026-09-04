@@ -10,7 +10,7 @@ import {
   DepositStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { DepositService } from './deposit.service';
+import { completeBookingAfterReturnInTransaction } from './deposit.service';
 import {
   FakeSafeDealProvider,
   type ProviderOperationResult,
@@ -38,7 +38,6 @@ export class DepositOperationProcessor
     private readonly prisma: PrismaService,
     private readonly paymentPolicy: PaymentPolicyService,
     private readonly provider: FakeSafeDealProvider,
-    private readonly deposits: DepositService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -124,7 +123,7 @@ export class DepositOperationProcessor
       outcome = { outcome: 'TIMEOUT' };
     }
 
-    const settledBookingId = await this.applyOutcome(
+    await this.applyOutcome(
       claimed.id,
       claimed.deposit.bookingId,
       claimed.attempts,
@@ -132,9 +131,6 @@ export class DepositOperationProcessor
       outcome,
       now,
     );
-    if (settledBookingId) {
-      await this.deposits.completeAfterDepositSettled(settledBookingId, now);
-    }
     return 1;
   }
 
@@ -145,7 +141,7 @@ export class DepositOperationProcessor
     processingUntil: Date,
     outcome: ProviderOperationResult,
     now: Date,
-  ): Promise<string | null> {
+  ): Promise<void> {
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${bookingId}))`;
       const operation = await tx.depositOperation.findUnique({
@@ -157,7 +153,7 @@ export class DepositOperationProcessor
         operation.status !== DepositOperationStatus.PENDING ||
         operation.processingUntil?.getTime() !== processingUntil.getTime()
       ) {
-        return null;
+        return;
       }
 
       if (outcome.outcome === 'TIMEOUT') {
@@ -177,9 +173,9 @@ export class DepositOperationProcessor
           },
         });
         if (retryScheduled.count === 0) {
-          return null;
+          return;
         }
-        return null;
+        return;
       }
 
       if (outcome.outcome === 'DECLINED') {
@@ -197,7 +193,7 @@ export class DepositOperationProcessor
           },
         });
         if (failed.count === 0) {
-          return null;
+          return;
         }
         await tx.adminAuditLog.create({
           data: {
@@ -209,11 +205,11 @@ export class DepositOperationProcessor
             metadata: { kind: operation.kind, attempts },
           },
         });
-        return null;
+        return;
       }
 
       if (operation.deposit.status !== DepositStatus.RESOLVING) {
-        return null;
+        return;
       }
       const amountMinor = decimalToMinor(operation.amount);
       const refundedMinor = decimalToMinor(operation.deposit.refundedAmount);
@@ -252,7 +248,7 @@ export class DepositOperationProcessor
         },
       });
       if (succeeded.count === 0) {
-        return null;
+        return;
       }
       await tx.bookingDeposit.update({
         where: { id: operation.depositId },
@@ -268,7 +264,14 @@ export class DepositOperationProcessor
           status: resolved ? DepositStatus.RESOLVED : DepositStatus.RESOLVING,
         },
       });
-      return resolved ? bookingId : null;
+      if (resolved) {
+        await completeBookingAfterReturnInTransaction(
+          tx,
+          bookingId,
+          now,
+          'DEPOSIT_SETTLED',
+        );
+      }
     });
   }
 

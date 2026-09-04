@@ -14,6 +14,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import { completeBookingAfterReturnInTransaction } from '../payments/deposit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingEventType, bookingEventKey } from './booking-events';
@@ -310,6 +311,18 @@ export class BookingActService {
             deduplicationKey: bookingEventKey(bookingId, eventType),
           },
         });
+        if (
+          act.stage === BookingActStage.RETURN &&
+          snapshot?.paymentScenario === 'FAKE_SAFE_DEAL' &&
+          snapshot.moneyMinor.deposit === 0
+        ) {
+          await completeBookingAfterReturnInTransaction(
+            tx,
+            bookingId,
+            confirmedAt,
+            'ZERO_DEPOSIT_RETURN',
+          );
+        }
         return this.toResponse(confirmed);
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
