@@ -32,10 +32,11 @@ osv-scanner scan source \
 `~/Library/Caches/osv-scalibr/Pub/all.zip`. Команда выше обновляет оба cache;
 `make security-scan` после этого использует их без сети.
 
-Generated dependencies и build output исключены из directory scan в
-`.gitleaks.toml`; Git history всё равно проверяется полностью. Узкий allowlist
-совмещает rule, точный путь и точное значение публичного RFC 6238 test vector;
-другие значения или файлы он не пропускает. Один fingerprint в
+Generated dependencies, build output и отдельные checkout внутри `.worktrees/`
+исключены из directory scan в `.gitleaks.toml`; каждый worktree проверяется из
+собственного корня, а Git history всё равно сканируется полностью. Узкий
+allowlist совмещает rule, точный путь и точное значение публичного RFC 6238 test
+vector; другие значения или файлы он не пропускает. Один fingerprint в
 `.gitleaksignore` относится к удалённому из текущего дерева демонстрационному
 CircleCI token из стандартного Nest README. Это не действующий credential.
 

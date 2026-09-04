@@ -2,13 +2,14 @@
 useDefault = true
 
 [[allowlists]]
-description = "Generated dependencies and build output are not project source"
+description = "Generated dependencies, build output and separate worktrees are not this checkout's source"
 paths = [
   '''(^|/)node_modules/''',
   '''(^|/)\.dart_tool/''',
   '''(^|/)build/''',
   '''(^|/)coverage/''',
   '''(^|/)ios/Pods/''',
+  '''^\.worktrees/''',
 ]
 
 [[allowlists]]
