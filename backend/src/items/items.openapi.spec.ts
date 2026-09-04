@@ -124,7 +124,7 @@ describe('Items OpenAPI contract', () => {
     expect(privateProperties).toHaveProperty('longitude');
   });
 
-  it('documents that new items do not support a non-zero deposit', () => {
+  it('documents legacy and exact minor-unit deposit inputs', () => {
     const schemas = document.components?.schemas;
     if (!schemas) {
       throw new Error('Expected OpenAPI component schemas');
@@ -138,6 +138,13 @@ describe('Items OpenAPI contract', () => {
       enum: [0],
       maximum: 0,
       minimum: 0,
+    });
+    expect(createItemProperties).toHaveProperty('depositAmountMinor');
+    expect(asRecord(createItemProperties.depositAmountMinor)).toMatchObject({
+      maximum: 3_000_000_000,
+      minimum: 0,
+      nullable: true,
+      type: 'integer',
     });
   });
 

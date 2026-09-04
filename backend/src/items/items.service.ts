@@ -12,6 +12,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { minorToDecimal } from '../payments/money-minor';
+import { PaymentPolicyService } from '../payments/payment-policy.service';
 import {
   hashIdempotentPayload,
   isUniqueConstraintError,
@@ -160,13 +162,17 @@ type ItemDistanceRow = {
 
 @Injectable()
 export class ItemsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentPolicy: PaymentPolicyService,
+  ) {}
 
   async create(
     ownerId: string,
     dto: CreateItemDto,
     clientRequestId: string = randomUUID(),
   ): Promise<PrivateItemResponseDto> {
+    const depositAmount = this.resolveDepositAmount(dto);
     const category = await this.ensureActiveCategory(dto.categoryId);
     const clientRequestHash = hashIdempotentPayload(dto);
 
@@ -183,7 +189,7 @@ export class ItemsService {
           completeness: dto.completeness,
           handoverTerms: dto.handoverTerms,
           pricePerDay: dto.pricePerDay,
-          depositAmount: dto.depositAmount ?? null,
+          depositAmount,
           status: ItemStatus.PENDING,
           rejectReason: null,
           publicArea: dto.publicArea,
@@ -641,8 +647,11 @@ export class ItemsService {
       data.pricePerDay = dto.pricePerDay;
     }
 
-    if (Object.hasOwn(dto, 'depositAmount')) {
-      data.depositAmount = dto.depositAmount ?? null;
+    if (
+      dto.depositAmount !== undefined ||
+      dto.depositAmountMinor !== undefined
+    ) {
+      data.depositAmount = this.resolveDepositAmount(dto);
     }
 
     if (Object.hasOwn(dto, 'publicArea')) {
@@ -662,6 +671,43 @@ export class ItemsService {
     }
 
     return data;
+  }
+
+  private resolveDepositAmount(
+    dto: Pick<CreateItemDto, 'depositAmount' | 'depositAmountMinor'>,
+  ): Prisma.Decimal | null {
+    const hasLegacy = dto.depositAmount !== undefined;
+    const hasMinor = dto.depositAmountMinor !== undefined;
+    if (hasLegacy && hasMinor) {
+      throw new BadRequestException('Укажите только один формат суммы залога');
+    }
+
+    if (hasLegacy && dto.depositAmount !== null && dto.depositAmount !== 0) {
+      throw new BadRequestException(
+        'Legacy depositAmount поддерживает только null или 0',
+      );
+    }
+
+    const minorValue = hasMinor ? (dto.depositAmountMinor ?? null) : 0;
+    if (
+      minorValue !== null &&
+      (!Number.isSafeInteger(minorValue) ||
+        minorValue < 0 ||
+        minorValue > 3_000_000_000)
+    ) {
+      throw new BadRequestException('Некорректная сумма залога');
+    }
+
+    const minor = BigInt(minorValue ?? 0);
+    this.paymentPolicy.assertDepositAllowed(minor);
+    if (
+      (hasLegacy && dto.depositAmount === null) ||
+      (hasMinor && minorValue === null)
+    ) {
+      return null;
+    }
+
+    return hasLegacy || hasMinor ? minorToDecimal(minor) : null;
   }
 
   private rejectNullRequiredUpdateFields(dto: Record<string, unknown>): void {

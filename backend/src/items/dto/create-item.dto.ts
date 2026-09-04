@@ -5,6 +5,7 @@ import {
   Equals,
   IsBoolean,
   IsEnum,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -97,6 +98,22 @@ export class CreateItemDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Equals(0)
   depositAmount?: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Точный залог в копейках; доступность определяет серверная policy',
+    example: 50_000,
+    maximum: 3_000_000_000,
+    minimum: 0,
+    nullable: true,
+    type: 'integer',
+  })
+  @Transform(nullableNumberFromInput)
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(3_000_000_000)
+  depositAmountMinor?: number | null;
 
   @ApiProperty({
     description: 'Публичный район или округ без улицы, дома и pickup-адреса',

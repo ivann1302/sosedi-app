@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { UploadModule } from '../upload/upload.module';
 import { UsersModule } from '../users/users.module';
 import { BookingActController } from './booking-act.controller';
@@ -17,7 +18,13 @@ import { InboxController } from './inbox.controller';
 import { InboxService } from './inbox.service';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UploadModule, UsersModule],
+  imports: [
+    AuthModule,
+    PrismaModule,
+    UploadModule,
+    UsersModule,
+    PaymentsModule,
+  ],
   controllers: [
     BookingController,
     BookingMessageController,

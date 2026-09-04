@@ -1,5 +1,19 @@
 import { Prisma } from '@prisma/client';
 
+export type BookingMoneyMinor = {
+  pricePerDay: number;
+  rentalSubtotal: number;
+  deposit: number;
+  platformFee: number;
+  ownerPayout: number;
+  total: number;
+};
+
+export type DepositTerms = {
+  policyVersion: string;
+  disputeWindowSeconds: number;
+} | null;
+
 export type BookingTermsSnapshot = {
   itemTitle: string;
   lenderId: string;
@@ -12,7 +26,9 @@ export type BookingTermsSnapshot = {
   ownerPayout: number;
   total: number;
   currency: 'RUB';
-  paymentScenario: 'PAY_ON_HANDOVER';
+  paymentScenario: 'PAY_ON_HANDOVER' | 'FAKE_SAFE_DEAL';
+  moneyMinor: BookingMoneyMinor;
+  depositTerms: DepositTerms;
   handover: {
     area: string;
     address: string;
@@ -52,6 +68,37 @@ export function readBookingTermsSnapshot(
   const platformFee = minorUnits(value.platformFee);
   const ownerPayout = minorUnits(value.ownerPayout);
   const total = minorUnits(value.total);
+  const paymentScenario =
+    value.paymentScenario === 'PAY_ON_HANDOVER' ||
+    value.paymentScenario === 'FAKE_SAFE_DEAL'
+      ? value.paymentScenario
+      : null;
+  const isOffline = paymentScenario === 'PAY_ON_HANDOVER';
+  const suppliedMoney = isJsonRecord(value.moneyMinor)
+    ? readMoneyMinor(value.moneyMinor)
+    : null;
+  const moneyMinor =
+    suppliedMoney ??
+    (isOffline &&
+    pricePerDay !== null &&
+    rentalSubtotal !== null &&
+    depositAmount !== null &&
+    platformFee !== null &&
+    ownerPayout !== null &&
+    total !== null
+      ? {
+          pricePerDay,
+          rentalSubtotal,
+          deposit: depositAmount,
+          platformFee,
+          ownerPayout,
+          total,
+        }
+      : null);
+  const depositTerms =
+    value.depositTerms === undefined && isOffline
+      ? null
+      : readDepositTerms(value.depositTerms);
   if (
     !isNonEmptyString(value.itemTitle) ||
     !isNonEmptyString(value.lenderId) ||
@@ -62,12 +109,12 @@ export function readBookingTermsSnapshot(
     value.days < 1 ||
     rentalSubtotal === null ||
     depositAmount === null ||
-    depositAmount !== 0 ||
-    platformFee !== 0 ||
+    moneyMinor === null ||
+    depositTerms === undefined ||
     ownerPayout === null ||
     total === null ||
     value.currency !== 'RUB' ||
-    value.paymentScenario !== 'PAY_ON_HANDOVER' ||
+    paymentScenario === null ||
     !isNonEmptyString(handover.area) ||
     !isNonEmptyString(handover.address) ||
     !isCoordinate(handover.latitude, -90, 90) ||
@@ -80,9 +127,23 @@ export function readBookingTermsSnapshot(
       value.offerVersion,
       value.cancellationPolicyVersion,
     ) ||
-    rentalSubtotal !== pricePerDay * value.days ||
-    ownerPayout !== rentalSubtotal ||
-    total !== rentalSubtotal + depositAmount
+    !Number.isSafeInteger(moneyMinor.pricePerDay * value.days) ||
+    moneyMinor.rentalSubtotal !== moneyMinor.pricePerDay * value.days ||
+    moneyMinor.ownerPayout + moneyMinor.platformFee !==
+      moneyMinor.rentalSubtotal ||
+    moneyMinor.total !== moneyMinor.rentalSubtotal + moneyMinor.deposit ||
+    pricePerDay !== moneyMinor.pricePerDay ||
+    rentalSubtotal !== moneyMinor.rentalSubtotal ||
+    depositAmount !== moneyMinor.deposit ||
+    platformFee !== moneyMinor.platformFee ||
+    ownerPayout !== moneyMinor.ownerPayout ||
+    total !== moneyMinor.total ||
+    (isOffline &&
+      (moneyMinor.deposit !== 0 ||
+        moneyMinor.platformFee !== 0 ||
+        moneyMinor.ownerPayout !== moneyMinor.rentalSubtotal ||
+        depositTerms !== null)) ||
+    (!isOffline && moneyMinor.deposit > 0 !== (depositTerms !== null))
   ) {
     return null;
   }
@@ -99,7 +160,9 @@ export function readBookingTermsSnapshot(
     ownerPayout: value.ownerPayout as number,
     total: value.total as number,
     currency: 'RUB',
-    paymentScenario: 'PAY_ON_HANDOVER',
+    paymentScenario,
+    moneyMinor,
+    depositTerms,
     handover: {
       area: handover.area,
       address: handover.address,
@@ -138,11 +201,69 @@ export function readBoundBookingTermsSnapshot(
     snapshot.days !== binding.days ||
     (snapshot.acceptance !== null &&
       snapshot.acceptance.actorId !== binding.borrowerId) ||
-    minorUnits(snapshot.total) !== minorUnits(binding.totalAmount)
+    snapshot.moneyMinor.total !== minorUnits(binding.totalAmount)
   ) {
     return null;
   }
   return snapshot;
+}
+
+function readMoneyMinor(value: Prisma.JsonObject): BookingMoneyMinor | null {
+  const pricePerDay = safeMinor(value.pricePerDay);
+  const rentalSubtotal = safeMinor(value.rentalSubtotal);
+  const deposit = safeMinor(value.deposit);
+  const platformFee = safeMinor(value.platformFee);
+  const ownerPayout = safeMinor(value.ownerPayout);
+  const total = safeMinor(value.total);
+  if (
+    pricePerDay === null ||
+    rentalSubtotal === null ||
+    deposit === null ||
+    platformFee === null ||
+    ownerPayout === null ||
+    total === null
+  ) {
+    return null;
+  }
+  return {
+    pricePerDay,
+    rentalSubtotal,
+    deposit,
+    platformFee,
+    ownerPayout,
+    total,
+  };
+}
+
+function readDepositTerms(
+  value: Prisma.JsonValue | undefined,
+): DepositTerms | undefined {
+  if (value === null) {
+    return null;
+  }
+  if (
+    !isJsonRecord(value) ||
+    !isNonEmptyString(value.policyVersion) ||
+    !isPositiveSafeInteger(value.disputeWindowSeconds)
+  ) {
+    return undefined;
+  }
+  return {
+    policyVersion: value.policyVersion,
+    disputeWindowSeconds: value.disputeWindowSeconds,
+  };
+}
+
+function safeMinor(value: Prisma.JsonValue | undefined): number | null {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+    ? value
+    : null;
+}
+
+function isPositiveSafeInteger(
+  value: Prisma.JsonValue | undefined,
+): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
 function validAcceptance(

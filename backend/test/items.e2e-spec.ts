@@ -482,7 +482,7 @@ describe('Items public API (e2e)', () => {
       completeness: 'Камера, аккумулятор, зарядное устройство и сумка',
       handoverTerms: 'Личная передача после проверки комплектации',
       pricePerDay: 1200,
-      depositAmount: 0,
+      depositAmountMinor: 0,
       publicArea: 'Центральный округ',
       address: 'Москва, приватный адрес, 3',
       latitude: 55.75,
@@ -512,7 +512,17 @@ describe('Items public API (e2e)', () => {
     await request(httpServer())
       .post('/api/v1/items')
       .set('Authorization', authorization)
-      .send({ ...payload, depositAmount: 1 })
+      .send({ ...payload, depositAmountMinor: undefined, depositAmount: 1 })
+      .expect(400);
+    await request(httpServer())
+      .post('/api/v1/items')
+      .set('Authorization', authorization)
+      .send({ ...payload, depositAmount: 0 })
+      .expect(400);
+    await request(httpServer())
+      .post('/api/v1/items')
+      .set('Authorization', authorization)
+      .send({ ...payload, depositAmountMinor: 3_000_000_001 })
       .expect(400);
     await request(httpServer())
       .post('/api/v1/items')

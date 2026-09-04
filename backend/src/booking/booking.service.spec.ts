@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { BookingStatus, ItemStatus, Prisma } from '@prisma/client';
 import { TooManyRequestsException } from '../common/http/too-many-requests.exception';
+import { PaymentPolicyService } from '../payments/payment-policy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   BOOKING_COMPETING_CANCELLATION_REASON,
@@ -32,6 +33,12 @@ function acceptedRequest(
   };
 }
 
+function offlinePaymentPolicy(): PaymentPolicyService {
+  const policy = new PaymentPolicyService(new ConfigService());
+  policy.onModuleInit();
+  return policy;
+}
+
 function createService({
   ownerId = 'lender-1',
   hasConflict = false,
@@ -41,6 +48,7 @@ function createService({
   competingPendingCount = 0,
   depositAmount = null,
   legalTermsVersion = '2026-08-01.1',
+  paymentConfig = {},
 }: {
   ownerId?: string;
   hasConflict?: boolean;
@@ -50,6 +58,7 @@ function createService({
   competingPendingCount?: number;
   depositAmount?: Prisma.Decimal | null;
   legalTermsVersion?: string | null;
+  paymentConfig?: Record<string, string>;
 } = {}) {
   const create = jest.fn(
     ({
@@ -123,6 +132,9 @@ function createService({
       ),
       create,
     },
+    bookingDeposit: {
+      create: jest.fn(() => Promise.resolve({ id: 'deposit-1' })),
+    },
     bookingMessage: {
       create: jest.fn(() => Promise.resolve({ id: 'message-1' })),
       createMany: jest.fn(() => Promise.resolve({ count: 1 })),
@@ -139,18 +151,26 @@ function createService({
       callback(tx),
     ),
   };
-  const config = new ConfigService(
-    legalTermsVersion
+  const config = new ConfigService({
+    ...(legalTermsVersion
       ? {
           MARKETPLACE_OFFER_VERSION: legalTermsVersion,
           MARKETPLACE_CANCELLATION_POLICY_VERSION: legalTermsVersion,
         }
-      : {},
-  );
+      : {}),
+    ...paymentConfig,
+  });
+  const paymentPolicy = new PaymentPolicyService(config);
+  paymentPolicy.onModuleInit();
 
   return {
-    service: new BookingService(prisma as unknown as PrismaService, config),
+    service: new BookingService(
+      prisma as unknown as PrismaService,
+      config,
+      paymentPolicy,
+    ),
     create,
+    createDeposit: tx.bookingDeposit.create,
     transaction: prisma.$transaction,
   };
 }
@@ -165,7 +185,7 @@ describe('BookingService', () => {
   });
 
   it('takes lender and inclusive price total from backend', async () => {
-    const { service, create } = createService();
+    const { service, create, createDeposit } = createService();
 
     const result = await service.create('borrower-1', acceptedRequest());
 
@@ -190,6 +210,15 @@ describe('BookingService', () => {
         total: 1350,
         currency: 'RUB',
         paymentScenario: 'PAY_ON_HANDOVER',
+        moneyMinor: {
+          pricePerDay: 45_000,
+          rentalSubtotal: 135_000,
+          deposit: 0,
+          platformFee: 0,
+          ownerPayout: 135_000,
+          total: 135_000,
+        },
+        depositTerms: null,
         offerVersion: '2026-08-01.1',
         cancellationPolicyVersion: '2026-08-01.1',
         acceptance: {
@@ -206,6 +235,56 @@ describe('BookingService', () => {
     expect(BOOKING_PENDING_TTL_MS).toBe(12 * 60 * 60 * 1000);
     const termsSnapshot = create.mock.calls[0]?.[0].data.termsSnapshot;
     expect(termsSnapshot).toHaveProperty('acceptance.acceptedAt');
+    expect(createDeposit).not.toHaveBeenCalled();
+  });
+
+  it('snapshots exact fake Safe Deal amounts and creates one pending deposit', async () => {
+    const { service, create, createDeposit } = createService({
+      depositAmount: new Prisma.Decimal(50),
+      paymentConfig: {
+        PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
+        FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '5000',
+        FAKE_SAFE_DEAL_POLICY_VERSION: 'fake-deposit-v1',
+        FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
+        NODE_ENV: 'test',
+      },
+    });
+
+    await expect(
+      service.create('borrower-1', acceptedRequest()),
+    ).resolves.toMatchObject({ totalAmount: 1400 });
+    expect(create.mock.calls[0]?.[0].data).toMatchObject({
+      totalAmount: new Prisma.Decimal(1400),
+      termsSnapshot: {
+        rentalSubtotal: 1350,
+        depositAmount: 50,
+        platformFee: 13.5,
+        ownerPayout: 1336.5,
+        total: 1400,
+        paymentScenario: 'FAKE_SAFE_DEAL',
+        moneyMinor: {
+          pricePerDay: 45_000,
+          rentalSubtotal: 135_000,
+          deposit: 5_000,
+          platformFee: 1_350,
+          ownerPayout: 133_650,
+          total: 140_000,
+        },
+        depositTerms: {
+          policyVersion: 'fake-deposit-v1',
+          disputeWindowSeconds: 86_400,
+        },
+      },
+    });
+    expect(createDeposit).toHaveBeenCalledWith({
+      data: {
+        bookingId: 'booking-1',
+        amount: new Prisma.Decimal(50),
+        policyVersion: 'fake-deposit-v1',
+        disputeWindowSeconds: 86_400,
+        status: 'PENDING',
+      },
+    });
   });
 
   it('rejects missing or stale explicit marketplace terms acceptance before DB', async () => {
@@ -380,6 +459,7 @@ describe('BookingService', () => {
     const service = new BookingService(
       prisma as unknown as PrismaService,
       new ConfigService(),
+      offlinePaymentPolicy(),
     );
 
     await expect(
@@ -450,6 +530,7 @@ describe('BookingService', () => {
       const service = new BookingService(
         prisma as unknown as PrismaService,
         new ConfigService(),
+        offlinePaymentPolicy(),
       );
 
       await expect(

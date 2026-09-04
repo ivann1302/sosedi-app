@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   BookingStatus,
   ItemCondition,
@@ -12,6 +13,8 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PaymentPolicyService } from '../payments/payment-policy.service';
+import { CreateItemDto } from './dto/create-item.dto';
 import { ItemListSort } from './dto/list-items-query.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { ItemsService } from './items.service';
@@ -123,7 +126,7 @@ type TestItemCreateData = {
   completeness: string;
   handoverTerms: string;
   pricePerDay: number;
-  depositAmount?: number | null;
+  depositAmount?: number | Prisma.Decimal | null;
   status: ItemStatus;
   rejectReason: string | null;
   publicArea: string;
@@ -140,7 +143,7 @@ type TestItemUpdateData = Partial<{
   completeness: string;
   handoverTerms: string;
   pricePerDay: number;
-  depositAmount: number | null;
+  depositAmount: number | Prisma.Decimal | null;
   status: ItemStatus;
   rejectReason: string | null;
   publicArea: string;
@@ -149,7 +152,35 @@ type TestItemUpdateData = Partial<{
   longitude: number;
 }>;
 
-function createService() {
+type CreateItemInput = CreateItemDto & {
+  depositAmountMinor?: number | null;
+};
+
+function validCreateItem(
+  overrides: Partial<CreateItemInput> = {},
+): CreateItemInput {
+  return {
+    categoryId: 'category-1',
+    title: 'Проектор Epson',
+    description: 'Домашний проектор в исправном состоянии',
+    condition: ItemCondition.GOOD,
+    completeness: 'Проектор, пульт, кабель питания и чехол',
+    handoverTerms: 'Личная передача по договорённости',
+    pricePerDay: 500,
+    publicArea: 'Центральный округ',
+    address: 'Москва, Тверская 1',
+    latitude: 55.7558,
+    longitude: 37.6173,
+    ownershipConfirmed: true,
+    conditionConfirmed: true,
+    completenessConfirmed: true,
+    safetyAndMarketplaceRulesAccepted: true,
+    listingRulesVersion: '2026-07-28',
+    ...overrides,
+  };
+}
+
+function createService(paymentConfig: Record<string, string> = {}) {
   const categories = new Map<string, TestCategory>([
     [
       'category-1',
@@ -649,9 +680,13 @@ function createService() {
   prisma.$transaction = jest.fn(
     <T>(callback: (tx: PrismaService) => Promise<T>) => callback(prisma),
   );
+  const paymentPolicy = new PaymentPolicyService(
+    new ConfigService(paymentConfig),
+  );
+  paymentPolicy.onModuleInit();
 
   return {
-    service: new ItemsService(prisma),
+    service: new ItemsService(prisma, paymentPolicy),
     prisma,
     categories,
     bookings,
@@ -699,6 +734,95 @@ describe('ItemsService', () => {
       role: UserRole.USER,
       kycStatus: null,
     });
+  });
+
+  it.each([
+    ['omitted deposit', {}, null],
+    ['legacy null deposit', { depositAmount: null }, null],
+    ['legacy zero deposit', { depositAmount: 0 }, 0],
+    ['zero minor-unit deposit', { depositAmountMinor: 0 }, 0],
+  ] as const)('accepts %s in offline mode', async (_name, deposit, expected) => {
+    const { service } = createService();
+
+    await expect(
+      service.create('owner-1', validCreateItem(deposit)),
+    ).resolves.toMatchObject({ depositAmount: expected });
+  });
+
+  it('rejects a non-zero minor-unit deposit in offline mode', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.create('owner-1', validCreateItem({ depositAmountMinor: 1 })),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('stores the exact active-policy maximum in fake Safe Deal mode', async () => {
+    const { service } = createService({
+      PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
+      FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '3000000000',
+      FAKE_SAFE_DEAL_POLICY_VERSION: 'fake-deposit-v1',
+      FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
+      NODE_ENV: 'test',
+    });
+
+    await expect(
+      service.create(
+        'owner-1',
+        validCreateItem({ depositAmountMinor: 3_000_000_000 }),
+      ),
+    ).resolves.toMatchObject({ depositAmount: 30_000_000 });
+  });
+
+  it('rejects a minor-unit deposit above the active policy maximum', async () => {
+    const { service } = createService({
+      PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
+      FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '5000',
+      FAKE_SAFE_DEAL_POLICY_VERSION: 'fake-deposit-v1',
+      FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
+      NODE_ENV: 'test',
+    });
+
+    await expect(
+      service.create('owner-1', validCreateItem({ depositAmountMinor: 5_001 })),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects legacy non-zero and mutually exclusive deposit inputs', async () => {
+    const { service } = createService({
+      PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
+      FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '5000',
+      FAKE_SAFE_DEAL_POLICY_VERSION: 'fake-deposit-v1',
+      FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
+      NODE_ENV: 'test',
+    });
+
+    await expect(
+      service.create('owner-1', validCreateItem({ depositAmount: 1 })),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.create(
+        'owner-1',
+        validCreateItem({ depositAmount: 0, depositAmountMinor: 5_000 }),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('applies the deposit policy to explicit update commands', async () => {
+    const { service, storeItem } = createService({
+      PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
+      FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '5000',
+      FAKE_SAFE_DEAL_POLICY_VERSION: 'fake-deposit-v1',
+      FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
+      NODE_ENV: 'test',
+    });
+    const item = storeItem();
+
+    await expect(
+      service.updateOwn(item.ownerId, item.id, {
+        depositAmountMinor: 5_000,
+      }),
+    ).resolves.toMatchObject({ depositAmount: 50 });
   });
 
   it('rejects categories outside the active launch whitelist', async () => {

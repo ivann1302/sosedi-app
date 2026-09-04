@@ -1,5 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, DepositStatus, PaymentStatus } from '@prisma/client';
+
+export class BookingMoneyMinorResponseDto {
+  @ApiProperty()
+  pricePerDay: number;
+
+  @ApiProperty()
+  rentalSubtotal: number;
+
+  @ApiProperty()
+  deposit: number;
+
+  @ApiProperty()
+  platformFee: number;
+
+  @ApiProperty()
+  ownerPayout: number;
+
+  @ApiProperty()
+  total: number;
+}
+
+export class BookingDepositTermsResponseDto {
+  @ApiProperty()
+  policyVersion: string;
+
+  @ApiProperty()
+  disputeWindowSeconds: number;
+}
 
 export class BookingNextActionResponseDto {
   @ApiProperty()
@@ -43,8 +71,14 @@ export class BookingTermsResponseDto {
   @ApiProperty({ enum: ['RUB'] })
   currency: 'RUB';
 
-  @ApiProperty({ enum: ['PAY_ON_HANDOVER'] })
-  paymentScenario: 'PAY_ON_HANDOVER';
+  @ApiProperty({ enum: ['PAY_ON_HANDOVER', 'FAKE_SAFE_DEAL'] })
+  paymentScenario: 'PAY_ON_HANDOVER' | 'FAKE_SAFE_DEAL';
+
+  @ApiProperty({ type: BookingMoneyMinorResponseDto })
+  moneyMinor: BookingMoneyMinorResponseDto;
+
+  @ApiProperty({ nullable: true, type: BookingDepositTermsResponseDto })
+  depositTerms: BookingDepositTermsResponseDto | null;
 
   @ApiProperty()
   listingVersion: string;
@@ -68,6 +102,34 @@ export class BookingHandoverResponseDto {
 
   @ApiProperty()
   longitude: number;
+}
+
+export class ParticipantPaymentResponseDto {
+  @ApiProperty()
+  amountMinor: number;
+
+  @ApiProperty({ enum: PaymentStatus })
+  status: PaymentStatus;
+}
+
+export class ParticipantDepositResponseDto {
+  @ApiProperty()
+  amountMinor: number;
+
+  @ApiProperty({ enum: DepositStatus })
+  status: DepositStatus;
+
+  @ApiProperty()
+  refundedMinor: number;
+
+  @ApiProperty()
+  releasedToLenderMinor: number;
+
+  @ApiProperty()
+  policyVersion: string;
+
+  @ApiProperty({ format: 'date-time', nullable: true, type: String })
+  disputeWindowEndsAt: Date | null;
 }
 
 export class ParticipantBookingResponseDto {
@@ -100,6 +162,12 @@ export class ParticipantBookingResponseDto {
 
   @ApiProperty({ nullable: true, type: BookingTermsResponseDto })
   terms: BookingTermsResponseDto | null;
+
+  @ApiProperty({ nullable: true, type: ParticipantPaymentResponseDto })
+  payment: ParticipantPaymentResponseDto | null;
+
+  @ApiProperty({ nullable: true, type: ParticipantDepositResponseDto })
+  deposit: ParticipantDepositResponseDto | null;
 
   @ApiProperty({ nullable: true, type: BookingHandoverResponseDto })
   handover: BookingHandoverResponseDto | null;

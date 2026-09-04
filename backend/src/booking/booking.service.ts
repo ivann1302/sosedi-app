@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   BookingMessageAuthorRole,
   BookingStatus,
+  DepositStatus,
   ItemStatus,
   Prisma,
 } from '@prisma/client';
@@ -16,6 +17,16 @@ import { randomUUID } from 'node:crypto';
 import { TooManyRequestsException } from '../common/http/too-many-requests.exception';
 import { hashIdempotentPayload } from '../common/http/idempotency';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  decimalToMinor,
+  minorToDecimal,
+  minorToSafeNumber,
+} from '../payments/money-minor';
+import {
+  PaymentPolicyService,
+  PaymentScenario,
+} from '../payments/payment-policy.service';
+import { calculateProvisionalSafeDealPrice } from '../payments/safe-deal-price';
 import { parseBookingPeriod } from './booking-period';
 import { BookingEventType, bookingEventKey } from './booking-events';
 import { bookingNextAction } from './booking-next-action';
@@ -46,6 +57,7 @@ export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly paymentPolicy: PaymentPolicyService,
   ) {}
 
   async create(
@@ -54,6 +66,7 @@ export class BookingService {
     requestId: string = randomUUID(),
   ): Promise<BookingResponseDto> {
     const legalTerms = requireApprovedMarketplaceTerms(this.config);
+    const marketplacePolicy = this.paymentPolicy.current();
     requireMarketplaceTermsAcceptance(dto, legalTerms);
     const period = parseBookingPeriod(dto.startDate, dto.endDate);
     const now = new Date();
@@ -123,12 +136,20 @@ export class BookingService {
         if (item.ownerId === borrowerId) {
           throw new BadRequestException('Нельзя бронировать собственную вещь');
         }
-        if (item.depositAmount && !item.depositAmount.isZero()) {
+        const depositMinor = item.depositAmount
+          ? decimalToMinor(item.depositAmount)
+          : 0n;
+        if (
+          marketplacePolicy.paymentScenario ===
+            PaymentScenario.PAY_ON_HANDOVER &&
+          depositMinor !== 0n
+        ) {
           throw new ConflictException({
             code: 'ITEM_DEPOSIT_NOT_SUPPORTED',
             message: 'Бронирование с залогом пока недоступно',
           });
         }
+        this.paymentPolicy.assertDepositAllowed(depositMinor);
         const interactionBlock = await tx.userBlock.findFirst({
           where: {
             OR: [
@@ -197,9 +218,36 @@ export class BookingService {
           );
         }
 
-        const totalAmount = item.pricePerDay.mul(period.days);
-        const rentalSubtotal = totalAmount.toNumber();
+        const pricePerDayMinor = decimalToMinor(item.pricePerDay);
+        const rentalSubtotalMinor = pricePerDayMinor * BigInt(period.days);
+        const price =
+          marketplacePolicy.paymentScenario === PaymentScenario.FAKE_SAFE_DEAL
+            ? calculateProvisionalSafeDealPrice(
+                rentalSubtotalMinor,
+                depositMinor,
+              )
+            : {
+                currency: 'RUB' as const,
+                rentalSubtotalMinor,
+                depositMinor,
+                borrowerTotalMinor: rentalSubtotalMinor,
+                platformFeeMinor: 0n,
+                ownerPayoutMinor: rentalSubtotalMinor,
+              };
+        const totalAmount = minorToDecimal(price.borrowerTotalMinor);
+        const rentalSubtotal = minorToDecimal(
+          price.rentalSubtotalMinor,
+        ).toNumber();
         const depositAmount = item.depositAmount?.toNumber() ?? null;
+        const depositTerms =
+          marketplacePolicy.paymentScenario ===
+            PaymentScenario.FAKE_SAFE_DEAL && depositMinor > 0n
+            ? {
+                policyVersion: marketplacePolicy.deposit.policyVersion!,
+                disputeWindowSeconds:
+                  marketplacePolicy.deposit.disputeWindowSeconds!,
+              }
+            : null;
         const snapshot: BookingTermsSnapshot = {
           itemTitle: item.title,
           lenderId: item.ownerId,
@@ -208,11 +256,23 @@ export class BookingService {
           days: period.days,
           rentalSubtotal,
           depositAmount,
-          platformFee: 0,
-          ownerPayout: rentalSubtotal,
-          total: rentalSubtotal + (depositAmount ?? 0),
+          platformFee: minorToDecimal(price.platformFeeMinor).toNumber(),
+          ownerPayout: minorToDecimal(price.ownerPayoutMinor).toNumber(),
+          total: totalAmount.toNumber(),
           currency: 'RUB',
-          paymentScenario: 'PAY_ON_HANDOVER',
+          paymentScenario:
+            marketplacePolicy.paymentScenario === PaymentScenario.FAKE_SAFE_DEAL
+              ? 'FAKE_SAFE_DEAL'
+              : 'PAY_ON_HANDOVER',
+          moneyMinor: {
+            pricePerDay: minorToSafeNumber(pricePerDayMinor),
+            rentalSubtotal: minorToSafeNumber(price.rentalSubtotalMinor),
+            deposit: minorToSafeNumber(depositMinor),
+            platformFee: minorToSafeNumber(price.platformFeeMinor),
+            ownerPayout: minorToSafeNumber(price.ownerPayoutMinor),
+            total: minorToSafeNumber(price.borrowerTotalMinor),
+          },
+          depositTerms,
           handover: {
             area: item.publicArea,
             address: item.address,
@@ -248,6 +308,17 @@ export class BookingService {
             termsSnapshot: toSnapshotJson(snapshot),
           },
         });
+        if (depositTerms) {
+          await tx.bookingDeposit.create({
+            data: {
+              bookingId: createdBooking.id,
+              amount: minorToDecimal(depositMinor),
+              policyVersion: depositTerms.policyVersion,
+              disputeWindowSeconds: depositTerms.disputeWindowSeconds,
+              status: DepositStatus.PENDING,
+            },
+          });
+        }
         await tx.bookingMessage.create({
           data: {
             bookingId: createdBooking.id,
@@ -496,6 +567,8 @@ export class BookingService {
       include: {
         borrower: { select: { phone: true } },
         lender: { select: { phone: true } },
+        payment: true,
+        deposit: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -618,6 +691,8 @@ export class BookingService {
       include: {
         borrower: { select: { phone: true } },
         lender: { select: { phone: true } },
+        payment: true,
+        deposit: true,
       },
     });
     if (!booking) {
@@ -654,6 +729,8 @@ export class BookingService {
       include: {
         borrower: { select: { phone: true } };
         lender: { select: { phone: true } };
+        payment: true;
+        deposit: true;
       };
     }>,
   ): ParticipantBookingResponseDto {
@@ -694,9 +771,35 @@ export class BookingService {
             total: snapshot.total,
             currency: snapshot.currency,
             paymentScenario: snapshot.paymentScenario,
+            moneyMinor: snapshot.moneyMinor,
+            depositTerms: snapshot.depositTerms,
             listingVersion: snapshot.listingVersion,
             offerVersion: snapshot.offerVersion,
             cancellationPolicyVersion: snapshot.cancellationPolicyVersion,
+          }
+        : null,
+      payment: booking.payment
+        ? {
+            amountMinor: minorToSafeNumber(
+              decimalToMinor(booking.payment.amount),
+            ),
+            status: booking.payment.status,
+          }
+        : null,
+      deposit: booking.deposit
+        ? {
+            amountMinor: minorToSafeNumber(
+              decimalToMinor(booking.deposit.amount),
+            ),
+            status: booking.deposit.status,
+            refundedMinor: minorToSafeNumber(
+              decimalToMinor(booking.deposit.refundedAmount),
+            ),
+            releasedToLenderMinor: minorToSafeNumber(
+              decimalToMinor(booking.deposit.releasedToLenderAmount),
+            ),
+            policyVersion: booking.deposit.policyVersion,
+            disputeWindowEndsAt: booking.deposit.disputeWindowEndsAt,
           }
         : null,
       handover: canSeeHandover && snapshot ? snapshot.handover : null,

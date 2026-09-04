@@ -19,6 +19,15 @@ const validSnapshot: BookingTermsSnapshot = {
   total: 1350,
   currency: 'RUB',
   paymentScenario: 'PAY_ON_HANDOVER',
+  moneyMinor: {
+    pricePerDay: 45_000,
+    rentalSubtotal: 135_000,
+    deposit: 0,
+    platformFee: 0,
+    ownerPayout: 135_000,
+    total: 135_000,
+  },
+  depositTerms: null,
   handover: {
     area: 'Центральный округ',
     address: 'Москва, приватный адрес',
@@ -36,6 +45,132 @@ describe('Booking terms snapshot', () => {
     expect(readBookingTermsSnapshot(toSnapshotJson(validSnapshot))).toEqual(
       validSnapshot,
     );
+  });
+
+  it('keeps reading a valid legacy offline snapshot without exact fields', () => {
+    const legacy = { ...validSnapshot } as Partial<BookingTermsSnapshot>;
+    delete legacy.moneyMinor;
+    delete legacy.depositTerms;
+
+    expect(
+      readBookingTermsSnapshot(legacy as Prisma.InputJsonValue),
+    ).toMatchObject({
+      paymentScenario: 'PAY_ON_HANDOVER',
+      moneyMinor: validSnapshot.moneyMinor,
+      depositTerms: null,
+    });
+  });
+
+  it('reads exact minor units from a new offline snapshot', () => {
+    const exactOffline = {
+      ...validSnapshot,
+      moneyMinor: {
+        pricePerDay: 45_000,
+        rentalSubtotal: 135_000,
+        deposit: 0,
+        platformFee: 0,
+        ownerPayout: 135_000,
+        total: 135_000,
+      },
+      depositTerms: null,
+    } as Prisma.InputJsonValue;
+
+    expect(readBookingTermsSnapshot(exactOffline)).toMatchObject({
+      moneyMinor: {
+        pricePerDay: 45_000,
+        rentalSubtotal: 135_000,
+        deposit: 0,
+        platformFee: 0,
+        ownerPayout: 135_000,
+        total: 135_000,
+      },
+      depositTerms: null,
+    });
+  });
+
+  it('reads an internally consistent fake Safe Deal snapshot', () => {
+    const fakeSafeDeal = {
+      ...validSnapshot,
+      depositAmount: 50,
+      platformFee: 13.5,
+      ownerPayout: 1336.5,
+      total: 1400,
+      paymentScenario: 'FAKE_SAFE_DEAL',
+      moneyMinor: {
+        pricePerDay: 45_000,
+        rentalSubtotal: 135_000,
+        deposit: 5_000,
+        platformFee: 1_350,
+        ownerPayout: 133_650,
+        total: 140_000,
+      },
+      depositTerms: {
+        policyVersion: 'fake-deposit-v1',
+        disputeWindowSeconds: 86_400,
+      },
+    } as Prisma.InputJsonValue;
+
+    expect(readBookingTermsSnapshot(fakeSafeDeal)).toMatchObject({
+      paymentScenario: 'FAKE_SAFE_DEAL',
+      moneyMinor: {
+        deposit: 5_000,
+        platformFee: 1_350,
+        ownerPayout: 133_650,
+        total: 140_000,
+      },
+      depositTerms: {
+        policyVersion: 'fake-deposit-v1',
+        disputeWindowSeconds: 86_400,
+      },
+    });
+  });
+
+  it.each([
+    {
+      name: 'missing exact minor fields',
+      override: { moneyMinor: undefined },
+    },
+    {
+      name: 'minor total that excludes the deposit',
+      override: {
+        moneyMinor: {
+          pricePerDay: 45_000,
+          rentalSubtotal: 135_000,
+          deposit: 5_000,
+          platformFee: 1_350,
+          ownerPayout: 133_650,
+          total: 135_000,
+        },
+      },
+    },
+    {
+      name: 'missing terms for a positive deposit',
+      override: { depositTerms: null },
+    },
+  ])('rejects fake Safe Deal with $name', ({ override }) => {
+    const fakeSafeDeal = {
+      ...validSnapshot,
+      depositAmount: 50,
+      platformFee: 13.5,
+      ownerPayout: 1336.5,
+      total: 1400,
+      paymentScenario: 'FAKE_SAFE_DEAL',
+      moneyMinor: {
+        pricePerDay: 45_000,
+        rentalSubtotal: 135_000,
+        deposit: 5_000,
+        platformFee: 1_350,
+        ownerPayout: 133_650,
+        total: 140_000,
+      },
+      depositTerms: {
+        policyVersion: 'fake-deposit-v1',
+        disputeWindowSeconds: 86_400,
+      },
+      ...override,
+    } as Prisma.InputJsonValue;
+
+    expect(readBookingTermsSnapshot(fakeSafeDeal)).toBeNull();
   });
 
   it('retains immutable borrower acceptance for approved document versions', () => {

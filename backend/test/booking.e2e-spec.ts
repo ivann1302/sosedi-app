@@ -1042,6 +1042,9 @@ describe('Booking availability (e2e)', () => {
       0,
     );
     await expect(
+      prisma.bookingDeposit.count({ where: { bookingId } }),
+    ).resolves.toBe(0);
+    await expect(
       prisma.booking.count({ where: { id: bookingId, lenderId: owner.id } }),
     ).resolves.toBe(1);
   });
@@ -1101,11 +1104,22 @@ describe('Booking availability (e2e)', () => {
         total: 1200,
         currency: 'RUB',
         paymentScenario: 'PAY_ON_HANDOVER',
+        moneyMinor: {
+          pricePerDay: 60_000,
+          rentalSubtotal: 120_000,
+          deposit: 0,
+          platformFee: 0,
+          ownerPayout: 120_000,
+          total: 120_000,
+        },
+        depositTerms: null,
         platformFee: 0,
         ownerPayout: 1200,
         offerVersion: 'e2e-approved-offer-1',
         cancellationPolicyVersion: 'e2e-approved-cancellation-1',
       },
+      payment: null,
+      deposit: null,
       handover: null,
       counterpartyContact: null,
     });
