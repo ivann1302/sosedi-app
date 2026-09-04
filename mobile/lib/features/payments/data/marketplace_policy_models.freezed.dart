@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MarketplaceDepositPolicy {
 
- bool get enabled; String get currency; int? get maximumMinor; String? get policyVersion; int? get disputeWindowSeconds;
+ bool get enabled; String get currency;@JsonKey(fromJson: _exactNullableSafeIntegerFromJson) int? get maximumMinor; String? get policyVersion;@JsonKey(fromJson: _exactNullableSafeIntegerFromJson) int? get disputeWindowSeconds;
 /// Create a copy of MarketplaceDepositPolicy
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $MarketplaceDepositPolicyCopyWith<$Res>  {
   factory $MarketplaceDepositPolicyCopyWith(MarketplaceDepositPolicy value, $Res Function(MarketplaceDepositPolicy) _then) = _$MarketplaceDepositPolicyCopyWithImpl;
 @useResult
 $Res call({
- bool enabled, String currency, int? maximumMinor, String? policyVersion, int? disputeWindowSeconds
+ bool enabled, String currency,@JsonKey(fromJson: _exactNullableSafeIntegerFromJson) int? maximumMinor, String? policyVersion,@JsonKey(fromJson: _exactNullableSafeIntegerFromJson) int? disputeWindowSeconds
 });
 
 
@@ -157,7 +157,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enabled,  String currency,  int? maximumMinor,  String? policyVersion,  int? disputeWindowSeconds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enabled,  String currency, @JsonKey(fromJson: _exactNullableSafeIntegerFromJson)  int? maximumMinor,  String? policyVersion, @JsonKey(fromJson: _exactNullableSafeIntegerFromJson)  int? disputeWindowSeconds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MarketplaceDepositPolicy() when $default != null:
 return $default(_that.enabled,_that.currency,_that.maximumMinor,_that.policyVersion,_that.disputeWindowSeconds);case _:
@@ -178,7 +178,7 @@ return $default(_that.enabled,_that.currency,_that.maximumMinor,_that.policyVers
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enabled,  String currency,  int? maximumMinor,  String? policyVersion,  int? disputeWindowSeconds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enabled,  String currency, @JsonKey(fromJson: _exactNullableSafeIntegerFromJson)  int? maximumMinor,  String? policyVersion, @JsonKey(fromJson: _exactNullableSafeIntegerFromJson)  int? disputeWindowSeconds)  $default,) {final _that = this;
 switch (_that) {
 case _MarketplaceDepositPolicy():
 return $default(_that.enabled,_that.currency,_that.maximumMinor,_that.policyVersion,_that.disputeWindowSeconds);case _:
@@ -198,7 +198,7 @@ return $default(_that.enabled,_that.currency,_that.maximumMinor,_that.policyVers
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enabled,  String currency,  int? maximumMinor,  String? policyVersion,  int? disputeWindowSeconds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enabled,  String currency, @JsonKey(fromJson: _exactNullableSafeIntegerFromJson)  int? maximumMinor,  String? policyVersion, @JsonKey(fromJson: _exactNullableSafeIntegerFromJson)  int? disputeWindowSeconds)?  $default,) {final _that = this;
 switch (_that) {
 case _MarketplaceDepositPolicy() when $default != null:
 return $default(_that.enabled,_that.currency,_that.maximumMinor,_that.policyVersion,_that.disputeWindowSeconds);case _:
@@ -213,14 +213,14 @@ return $default(_that.enabled,_that.currency,_that.maximumMinor,_that.policyVers
 @JsonSerializable()
 
 class _MarketplaceDepositPolicy implements MarketplaceDepositPolicy {
-  const _MarketplaceDepositPolicy({required this.enabled, required this.currency, required this.maximumMinor, required this.policyVersion, required this.disputeWindowSeconds});
+  const _MarketplaceDepositPolicy({required this.enabled, required this.currency, @JsonKey(fromJson: _exactNullableSafeIntegerFromJson) required this.maximumMinor, required this.policyVersion, @JsonKey(fromJson: _exactNullableSafeIntegerFromJson) required this.disputeWindowSeconds});
   factory _MarketplaceDepositPolicy.fromJson(Map<String, dynamic> json) => _$MarketplaceDepositPolicyFromJson(json);
 
 @override final  bool enabled;
 @override final  String currency;
-@override final  int? maximumMinor;
+@override@JsonKey(fromJson: _exactNullableSafeIntegerFromJson) final  int? maximumMinor;
 @override final  String? policyVersion;
-@override final  int? disputeWindowSeconds;
+@override@JsonKey(fromJson: _exactNullableSafeIntegerFromJson) final  int? disputeWindowSeconds;
 
 /// Create a copy of MarketplaceDepositPolicy
 /// with the given fields replaced by the non-null parameter values.
@@ -255,7 +255,7 @@ abstract mixin class _$MarketplaceDepositPolicyCopyWith<$Res> implements $Market
   factory _$MarketplaceDepositPolicyCopyWith(_MarketplaceDepositPolicy value, $Res Function(_MarketplaceDepositPolicy) _then) = __$MarketplaceDepositPolicyCopyWithImpl;
 @override @useResult
 $Res call({
- bool enabled, String currency, int? maximumMinor, String? policyVersion, int? disputeWindowSeconds
+ bool enabled, String currency,@JsonKey(fromJson: _exactNullableSafeIntegerFromJson) int? maximumMinor, String? policyVersion,@JsonKey(fromJson: _exactNullableSafeIntegerFromJson) int? disputeWindowSeconds
 });
 
 

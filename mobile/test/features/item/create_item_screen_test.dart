@@ -7,6 +7,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/core/permissions/app_permissions.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/catalog/data/catalog_service.dart';
@@ -33,7 +34,7 @@ void main() {
     expect(find.text('С залогом'), findsNothing);
   });
 
-  testWidgets('fails closed with a retry message when policy loading fails', (
+  testWidgets('fails closed when the policy response is invalid', (
     tester,
   ) async {
     _useTallSurface(tester);
@@ -41,7 +42,10 @@ void main() {
       _app(
         _FakeCreateItemService(),
         draftStorage: _FakeDraftStorage(const LocalCreateItemDraft(step: 2)),
-        policyError: StateError('offline'),
+        policyError: const ApiException(
+          code: 'INVALID_RESPONSE',
+          message: 'Не удалось прочитать платёжную политику',
+        ),
       ),
     );
     await tester.pumpAndSettle();

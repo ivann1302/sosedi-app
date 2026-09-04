@@ -41,6 +41,12 @@ class MarketplacePolicyService {
       );
       final policy = envelope.data;
       if (envelope.success && policy != null) {
+        if (!_isValidPolicy(policy)) {
+          throw const ApiException(
+            code: 'INVALID_RESPONSE',
+            message: 'Не удалось прочитать платёжную политику',
+          );
+        }
         return policy;
       }
       throw ApiException(
@@ -63,4 +69,26 @@ class MarketplacePolicyService {
       );
     }
   }
+}
+
+bool _isValidPolicy(MarketplacePolicy policy) {
+  final deposit = policy.deposit;
+  if (deposit.currency != 'RUB') return false;
+
+  return switch (policy.paymentScenario) {
+    PaymentScenario.payOnHandover =>
+      !deposit.enabled &&
+          deposit.maximumMinor == null &&
+          deposit.policyVersion == null &&
+          deposit.disputeWindowSeconds == null,
+    PaymentScenario.fakeSafeDeal =>
+      deposit.enabled &&
+          deposit.maximumMinor != null &&
+          deposit.maximumMinor! > 0 &&
+          deposit.policyVersion != null &&
+          deposit.policyVersion!.trim().isNotEmpty &&
+          deposit.disputeWindowSeconds != null &&
+          deposit.disputeWindowSeconds! > 0,
+    PaymentScenario.safeDeal => false,
+  };
 }

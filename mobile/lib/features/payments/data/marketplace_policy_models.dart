@@ -5,6 +5,16 @@ part 'marketplace_policy_models.g.dart';
 
 const _maximumSafeInteger = 9007199254740991;
 
+int? _exactNullableSafeIntegerFromJson(Object? value) {
+  if (value == null) return null;
+  if (value is! int ||
+      value < -_maximumSafeInteger ||
+      value > _maximumSafeInteger) {
+    throw const FormatException('Expected a safe integer');
+  }
+  return value;
+}
+
 class DepositAmountFormatException implements Exception {
   const DepositAmountFormatException(this.message);
 
@@ -64,8 +74,10 @@ abstract class MarketplaceDepositPolicy with _$MarketplaceDepositPolicy {
   const factory MarketplaceDepositPolicy({
     required bool enabled,
     required String currency,
+    @JsonKey(fromJson: _exactNullableSafeIntegerFromJson)
     required int? maximumMinor,
     required String? policyVersion,
+    @JsonKey(fromJson: _exactNullableSafeIntegerFromJson)
     required int? disputeWindowSeconds,
   }) = _MarketplaceDepositPolicy;
 

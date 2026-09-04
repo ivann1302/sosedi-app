@@ -11,9 +11,11 @@ _MarketplaceDepositPolicy _$MarketplaceDepositPolicyFromJson(
 ) => _MarketplaceDepositPolicy(
   enabled: json['enabled'] as bool,
   currency: json['currency'] as String,
-  maximumMinor: (json['maximumMinor'] as num?)?.toInt(),
+  maximumMinor: _exactNullableSafeIntegerFromJson(json['maximumMinor']),
   policyVersion: json['policyVersion'] as String?,
-  disputeWindowSeconds: (json['disputeWindowSeconds'] as num?)?.toInt(),
+  disputeWindowSeconds: _exactNullableSafeIntegerFromJson(
+    json['disputeWindowSeconds'],
+  ),
 );
 
 Map<String, dynamic> _$MarketplaceDepositPolicyToJson(

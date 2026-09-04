@@ -86,6 +86,65 @@ void main() {
     expect(policy.deposit.disputeWindowSeconds, 300);
   });
 
+  test('rejects fractional, negative and unsafe policy integers', () async {
+    final invalidValues = <Object>[0.5, 0, -1, 9007199254740992];
+
+    for (final value in invalidValues) {
+      final service = _serviceForPolicy(_fakePolicyData(maximumMinor: value));
+
+      await _expectInvalidResponse(service, reason: '$value');
+    }
+
+    await _expectInvalidResponse(
+      _serviceForPolicy(_fakePolicyData(disputeWindowSeconds: 0.5)),
+      reason: 'fractional dispute window',
+    );
+  });
+
+  test('rejects unsupported scenarios and non-RUB currency', () async {
+    for (final policy in [
+      _fakePolicyData(paymentScenario: 'SAFE_DEAL'),
+      _fakePolicyData(paymentScenario: 'UNKNOWN_SCENARIO'),
+      _fakePolicyData(currency: 'USD'),
+    ]) {
+      await _expectInvalidResponse(_serviceForPolicy(policy));
+    }
+  });
+
+  test(
+    'rejects incomplete active and polluted offline policy tuples',
+    () async {
+      for (final policy in [
+        _fakePolicyData(policyVersion: ''),
+        _fakePolicyData(policyVersion: '   '),
+        _fakePolicyData(policyVersion: null),
+        _fakePolicyData(disputeWindowSeconds: 0),
+        {
+          'paymentScenario': 'PAY_ON_HANDOVER',
+          'deposit': {
+            'enabled': false,
+            'currency': 'RUB',
+            'maximumMinor': null,
+            'policyVersion': 'stale-policy',
+            'disputeWindowSeconds': null,
+          },
+        },
+        {
+          'paymentScenario': 'PAY_ON_HANDOVER',
+          'deposit': {
+            'enabled': false,
+            'currency': 'RUB',
+            'maximumMinor': 1,
+            'policyVersion': null,
+            'disputeWindowSeconds': 1,
+          },
+        },
+      ]) {
+        await _expectInvalidResponse(_serviceForPolicy(policy));
+      }
+    },
+  );
+
   test(
     'fails closed when the policy is not wrapped in the API envelope',
     () async {
@@ -117,5 +176,48 @@ void main() {
       );
       expect(adapter.requests, hasLength(1));
     },
+  );
+}
+
+Map<String, Object?> _fakePolicyData({
+  String paymentScenario = 'FAKE_SAFE_DEAL',
+  String currency = 'RUB',
+  Object? maximumMinor = 10000000,
+  Object? policyVersion = 'fake-deposit-2026-09-02',
+  Object? disputeWindowSeconds = 300,
+}) {
+  return {
+    'paymentScenario': paymentScenario,
+    'deposit': {
+      'enabled': true,
+      'currency': currency,
+      'maximumMinor': maximumMinor,
+      'policyVersion': policyVersion,
+      'disputeWindowSeconds': disputeWindowSeconds,
+    },
+  };
+}
+
+MarketplacePolicyService _serviceForPolicy(Map<String, Object?> policy) {
+  final adapter = CallbackAdapter(
+    (_) => jsonResponse({'success': true, 'data': policy, 'error': null}),
+  );
+  return MarketplacePolicyService(Dio()..httpClientAdapter = adapter);
+}
+
+Future<void> _expectInvalidResponse(
+  MarketplacePolicyService service, {
+  String? reason,
+}) {
+  return expectLater(
+    service.fetch(),
+    throwsA(
+      isA<ApiException>().having(
+        (error) => error.code,
+        'code',
+        'INVALID_RESPONSE',
+      ),
+    ),
+    reason: reason,
   );
 }
