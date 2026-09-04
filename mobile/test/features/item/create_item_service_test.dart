@@ -38,6 +38,12 @@ void main() {
     },
   );
 
+  test('omits a null deposit command instead of clearing it', () {
+    final json = draft.copyWith(depositAmountMinor: null).toJson();
+
+    expect(json, isNot(contains('depositAmountMinor')));
+  });
+
   test('uploads an item photo through presign and confirm', () async {
     final adapter = CallbackAdapter((options) {
       if (options.path == '/uploads/presigned-url') {
@@ -155,4 +161,5 @@ const draft = CreateItemDraft(
   completenessConfirmed: true,
   safetyAndMarketplaceRulesAccepted: true,
   listingRulesVersion: '2026-07-28',
+  depositAmountMinor: 12345,
 );

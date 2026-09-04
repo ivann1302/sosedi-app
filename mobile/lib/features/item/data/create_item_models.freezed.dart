@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LocalCreateItemDraft {
 
- int get step; String? get categoryId; String? get title; String? get description; String? get condition; String? get completeness; String? get handoverTerms; String? get pricePerDay; String? get publicArea;
+ int get step; String? get categoryId; String? get title; String? get description; String? get condition; String? get completeness; String? get handoverTerms; String? get pricePerDay; String? get publicArea; String? get depositMode; String? get depositAmount;
 /// Create a copy of LocalCreateItemDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $LocalCreateItemDraftCopyWith<LocalCreateItemDraft> get copyWith => _$LocalCreat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LocalCreateItemDraft&&(identical(other.step, step) || other.step == step)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LocalCreateItemDraft&&(identical(other.step, step) || other.step == step)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea)&&(identical(other.depositMode, depositMode) || other.depositMode == depositMode)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,step,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea);
+int get hashCode => Object.hash(runtimeType,step,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea,depositMode,depositAmount);
 
 @override
 String toString() {
-  return 'LocalCreateItemDraft(step: $step, categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea)';
+  return 'LocalCreateItemDraft(step: $step, categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea, depositMode: $depositMode, depositAmount: $depositAmount)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $LocalCreateItemDraftCopyWith<$Res>  {
   factory $LocalCreateItemDraftCopyWith(LocalCreateItemDraft value, $Res Function(LocalCreateItemDraft) _then) = _$LocalCreateItemDraftCopyWithImpl;
 @useResult
 $Res call({
- int step, String? categoryId, String? title, String? description, String? condition, String? completeness, String? handoverTerms, String? pricePerDay, String? publicArea
+ int step, String? categoryId, String? title, String? description, String? condition, String? completeness, String? handoverTerms, String? pricePerDay, String? publicArea, String? depositMode, String? depositAmount
 });
 
 
@@ -65,7 +65,7 @@ class _$LocalCreateItemDraftCopyWithImpl<$Res>
 
 /// Create a copy of LocalCreateItemDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? step = null,Object? categoryId = freezed,Object? title = freezed,Object? description = freezed,Object? condition = freezed,Object? completeness = freezed,Object? handoverTerms = freezed,Object? pricePerDay = freezed,Object? publicArea = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? step = null,Object? categoryId = freezed,Object? title = freezed,Object? description = freezed,Object? condition = freezed,Object? completeness = freezed,Object? handoverTerms = freezed,Object? pricePerDay = freezed,Object? publicArea = freezed,Object? depositMode = freezed,Object? depositAmount = freezed,}) {
   return _then(_self.copyWith(
 step: null == step ? _self.step : step // ignore: cast_nullable_to_non_nullable
 as int,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
@@ -76,6 +76,8 @@ as String?,completeness: freezed == completeness ? _self.completeness : complete
 as String?,handoverTerms: freezed == handoverTerms ? _self.handoverTerms : handoverTerms // ignore: cast_nullable_to_non_nullable
 as String?,pricePerDay: freezed == pricePerDay ? _self.pricePerDay : pricePerDay // ignore: cast_nullable_to_non_nullable
 as String?,publicArea: freezed == publicArea ? _self.publicArea : publicArea // ignore: cast_nullable_to_non_nullable
+as String?,depositMode: freezed == depositMode ? _self.depositMode : depositMode // ignore: cast_nullable_to_non_nullable
+as String?,depositAmount: freezed == depositAmount ? _self.depositAmount : depositAmount // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -161,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea,  String? depositMode,  String? depositAmount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LocalCreateItemDraft() when $default != null:
-return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea);case _:
+return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.depositMode,_that.depositAmount);case _:
   return orElse();
 
 }
@@ -182,10 +184,10 @@ return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea,  String? depositMode,  String? depositAmount)  $default,) {final _that = this;
 switch (_that) {
 case _LocalCreateItemDraft():
-return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea);case _:
+return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.depositMode,_that.depositAmount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +204,10 @@ return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int step,  String? categoryId,  String? title,  String? description,  String? condition,  String? completeness,  String? handoverTerms,  String? pricePerDay,  String? publicArea,  String? depositMode,  String? depositAmount)?  $default,) {final _that = this;
 switch (_that) {
 case _LocalCreateItemDraft() when $default != null:
-return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea);case _:
+return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.depositMode,_that.depositAmount);case _:
   return null;
 
 }
@@ -217,7 +219,7 @@ return $default(_that.step,_that.categoryId,_that.title,_that.description,_that.
 @JsonSerializable()
 
 class _LocalCreateItemDraft implements LocalCreateItemDraft {
-  const _LocalCreateItemDraft({this.step = 0, this.categoryId, this.title, this.description, this.condition, this.completeness, this.handoverTerms, this.pricePerDay, this.publicArea});
+  const _LocalCreateItemDraft({this.step = 0, this.categoryId, this.title, this.description, this.condition, this.completeness, this.handoverTerms, this.pricePerDay, this.publicArea, this.depositMode, this.depositAmount});
   factory _LocalCreateItemDraft.fromJson(Map<String, dynamic> json) => _$LocalCreateItemDraftFromJson(json);
 
 @override@JsonKey() final  int step;
@@ -229,6 +231,8 @@ class _LocalCreateItemDraft implements LocalCreateItemDraft {
 @override final  String? handoverTerms;
 @override final  String? pricePerDay;
 @override final  String? publicArea;
+@override final  String? depositMode;
+@override final  String? depositAmount;
 
 /// Create a copy of LocalCreateItemDraft
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +247,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LocalCreateItemDraft&&(identical(other.step, step) || other.step == step)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LocalCreateItemDraft&&(identical(other.step, step) || other.step == step)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea)&&(identical(other.depositMode, depositMode) || other.depositMode == depositMode)&&(identical(other.depositAmount, depositAmount) || other.depositAmount == depositAmount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,step,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea);
+int get hashCode => Object.hash(runtimeType,step,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea,depositMode,depositAmount);
 
 @override
 String toString() {
-  return 'LocalCreateItemDraft(step: $step, categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea)';
+  return 'LocalCreateItemDraft(step: $step, categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea, depositMode: $depositMode, depositAmount: $depositAmount)';
 }
 
 
@@ -263,7 +267,7 @@ abstract mixin class _$LocalCreateItemDraftCopyWith<$Res> implements $LocalCreat
   factory _$LocalCreateItemDraftCopyWith(_LocalCreateItemDraft value, $Res Function(_LocalCreateItemDraft) _then) = __$LocalCreateItemDraftCopyWithImpl;
 @override @useResult
 $Res call({
- int step, String? categoryId, String? title, String? description, String? condition, String? completeness, String? handoverTerms, String? pricePerDay, String? publicArea
+ int step, String? categoryId, String? title, String? description, String? condition, String? completeness, String? handoverTerms, String? pricePerDay, String? publicArea, String? depositMode, String? depositAmount
 });
 
 
@@ -280,7 +284,7 @@ class __$LocalCreateItemDraftCopyWithImpl<$Res>
 
 /// Create a copy of LocalCreateItemDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? step = null,Object? categoryId = freezed,Object? title = freezed,Object? description = freezed,Object? condition = freezed,Object? completeness = freezed,Object? handoverTerms = freezed,Object? pricePerDay = freezed,Object? publicArea = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? step = null,Object? categoryId = freezed,Object? title = freezed,Object? description = freezed,Object? condition = freezed,Object? completeness = freezed,Object? handoverTerms = freezed,Object? pricePerDay = freezed,Object? publicArea = freezed,Object? depositMode = freezed,Object? depositAmount = freezed,}) {
   return _then(_LocalCreateItemDraft(
 step: null == step ? _self.step : step // ignore: cast_nullable_to_non_nullable
 as int,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
@@ -291,6 +295,8 @@ as String?,completeness: freezed == completeness ? _self.completeness : complete
 as String?,handoverTerms: freezed == handoverTerms ? _self.handoverTerms : handoverTerms // ignore: cast_nullable_to_non_nullable
 as String?,pricePerDay: freezed == pricePerDay ? _self.pricePerDay : pricePerDay // ignore: cast_nullable_to_non_nullable
 as String?,publicArea: freezed == publicArea ? _self.publicArea : publicArea // ignore: cast_nullable_to_non_nullable
+as String?,depositMode: freezed == depositMode ? _self.depositMode : depositMode // ignore: cast_nullable_to_non_nullable
+as String?,depositAmount: freezed == depositAmount ? _self.depositAmount : depositAmount // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -302,7 +308,7 @@ as String?,
 /// @nodoc
 mixin _$CreateItemDraft {
 
- String get categoryId; String get title; String get description; String get condition; String get completeness; String get handoverTerms; double get pricePerDay; String get publicArea; String get address; double get latitude; double get longitude; bool get ownershipConfirmed; bool get conditionConfirmed; bool get completenessConfirmed; bool get safetyAndMarketplaceRulesAccepted; String get listingRulesVersion;
+ String get categoryId; String get title; String get description; String get condition; String get completeness; String get handoverTerms; double get pricePerDay; String get publicArea; String get address; double get latitude; double get longitude; bool get ownershipConfirmed; bool get conditionConfirmed; bool get completenessConfirmed; bool get safetyAndMarketplaceRulesAccepted; String get listingRulesVersion;@JsonKey(includeIfNull: false) int? get depositAmountMinor;
 /// Create a copy of CreateItemDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -315,16 +321,16 @@ $CreateItemDraftCopyWith<CreateItemDraft> get copyWith => _$CreateItemDraftCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreateItemDraft&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea)&&(identical(other.address, address) || other.address == address)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.ownershipConfirmed, ownershipConfirmed) || other.ownershipConfirmed == ownershipConfirmed)&&(identical(other.conditionConfirmed, conditionConfirmed) || other.conditionConfirmed == conditionConfirmed)&&(identical(other.completenessConfirmed, completenessConfirmed) || other.completenessConfirmed == completenessConfirmed)&&(identical(other.safetyAndMarketplaceRulesAccepted, safetyAndMarketplaceRulesAccepted) || other.safetyAndMarketplaceRulesAccepted == safetyAndMarketplaceRulesAccepted)&&(identical(other.listingRulesVersion, listingRulesVersion) || other.listingRulesVersion == listingRulesVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreateItemDraft&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea)&&(identical(other.address, address) || other.address == address)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.ownershipConfirmed, ownershipConfirmed) || other.ownershipConfirmed == ownershipConfirmed)&&(identical(other.conditionConfirmed, conditionConfirmed) || other.conditionConfirmed == conditionConfirmed)&&(identical(other.completenessConfirmed, completenessConfirmed) || other.completenessConfirmed == completenessConfirmed)&&(identical(other.safetyAndMarketplaceRulesAccepted, safetyAndMarketplaceRulesAccepted) || other.safetyAndMarketplaceRulesAccepted == safetyAndMarketplaceRulesAccepted)&&(identical(other.listingRulesVersion, listingRulesVersion) || other.listingRulesVersion == listingRulesVersion)&&(identical(other.depositAmountMinor, depositAmountMinor) || other.depositAmountMinor == depositAmountMinor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea,address,latitude,longitude,ownershipConfirmed,conditionConfirmed,completenessConfirmed,safetyAndMarketplaceRulesAccepted,listingRulesVersion);
+int get hashCode => Object.hash(runtimeType,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea,address,latitude,longitude,ownershipConfirmed,conditionConfirmed,completenessConfirmed,safetyAndMarketplaceRulesAccepted,listingRulesVersion,depositAmountMinor);
 
 @override
 String toString() {
-  return 'CreateItemDraft(categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea, address: $address, latitude: $latitude, longitude: $longitude, ownershipConfirmed: $ownershipConfirmed, conditionConfirmed: $conditionConfirmed, completenessConfirmed: $completenessConfirmed, safetyAndMarketplaceRulesAccepted: $safetyAndMarketplaceRulesAccepted, listingRulesVersion: $listingRulesVersion)';
+  return 'CreateItemDraft(categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea, address: $address, latitude: $latitude, longitude: $longitude, ownershipConfirmed: $ownershipConfirmed, conditionConfirmed: $conditionConfirmed, completenessConfirmed: $completenessConfirmed, safetyAndMarketplaceRulesAccepted: $safetyAndMarketplaceRulesAccepted, listingRulesVersion: $listingRulesVersion, depositAmountMinor: $depositAmountMinor)';
 }
 
 
@@ -335,7 +341,7 @@ abstract mixin class $CreateItemDraftCopyWith<$Res>  {
   factory $CreateItemDraftCopyWith(CreateItemDraft value, $Res Function(CreateItemDraft) _then) = _$CreateItemDraftCopyWithImpl;
 @useResult
 $Res call({
- String categoryId, String title, String description, String condition, String completeness, String handoverTerms, double pricePerDay, String publicArea, String address, double latitude, double longitude, bool ownershipConfirmed, bool conditionConfirmed, bool completenessConfirmed, bool safetyAndMarketplaceRulesAccepted, String listingRulesVersion
+ String categoryId, String title, String description, String condition, String completeness, String handoverTerms, double pricePerDay, String publicArea, String address, double latitude, double longitude, bool ownershipConfirmed, bool conditionConfirmed, bool completenessConfirmed, bool safetyAndMarketplaceRulesAccepted, String listingRulesVersion,@JsonKey(includeIfNull: false) int? depositAmountMinor
 });
 
 
@@ -352,7 +358,7 @@ class _$CreateItemDraftCopyWithImpl<$Res>
 
 /// Create a copy of CreateItemDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? categoryId = null,Object? title = null,Object? description = null,Object? condition = null,Object? completeness = null,Object? handoverTerms = null,Object? pricePerDay = null,Object? publicArea = null,Object? address = null,Object? latitude = null,Object? longitude = null,Object? ownershipConfirmed = null,Object? conditionConfirmed = null,Object? completenessConfirmed = null,Object? safetyAndMarketplaceRulesAccepted = null,Object? listingRulesVersion = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? categoryId = null,Object? title = null,Object? description = null,Object? condition = null,Object? completeness = null,Object? handoverTerms = null,Object? pricePerDay = null,Object? publicArea = null,Object? address = null,Object? latitude = null,Object? longitude = null,Object? ownershipConfirmed = null,Object? conditionConfirmed = null,Object? completenessConfirmed = null,Object? safetyAndMarketplaceRulesAccepted = null,Object? listingRulesVersion = null,Object? depositAmountMinor = freezed,}) {
   return _then(_self.copyWith(
 categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -370,7 +376,8 @@ as bool,conditionConfirmed: null == conditionConfirmed ? _self.conditionConfirme
 as bool,completenessConfirmed: null == completenessConfirmed ? _self.completenessConfirmed : completenessConfirmed // ignore: cast_nullable_to_non_nullable
 as bool,safetyAndMarketplaceRulesAccepted: null == safetyAndMarketplaceRulesAccepted ? _self.safetyAndMarketplaceRulesAccepted : safetyAndMarketplaceRulesAccepted // ignore: cast_nullable_to_non_nullable
 as bool,listingRulesVersion: null == listingRulesVersion ? _self.listingRulesVersion : listingRulesVersion // ignore: cast_nullable_to_non_nullable
-as String,
+as String,depositAmountMinor: freezed == depositAmountMinor ? _self.depositAmountMinor : depositAmountMinor // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -455,10 +462,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String categoryId,  String title,  String description,  String condition,  String completeness,  String handoverTerms,  double pricePerDay,  String publicArea,  String address,  double latitude,  double longitude,  bool ownershipConfirmed,  bool conditionConfirmed,  bool completenessConfirmed,  bool safetyAndMarketplaceRulesAccepted,  String listingRulesVersion)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String categoryId,  String title,  String description,  String condition,  String completeness,  String handoverTerms,  double pricePerDay,  String publicArea,  String address,  double latitude,  double longitude,  bool ownershipConfirmed,  bool conditionConfirmed,  bool completenessConfirmed,  bool safetyAndMarketplaceRulesAccepted,  String listingRulesVersion, @JsonKey(includeIfNull: false)  int? depositAmountMinor)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CreateItemDraft() when $default != null:
-return $default(_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.address,_that.latitude,_that.longitude,_that.ownershipConfirmed,_that.conditionConfirmed,_that.completenessConfirmed,_that.safetyAndMarketplaceRulesAccepted,_that.listingRulesVersion);case _:
+return $default(_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.address,_that.latitude,_that.longitude,_that.ownershipConfirmed,_that.conditionConfirmed,_that.completenessConfirmed,_that.safetyAndMarketplaceRulesAccepted,_that.listingRulesVersion,_that.depositAmountMinor);case _:
   return orElse();
 
 }
@@ -476,10 +483,10 @@ return $default(_that.categoryId,_that.title,_that.description,_that.condition,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String categoryId,  String title,  String description,  String condition,  String completeness,  String handoverTerms,  double pricePerDay,  String publicArea,  String address,  double latitude,  double longitude,  bool ownershipConfirmed,  bool conditionConfirmed,  bool completenessConfirmed,  bool safetyAndMarketplaceRulesAccepted,  String listingRulesVersion)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String categoryId,  String title,  String description,  String condition,  String completeness,  String handoverTerms,  double pricePerDay,  String publicArea,  String address,  double latitude,  double longitude,  bool ownershipConfirmed,  bool conditionConfirmed,  bool completenessConfirmed,  bool safetyAndMarketplaceRulesAccepted,  String listingRulesVersion, @JsonKey(includeIfNull: false)  int? depositAmountMinor)  $default,) {final _that = this;
 switch (_that) {
 case _CreateItemDraft():
-return $default(_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.address,_that.latitude,_that.longitude,_that.ownershipConfirmed,_that.conditionConfirmed,_that.completenessConfirmed,_that.safetyAndMarketplaceRulesAccepted,_that.listingRulesVersion);case _:
+return $default(_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.address,_that.latitude,_that.longitude,_that.ownershipConfirmed,_that.conditionConfirmed,_that.completenessConfirmed,_that.safetyAndMarketplaceRulesAccepted,_that.listingRulesVersion,_that.depositAmountMinor);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -496,10 +503,10 @@ return $default(_that.categoryId,_that.title,_that.description,_that.condition,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String categoryId,  String title,  String description,  String condition,  String completeness,  String handoverTerms,  double pricePerDay,  String publicArea,  String address,  double latitude,  double longitude,  bool ownershipConfirmed,  bool conditionConfirmed,  bool completenessConfirmed,  bool safetyAndMarketplaceRulesAccepted,  String listingRulesVersion)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String categoryId,  String title,  String description,  String condition,  String completeness,  String handoverTerms,  double pricePerDay,  String publicArea,  String address,  double latitude,  double longitude,  bool ownershipConfirmed,  bool conditionConfirmed,  bool completenessConfirmed,  bool safetyAndMarketplaceRulesAccepted,  String listingRulesVersion, @JsonKey(includeIfNull: false)  int? depositAmountMinor)?  $default,) {final _that = this;
 switch (_that) {
 case _CreateItemDraft() when $default != null:
-return $default(_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.address,_that.latitude,_that.longitude,_that.ownershipConfirmed,_that.conditionConfirmed,_that.completenessConfirmed,_that.safetyAndMarketplaceRulesAccepted,_that.listingRulesVersion);case _:
+return $default(_that.categoryId,_that.title,_that.description,_that.condition,_that.completeness,_that.handoverTerms,_that.pricePerDay,_that.publicArea,_that.address,_that.latitude,_that.longitude,_that.ownershipConfirmed,_that.conditionConfirmed,_that.completenessConfirmed,_that.safetyAndMarketplaceRulesAccepted,_that.listingRulesVersion,_that.depositAmountMinor);case _:
   return null;
 
 }
@@ -511,7 +518,7 @@ return $default(_that.categoryId,_that.title,_that.description,_that.condition,_
 @JsonSerializable()
 
 class _CreateItemDraft implements CreateItemDraft {
-  const _CreateItemDraft({required this.categoryId, required this.title, required this.description, required this.condition, required this.completeness, required this.handoverTerms, required this.pricePerDay, required this.publicArea, required this.address, required this.latitude, required this.longitude, required this.ownershipConfirmed, required this.conditionConfirmed, required this.completenessConfirmed, required this.safetyAndMarketplaceRulesAccepted, required this.listingRulesVersion});
+  const _CreateItemDraft({required this.categoryId, required this.title, required this.description, required this.condition, required this.completeness, required this.handoverTerms, required this.pricePerDay, required this.publicArea, required this.address, required this.latitude, required this.longitude, required this.ownershipConfirmed, required this.conditionConfirmed, required this.completenessConfirmed, required this.safetyAndMarketplaceRulesAccepted, required this.listingRulesVersion, @JsonKey(includeIfNull: false) this.depositAmountMinor});
   factory _CreateItemDraft.fromJson(Map<String, dynamic> json) => _$CreateItemDraftFromJson(json);
 
 @override final  String categoryId;
@@ -530,6 +537,7 @@ class _CreateItemDraft implements CreateItemDraft {
 @override final  bool completenessConfirmed;
 @override final  bool safetyAndMarketplaceRulesAccepted;
 @override final  String listingRulesVersion;
+@override@JsonKey(includeIfNull: false) final  int? depositAmountMinor;
 
 /// Create a copy of CreateItemDraft
 /// with the given fields replaced by the non-null parameter values.
@@ -544,16 +552,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreateItemDraft&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea)&&(identical(other.address, address) || other.address == address)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.ownershipConfirmed, ownershipConfirmed) || other.ownershipConfirmed == ownershipConfirmed)&&(identical(other.conditionConfirmed, conditionConfirmed) || other.conditionConfirmed == conditionConfirmed)&&(identical(other.completenessConfirmed, completenessConfirmed) || other.completenessConfirmed == completenessConfirmed)&&(identical(other.safetyAndMarketplaceRulesAccepted, safetyAndMarketplaceRulesAccepted) || other.safetyAndMarketplaceRulesAccepted == safetyAndMarketplaceRulesAccepted)&&(identical(other.listingRulesVersion, listingRulesVersion) || other.listingRulesVersion == listingRulesVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreateItemDraft&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.condition, condition) || other.condition == condition)&&(identical(other.completeness, completeness) || other.completeness == completeness)&&(identical(other.handoverTerms, handoverTerms) || other.handoverTerms == handoverTerms)&&(identical(other.pricePerDay, pricePerDay) || other.pricePerDay == pricePerDay)&&(identical(other.publicArea, publicArea) || other.publicArea == publicArea)&&(identical(other.address, address) || other.address == address)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.ownershipConfirmed, ownershipConfirmed) || other.ownershipConfirmed == ownershipConfirmed)&&(identical(other.conditionConfirmed, conditionConfirmed) || other.conditionConfirmed == conditionConfirmed)&&(identical(other.completenessConfirmed, completenessConfirmed) || other.completenessConfirmed == completenessConfirmed)&&(identical(other.safetyAndMarketplaceRulesAccepted, safetyAndMarketplaceRulesAccepted) || other.safetyAndMarketplaceRulesAccepted == safetyAndMarketplaceRulesAccepted)&&(identical(other.listingRulesVersion, listingRulesVersion) || other.listingRulesVersion == listingRulesVersion)&&(identical(other.depositAmountMinor, depositAmountMinor) || other.depositAmountMinor == depositAmountMinor));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea,address,latitude,longitude,ownershipConfirmed,conditionConfirmed,completenessConfirmed,safetyAndMarketplaceRulesAccepted,listingRulesVersion);
+int get hashCode => Object.hash(runtimeType,categoryId,title,description,condition,completeness,handoverTerms,pricePerDay,publicArea,address,latitude,longitude,ownershipConfirmed,conditionConfirmed,completenessConfirmed,safetyAndMarketplaceRulesAccepted,listingRulesVersion,depositAmountMinor);
 
 @override
 String toString() {
-  return 'CreateItemDraft(categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea, address: $address, latitude: $latitude, longitude: $longitude, ownershipConfirmed: $ownershipConfirmed, conditionConfirmed: $conditionConfirmed, completenessConfirmed: $completenessConfirmed, safetyAndMarketplaceRulesAccepted: $safetyAndMarketplaceRulesAccepted, listingRulesVersion: $listingRulesVersion)';
+  return 'CreateItemDraft(categoryId: $categoryId, title: $title, description: $description, condition: $condition, completeness: $completeness, handoverTerms: $handoverTerms, pricePerDay: $pricePerDay, publicArea: $publicArea, address: $address, latitude: $latitude, longitude: $longitude, ownershipConfirmed: $ownershipConfirmed, conditionConfirmed: $conditionConfirmed, completenessConfirmed: $completenessConfirmed, safetyAndMarketplaceRulesAccepted: $safetyAndMarketplaceRulesAccepted, listingRulesVersion: $listingRulesVersion, depositAmountMinor: $depositAmountMinor)';
 }
 
 
@@ -564,7 +572,7 @@ abstract mixin class _$CreateItemDraftCopyWith<$Res> implements $CreateItemDraft
   factory _$CreateItemDraftCopyWith(_CreateItemDraft value, $Res Function(_CreateItemDraft) _then) = __$CreateItemDraftCopyWithImpl;
 @override @useResult
 $Res call({
- String categoryId, String title, String description, String condition, String completeness, String handoverTerms, double pricePerDay, String publicArea, String address, double latitude, double longitude, bool ownershipConfirmed, bool conditionConfirmed, bool completenessConfirmed, bool safetyAndMarketplaceRulesAccepted, String listingRulesVersion
+ String categoryId, String title, String description, String condition, String completeness, String handoverTerms, double pricePerDay, String publicArea, String address, double latitude, double longitude, bool ownershipConfirmed, bool conditionConfirmed, bool completenessConfirmed, bool safetyAndMarketplaceRulesAccepted, String listingRulesVersion,@JsonKey(includeIfNull: false) int? depositAmountMinor
 });
 
 
@@ -581,7 +589,7 @@ class __$CreateItemDraftCopyWithImpl<$Res>
 
 /// Create a copy of CreateItemDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? categoryId = null,Object? title = null,Object? description = null,Object? condition = null,Object? completeness = null,Object? handoverTerms = null,Object? pricePerDay = null,Object? publicArea = null,Object? address = null,Object? latitude = null,Object? longitude = null,Object? ownershipConfirmed = null,Object? conditionConfirmed = null,Object? completenessConfirmed = null,Object? safetyAndMarketplaceRulesAccepted = null,Object? listingRulesVersion = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? categoryId = null,Object? title = null,Object? description = null,Object? condition = null,Object? completeness = null,Object? handoverTerms = null,Object? pricePerDay = null,Object? publicArea = null,Object? address = null,Object? latitude = null,Object? longitude = null,Object? ownershipConfirmed = null,Object? conditionConfirmed = null,Object? completenessConfirmed = null,Object? safetyAndMarketplaceRulesAccepted = null,Object? listingRulesVersion = null,Object? depositAmountMinor = freezed,}) {
   return _then(_CreateItemDraft(
 categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -599,7 +607,8 @@ as bool,conditionConfirmed: null == conditionConfirmed ? _self.conditionConfirme
 as bool,completenessConfirmed: null == completenessConfirmed ? _self.completenessConfirmed : completenessConfirmed // ignore: cast_nullable_to_non_nullable
 as bool,safetyAndMarketplaceRulesAccepted: null == safetyAndMarketplaceRulesAccepted ? _self.safetyAndMarketplaceRulesAccepted : safetyAndMarketplaceRulesAccepted // ignore: cast_nullable_to_non_nullable
 as bool,listingRulesVersion: null == listingRulesVersion ? _self.listingRulesVersion : listingRulesVersion // ignore: cast_nullable_to_non_nullable
-as String,
+as String,depositAmountMinor: freezed == depositAmountMinor ? _self.depositAmountMinor : depositAmountMinor // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

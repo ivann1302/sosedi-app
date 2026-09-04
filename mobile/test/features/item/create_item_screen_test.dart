@@ -14,9 +14,86 @@ import 'package:mobile/features/item/data/create_item_draft_storage.dart';
 import 'package:mobile/features/item/data/create_item_models.dart';
 import 'package:mobile/features/item/data/create_item_service.dart';
 import 'package:mobile/features/item/presentation/create_item_screen.dart';
+import 'package:mobile/features/payments/data/marketplace_policy_models.dart';
+import 'package:mobile/features/payments/data/marketplace_policy_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
+  testWidgets('hides deposit controls for the offline policy', (tester) async {
+    _useTallSurface(tester);
+    await tester.pumpWidget(
+      _app(
+        _FakeCreateItemService(),
+        draftStorage: _FakeDraftStorage(const LocalCreateItemDraft(step: 2)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Без залога'), findsNothing);
+    expect(find.text('С залогом'), findsNothing);
+  });
+
+  testWidgets('fails closed with a retry message when policy loading fails', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    await tester.pumpWidget(
+      _app(
+        _FakeCreateItemService(),
+        draftStorage: _FakeDraftStorage(const LocalCreateItemDraft(step: 2)),
+        policyError: StateError('offline'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Не удалось загрузить условия залога'), findsOneWidget);
+    expect(find.text('Повторить'), findsOneWidget);
+    expect(find.text('С залогом'), findsNothing);
+  });
+
+  testWidgets('validates fake deposit text and submits exact kopecks', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final service = _FakeCreateItemService();
+    await tester.pumpWidget(
+      _app(service, picker: _FakePhotoPicker(), policy: fakePolicy),
+    );
+    await tester.pumpAndSettle();
+    await _fillValidFormAndGoToLocation(tester);
+
+    expect(find.text('Без залога'), findsOneWidget);
+    expect(find.text('С залогом'), findsOneWidget);
+    expect(find.text('Максимальный залог: 100 000 ₽'), findsOneWidget);
+
+    final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
+    form.fields['depositMode']!.didChange('with');
+    await tester.pumpAndSettle();
+    form.fields['depositAmount']!.didChange('1.001');
+    await tester.tap(find.text('На модерацию'));
+    await tester.pump();
+    expect(service.calls, 0);
+    expect(
+      find.text(
+        'Введите неотрицательную сумму, не более двух знаков после запятой',
+      ),
+      findsOneWidget,
+    );
+
+    form.fields['depositAmount']!.didChange('100000.01');
+    await tester.tap(find.text('На модерацию'));
+    await tester.pump();
+    expect(service.calls, 0);
+    expect(find.text('Сумма превышает максимальный залог'), findsOneWidget);
+
+    form.fields['depositAmount']!.didChange('123,45');
+    await tester.tap(find.text('На модерацию'));
+    await tester.pumpAndSettle();
+
+    expect(service.calls, 1);
+    expect(service.lastDraft?.depositAmountMinor, 12345);
+  });
+
   testWidgets('rejects an invalid create item form', (tester) async {
     _useTallSurface(tester);
     final service = _FakeCreateItemService();
@@ -82,39 +159,40 @@ void main() {
     expect(find.text('На модерации'), findsOneWidget);
   });
 
-  testWidgets('collects price after item details and still requires it on submit', (
-    tester,
-  ) async {
-    _useTallSurface(tester);
-    await tester.pumpWidget(
-      _app(_FakeCreateItemService(), picker: _FakePhotoPicker()),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'collects price after item details and still requires it on submit',
+    (tester) async {
+      _useTallSurface(tester);
+      await tester.pumpWidget(
+        _app(_FakeCreateItemService(), picker: _FakePhotoPicker()),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Добавить фото'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Далее'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Добавить фото'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Далее'));
+      await tester.pumpAndSettle();
 
-    final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
-    form.patchValue({
-      'title': 'Перфоратор',
-      'description': 'Рабочий перфоратор для домашних работ',
-      'categoryId': category.id,
-      'condition': 'GOOD',
-      'completeness': 'Кейс и два бура',
-      'handoverTerms': 'Проверить при передаче',
-    });
-    await tester.pump();
+      final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
+      form.patchValue({
+        'title': 'Перфоратор',
+        'description': 'Рабочий перфоратор для домашних работ',
+        'categoryId': category.id,
+        'condition': 'GOOD',
+        'completeness': 'Кейс и два бура',
+        'handoverTerms': 'Проверить при передаче',
+      });
+      await tester.pump();
 
-    await tester.tap(find.text('Далее'));
-    await tester.pumpAndSettle();
-    expect(find.text('Шаг 3 из 3'), findsOneWidget);
+      await tester.tap(find.text('Далее'));
+      await tester.pumpAndSettle();
+      expect(find.text('Шаг 3 из 3'), findsOneWidget);
 
-    await tester.tap(find.text('На модерацию'));
-    await tester.pump();
-    expect(form.fields['pricePerDay']!.errorText, 'Обязательное поле');
-  });
+      await tester.tap(find.text('На модерацию'));
+      await tester.pump();
+      expect(form.fields['pricePerDay']!.errorText, 'Обязательное поле');
+    },
+  );
 
   testWidgets('selects item photos before submission', (tester) async {
     _useTallSurface(tester);
@@ -305,6 +383,38 @@ void main() {
     expect(storage.draft?.title, 'Дрель из черновика');
   });
 
+  testWidgets(
+    'restores and persists deposit mode and text without conversion',
+    (tester) async {
+      _useTallSurface(tester);
+      final storage = _FakeDraftStorage(
+        const LocalCreateItemDraft(
+          step: 2,
+          depositMode: 'with',
+          depositAmount: '250,75',
+        ),
+      );
+      await tester.pumpWidget(
+        _app(
+          _FakeCreateItemService(),
+          draftStorage: storage,
+          policy: fakePolicy,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
+      expect(form.fields['depositMode']?.value, 'with');
+      expect(form.fields['depositAmount']?.value, '250,75');
+
+      form.fields['depositAmount']!.didChange('350.25');
+      await tester.pumpAndSettle();
+
+      expect(storage.draft?.depositMode, 'with');
+      expect(storage.draft?.depositAmount, '350.25');
+    },
+  );
+
   testWidgets('moves back between the three publication steps', (tester) async {
     _useTallSurface(tester);
     await tester.pumpWidget(
@@ -387,6 +497,8 @@ Widget _app(
   ItemPhotoPicker? picker,
   AppPermissionGateway? permissions,
   CreateItemDraftStorage? draftStorage,
+  MarketplacePolicy policy = offlinePolicy,
+  Object? policyError,
 }) {
   return ProviderScope(
     overrides: [
@@ -398,10 +510,41 @@ Widget _app(
       appPermissionGatewayProvider.overrideWithValue(
         permissions ?? _FakePermissionGateway(PermissionStatus.granted),
       ),
+      marketplacePolicyProvider.overrideWith((ref) async {
+        if (policyError != null) throw policyError;
+        return policy;
+      }),
       if (picker != null) itemPhotoPickerProvider.overrideWithValue(picker),
     ],
     child: const MaterialApp(home: CreateItemScreen()),
   );
+}
+
+Future<void> _fillValidFormAndGoToLocation(WidgetTester tester) async {
+  await tester.tap(find.text('Добавить фото'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Далее'));
+  await tester.pumpAndSettle();
+  final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
+  form.patchValue({
+    'title': 'Перфоратор',
+    'description': 'Рабочий перфоратор для домашних работ',
+    'categoryId': category.id,
+    'condition': 'GOOD',
+    'completeness': 'Кейс и два бура',
+    'handoverTerms': 'Проверить при передаче',
+    'pricePerDay': '450',
+    'publicArea': 'Хамовники',
+    'address': 'Москва, улица Примерная, 1',
+    'latitude': '55.75',
+    'longitude': '37.62',
+    'ownershipConfirmed': true,
+    'conditionConfirmed': true,
+    'completenessConfirmed': true,
+    'safetyAndMarketplaceRulesAccepted': true,
+  });
+  await tester.tap(find.text('Далее'));
+  await tester.pumpAndSettle();
 }
 
 void _useTallSurface(WidgetTester tester) {
@@ -502,4 +645,26 @@ const category = CatalogCategory(
   name: 'Инструменты',
   slug: 'tools',
   safetyNotice: 'Используйте защитные очки',
+);
+
+const offlinePolicy = MarketplacePolicy(
+  paymentScenario: PaymentScenario.payOnHandover,
+  deposit: MarketplaceDepositPolicy(
+    enabled: false,
+    currency: 'RUB',
+    maximumMinor: null,
+    policyVersion: null,
+    disputeWindowSeconds: null,
+  ),
+);
+
+const fakePolicy = MarketplacePolicy(
+  paymentScenario: PaymentScenario.fakeSafeDeal,
+  deposit: MarketplaceDepositPolicy(
+    enabled: true,
+    currency: 'RUB',
+    maximumMinor: 10000000,
+    policyVersion: 'fake-deposit-2026-09-02',
+    disputeWindowSeconds: 300,
+  ),
 );

@@ -15,6 +15,8 @@ abstract class LocalCreateItemDraft with _$LocalCreateItemDraft {
     String? handoverTerms,
     String? pricePerDay,
     String? publicArea,
+    String? depositMode,
+    String? depositAmount,
   }) = _LocalCreateItemDraft;
 
   factory LocalCreateItemDraft.fromJson(Map<String, dynamic> json) =>
@@ -40,6 +42,7 @@ abstract class CreateItemDraft with _$CreateItemDraft {
     required bool completenessConfirmed,
     required bool safetyAndMarketplaceRulesAccepted,
     required String listingRulesVersion,
+    @JsonKey(includeIfNull: false) int? depositAmountMinor,
   }) = _CreateItemDraft;
 
   factory CreateItemDraft.fromJson(Map<String, dynamic> json) =>

@@ -14,6 +14,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/unsaved_changes_guard.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/domain/catalog_controller.dart';
+import '../../payments/data/marketplace_policy_models.dart';
+import '../../payments/data/marketplace_policy_service.dart';
 import '../data/create_item_draft_storage.dart';
 import '../data/create_item_models.dart';
 import '../domain/create_item_controller.dart';
@@ -53,6 +55,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   var _step = 0;
   var _draftLoading = true;
   var _photoError = false;
+  var _depositMode = 'none';
   Map<String, dynamic> _initialValue = const {};
   late final CreateItemDraftStorage _draftStorage;
   Future<void> _draftWrites = Future.value();
@@ -67,6 +70,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   @override
   Widget build(BuildContext context) {
     final categories = ref.watch(catalogCategoriesProvider);
+    final policy = ref.watch(marketplacePolicyProvider);
     final submission = ref.watch(createItemProvider);
 
     if (submission.value case final result?) {
@@ -93,6 +97,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
                   ),
                   data: (value) => _buildForm(
                     value,
+                    policy: policy,
                     isSubmitting: submission.isLoading,
                     error: submission.error,
                   ),
@@ -104,6 +109,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
 
   Widget _buildForm(
     List<CatalogCategory> categories, {
+    required AsyncValue<MarketplacePolicy> policy,
     required bool isSubmitting,
     required Object? error,
   }) {
@@ -143,7 +149,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
               children: [
                 _photoStep(isSubmitting),
                 _descriptionStep(categories, isSubmitting),
-                _locationStep(isSubmitting),
+                _locationStep(isSubmitting, policy),
               ],
             ),
           ),
@@ -334,7 +340,10 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
     );
   }
 
-  Widget _locationStep(bool isSubmitting) {
+  Widget _locationStep(
+    bool isSubmitting,
+    AsyncValue<MarketplacePolicy> policy,
+  ) {
     return ListView(
       key: const ValueKey('create-item-location-step'),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -354,6 +363,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
           min: 1,
           max: 1000000,
         ),
+        _depositControls(policy, isSubmitting),
         const SizedBox(height: 12),
         Text('Место передачи', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
@@ -417,6 +427,65 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
           'Я принимаю правила публикации $_listingRulesVersion и требования безопасности категории',
         ),
       ],
+    );
+  }
+
+  Widget _depositControls(
+    AsyncValue<MarketplacePolicy> policy,
+    bool isSubmitting,
+  ) {
+    return policy.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => Row(
+        children: [
+          const Expanded(child: Text('Не удалось загрузить условия залога')),
+          TextButton(
+            onPressed: () => ref.invalidate(marketplacePolicyProvider),
+            child: const Text('Повторить'),
+          ),
+        ],
+      ),
+      data: (value) {
+        final maximumMinor = value.deposit.maximumMinor;
+        if (!value.deposit.enabled) {
+          return const SizedBox.shrink();
+        }
+        if (maximumMinor == null) {
+          return const Text('Не удалось загрузить условия залога');
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Залог', style: Theme.of(context).textTheme.titleMedium),
+            Text('Максимальный залог: ${formatDepositRubles(maximumMinor)} ₽'),
+            FormBuilderRadioGroup<String>(
+              name: 'depositMode',
+              enabled: !isSubmitting,
+              onChanged: (mode) {
+                if (mode != null && mode != _depositMode) {
+                  setState(() => _depositMode = mode);
+                }
+              },
+              options: const [
+                FormBuilderFieldOption(
+                  value: 'none',
+                  child: Text('Без залога'),
+                ),
+                FormBuilderFieldOption(value: 'with', child: Text('С залогом')),
+              ],
+            ),
+            if (_depositMode == 'with')
+              FormBuilderTextField(
+                name: 'depositAmount',
+                decoration: const InputDecoration(labelText: 'Сумма залога, ₽'),
+                enabled: !isSubmitting,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -484,6 +553,27 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
       return;
     }
     final values = form.value;
+    int? depositAmountMinor;
+    final policy = ref.read(marketplacePolicyProvider).value;
+    if (policy?.deposit.enabled == true) {
+      if (values['depositMode'] == 'with') {
+        final maximumMinor = policy!.deposit.maximumMinor;
+        if (maximumMinor == null) {
+          return;
+        }
+        try {
+          depositAmountMinor = parseDepositAmountMinor(
+            values['depositAmount'] as String? ?? '',
+            maximumMinor: maximumMinor,
+          );
+        } on DepositAmountFormatException catch (error) {
+          form.fields['depositAmount']?.invalidate(error.message);
+          return;
+        }
+      } else {
+        depositAmountMinor = 0;
+      }
+    }
     await ref
         .read(createItemProvider.notifier)
         .submit(
@@ -505,6 +595,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
             safetyAndMarketplaceRulesAccepted:
                 values['safetyAndMarketplaceRulesAccepted']! as bool,
             listingRulesVersion: _listingRulesVersion,
+            depositAmountMinor: depositAmountMinor,
           ),
           _photos,
         );
@@ -555,10 +646,15 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
           'handoverTerms': draft.handoverTerms,
           'pricePerDay': draft.pricePerDay,
           'publicArea': draft.publicArea,
+          'depositMode': draft.depositMode ?? 'none',
+          'depositAmount': draft.depositAmount,
         };
+        _depositMode = draft.depositMode ?? 'none';
         _hasUnsavedChanges = _initialValue.values.any(
           (value) => value is String && value.isNotEmpty,
         );
+      } else {
+        _initialValue = const {'depositMode': 'none'};
       }
       _draftLoading = false;
     });
@@ -583,6 +679,8 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
       handoverTerms: _stringValue(values['handoverTerms']),
       pricePerDay: _stringValue(values['pricePerDay']),
       publicArea: _stringValue(values['publicArea']),
+      depositMode: _stringValue(values['depositMode']) ?? _depositMode,
+      depositAmount: _stringValue(values['depositAmount']),
     );
     _draftWrites = _draftWrites
         .catchError((Object _, StackTrace _) {})

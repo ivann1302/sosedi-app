@@ -18,6 +18,8 @@ _LocalCreateItemDraft _$LocalCreateItemDraftFromJson(
   handoverTerms: json['handoverTerms'] as String?,
   pricePerDay: json['pricePerDay'] as String?,
   publicArea: json['publicArea'] as String?,
+  depositMode: json['depositMode'] as String?,
+  depositAmount: json['depositAmount'] as String?,
 );
 
 Map<String, dynamic> _$LocalCreateItemDraftToJson(
@@ -32,6 +34,8 @@ Map<String, dynamic> _$LocalCreateItemDraftToJson(
   'handoverTerms': instance.handoverTerms,
   'pricePerDay': instance.pricePerDay,
   'publicArea': instance.publicArea,
+  'depositMode': instance.depositMode,
+  'depositAmount': instance.depositAmount,
 };
 
 _CreateItemDraft _$CreateItemDraftFromJson(Map<String, dynamic> json) =>
@@ -53,6 +57,7 @@ _CreateItemDraft _$CreateItemDraftFromJson(Map<String, dynamic> json) =>
       safetyAndMarketplaceRulesAccepted:
           json['safetyAndMarketplaceRulesAccepted'] as bool,
       listingRulesVersion: json['listingRulesVersion'] as String,
+      depositAmountMinor: (json['depositAmountMinor'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$CreateItemDraftToJson(_CreateItemDraft instance) =>
@@ -74,6 +79,7 @@ Map<String, dynamic> _$CreateItemDraftToJson(_CreateItemDraft instance) =>
       'safetyAndMarketplaceRulesAccepted':
           instance.safetyAndMarketplaceRulesAccepted,
       'listingRulesVersion': instance.listingRulesVersion,
+      'depositAmountMinor': ?instance.depositAmountMinor,
     };
 
 _CreateItemResult _$CreateItemResultFromJson(Map<String, dynamic> json) =>

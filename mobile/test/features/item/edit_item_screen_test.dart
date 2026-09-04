@@ -14,9 +14,51 @@ import 'package:mobile/features/item/data/owned_item_models.dart';
 import 'package:mobile/features/item/data/owned_items_service.dart';
 import 'package:mobile/features/item/presentation/create_item_screen.dart';
 import 'package:mobile/features/item/presentation/edit_item_screen.dart';
+import 'package:mobile/features/payments/data/marketplace_policy_models.dart';
+import 'package:mobile/features/payments/data/marketplace_policy_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
+  testWidgets('clears an existing deposit with explicit zero in fake mode', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final service = _FakeOwnedItemsService();
+    await tester.pumpWidget(
+      _editApp(service, item.copyWith(depositAmount: 50), policy: fakePolicy),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Без залога'), findsOneWidget);
+    expect(find.text('С залогом'), findsOneWidget);
+    final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
+    expect(form.fields['depositMode']?.value, 'with');
+    form.fields['depositMode']!.didChange('none');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Сохранить и отправить на модерацию'));
+    await tester.pumpAndSettle();
+
+    expect(service.lastDraft?.depositAmountMinor, 0);
+  });
+
+  testWidgets('omits deposit update when the server policy is disabled', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final service = _FakeOwnedItemsService();
+    await tester.pumpWidget(
+      _editApp(service, item.copyWith(depositAmount: 50)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Без залога'), findsNothing);
+    expect(find.text('С залогом'), findsNothing);
+    await tester.tap(find.text('Сохранить и отправить на модерацию'));
+    await tester.pumpAndSettle();
+
+    expect(service.lastDraft?.depositAmountMinor, isNull);
+  });
+
   testWidgets('edits an owned item and shows moderation status', (
     tester,
   ) async {
@@ -137,6 +179,28 @@ void main() {
   });
 }
 
+Widget _editApp(
+  OwnedItemsService service,
+  OwnedItem ownedItem, {
+  MarketplacePolicy policy = offlinePolicy,
+}) {
+  return ProviderScope(
+    overrides: [
+      ownedItemsProvider.overrideWith((ref) async => [ownedItem]),
+      catalogCategoriesProvider.overrideWith((ref) async => [category]),
+      ownedItemsServiceProvider.overrideWithValue(service),
+      marketplacePolicyProvider.overrideWith((ref) async => policy),
+    ],
+    child: MaterialApp(home: EditItemScreen(itemId: ownedItem.id)),
+  );
+}
+
+void _useTallSurface(WidgetTester tester) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = const Size(1000, 4000);
+  addTearDown(tester.view.reset);
+}
+
 class _FakeOwnedItemsService extends OwnedItemsService {
   _FakeOwnedItemsService({List<UnavailablePeriod> periods = const []})
     : periods = [...periods],
@@ -249,4 +313,26 @@ final item = OwnedItem(
       createdAt: DateTime.utc(2026, 7, 29),
     ),
   ],
+);
+
+const offlinePolicy = MarketplacePolicy(
+  paymentScenario: PaymentScenario.payOnHandover,
+  deposit: MarketplaceDepositPolicy(
+    enabled: false,
+    currency: 'RUB',
+    maximumMinor: null,
+    policyVersion: null,
+    disputeWindowSeconds: null,
+  ),
+);
+
+const fakePolicy = MarketplacePolicy(
+  paymentScenario: PaymentScenario.fakeSafeDeal,
+  deposit: MarketplaceDepositPolicy(
+    enabled: true,
+    currency: 'RUB',
+    maximumMinor: 10000000,
+    policyVersion: 'fake-deposit-2026-09-02',
+    disputeWindowSeconds: 300,
+  ),
 );

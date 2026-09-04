@@ -10,6 +10,8 @@ import '../../../core/permissions/permission_prompt.dart';
 import '../../../shared/widgets/unsaved_changes_guard.dart';
 import '../../booking/domain/booking_date_rules.dart';
 import '../../catalog/domain/catalog_controller.dart';
+import '../../payments/data/marketplace_policy_models.dart';
+import '../../payments/data/marketplace_policy_service.dart';
 import '../data/owned_item_models.dart';
 import '../data/owned_items_service.dart';
 import '../domain/edit_item_controller.dart';
@@ -27,6 +29,7 @@ class EditItemScreen extends ConsumerStatefulWidget {
 class _EditItemScreenState extends ConsumerState<EditItemScreen> {
   final _formKey = GlobalKey<FormBuilderState>();
   var _hasUnsavedChanges = false;
+  String? _depositMode;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +37,7 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
     final categories = ref.watch(catalogCategoriesProvider);
     final update = ref.watch(editItemProvider);
     final photoUpload = ref.watch(editItemPhotoProvider);
+    final policy = ref.watch(marketplacePolicyProvider);
 
     if (update.value != null) {
       return Scaffold(
@@ -82,6 +86,11 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                 return const Center(child: Text('Объявление не найдено'));
               }
               final item = matches.single;
+              final initialDepositMode =
+                  item.depositAmount != null && item.depositAmount! > 0
+                  ? 'with'
+                  : 'none';
+              final depositMode = _depositMode ?? initialDepositMode;
               return categories.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (_, _) => _Retry(
@@ -101,6 +110,10 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                     'address': item.address,
                     'latitude': _coordinate(item.latitude),
                     'longitude': _coordinate(item.longitude),
+                    'depositMode': depositMode,
+                    'depositAmount': item.depositAmount == null
+                        ? null
+                        : _price(item.depositAmount!),
                   },
                   onChanged: _markDirty,
                   child: Column(
@@ -220,6 +233,11 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                               min: 1,
                               max: 1000000,
                             ),
+                            _depositControls(
+                              policy,
+                              update.isLoading,
+                              depositMode,
+                            ),
                             _text(
                               name: 'publicArea',
                               label: 'Район для публичной карточки',
@@ -307,6 +325,66 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
     );
   }
 
+  Widget _depositControls(
+    AsyncValue<MarketplacePolicy> policy,
+    bool isSubmitting,
+    String depositMode,
+  ) {
+    return policy.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => Row(
+        children: [
+          const Expanded(child: Text('Не удалось загрузить условия залога')),
+          TextButton(
+            onPressed: () => ref.invalidate(marketplacePolicyProvider),
+            child: const Text('Повторить'),
+          ),
+        ],
+      ),
+      data: (value) {
+        final maximumMinor = value.deposit.maximumMinor;
+        if (!value.deposit.enabled) {
+          return const SizedBox.shrink();
+        }
+        if (maximumMinor == null) {
+          return const Text('Не удалось загрузить условия залога');
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Залог', style: Theme.of(context).textTheme.titleMedium),
+            Text('Максимальный залог: ${formatDepositRubles(maximumMinor)} ₽'),
+            FormBuilderRadioGroup<String>(
+              name: 'depositMode',
+              enabled: !isSubmitting,
+              onChanged: (mode) {
+                if (mode != null && mode != depositMode) {
+                  setState(() => _depositMode = mode);
+                }
+              },
+              options: const [
+                FormBuilderFieldOption(
+                  value: 'none',
+                  child: Text('Без залога'),
+                ),
+                FormBuilderFieldOption(value: 'with', child: Text('С залогом')),
+              ],
+            ),
+            if (depositMode == 'with')
+              FormBuilderTextField(
+                name: 'depositAmount',
+                decoration: const InputDecoration(labelText: 'Сумма залога, ₽'),
+                enabled: !isSubmitting,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _text({
     required String name,
     required String label,
@@ -352,6 +430,27 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
       return;
     }
     final values = form.value;
+    int? depositAmountMinor;
+    final policy = ref.read(marketplacePolicyProvider).value;
+    if (policy?.deposit.enabled == true) {
+      if (values['depositMode'] == 'with') {
+        final maximumMinor = policy!.deposit.maximumMinor;
+        if (maximumMinor == null) {
+          return;
+        }
+        try {
+          depositAmountMinor = parseDepositAmountMinor(
+            values['depositAmount'] as String? ?? '',
+            maximumMinor: maximumMinor,
+          );
+        } on DepositAmountFormatException catch (error) {
+          form.fields['depositAmount']?.invalidate(error.message);
+          return;
+        }
+      } else {
+        depositAmountMinor = 0;
+      }
+    }
     ref
         .read(editItemProvider.notifier)
         .submit(
@@ -368,6 +467,7 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
             address: (values['address']! as String).trim(),
             latitude: _double(values['latitude']),
             longitude: _double(values['longitude']),
+            depositAmountMinor: depositAmountMinor,
           ),
         );
   }

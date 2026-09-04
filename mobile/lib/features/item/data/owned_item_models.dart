@@ -49,6 +49,7 @@ abstract class UpdateItemDraft with _$UpdateItemDraft {
     required String address,
     required double latitude,
     required double longitude,
+    @JsonKey(includeIfNull: false) int? depositAmountMinor,
   }) = _UpdateItemDraft;
 
   factory UpdateItemDraft.fromJson(Map<String, dynamic> json) =>

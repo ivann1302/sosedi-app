@@ -45,6 +45,7 @@ void main() {
         address: 'Москва, улица Новый Арбат, 1',
         latitude: 55.752,
         longitude: 37.6,
+        depositAmountMinor: 0,
       );
       final adapter = CallbackAdapter((options) {
         expect(options.method, 'PATCH');
@@ -64,6 +65,35 @@ void main() {
       expect(item.status, 'PENDING');
     },
   );
+
+  test('omits a null deposit update to preserve the stored value', () async {
+    const update = UpdateItemDraft(
+      title: 'Перфоратор',
+      description: 'Подробное описание перфоратора',
+      categoryId: 'category-1',
+      condition: 'GOOD',
+      completeness: 'Кейс и два бура',
+      handoverTerms: 'Проверить при передаче',
+      pricePerDay: 450,
+      publicArea: 'Хамовники',
+      address: 'Москва, улица Примерная, 1',
+      latitude: 55.75,
+      longitude: 37.62,
+    );
+    final adapter = CallbackAdapter((options) {
+      expect(options.data, isNot(contains('depositAmountMinor')));
+      return jsonResponse({
+        'success': true,
+        'data': ownedItemJson(),
+        'error': null,
+      });
+    });
+    final service = OwnedItemsService(Dio()..httpClientAdapter = adapter);
+
+    await service.updateItem('item-1', update);
+
+    expect(adapter.requests, hasLength(1));
+  });
 
   test('preserves a safe update conflict from the backend', () async {
     final adapter = CallbackAdapter(

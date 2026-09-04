@@ -62,6 +62,7 @@ _UpdateItemDraft _$UpdateItemDraftFromJson(Map<String, dynamic> json) =>
       address: json['address'] as String,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
+      depositAmountMinor: (json['depositAmountMinor'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$UpdateItemDraftToJson(_UpdateItemDraft instance) =>
@@ -77,6 +78,7 @@ Map<String, dynamic> _$UpdateItemDraftToJson(_UpdateItemDraft instance) =>
       'address': instance.address,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
+      'depositAmountMinor': ?instance.depositAmountMinor,
     };
 
 _UnavailablePeriod _$UnavailablePeriodFromJson(Map<String, dynamic> json) =>
