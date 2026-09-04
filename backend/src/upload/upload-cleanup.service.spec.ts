@@ -133,4 +133,72 @@ describe('UploadCleanupService', () => {
     expect(prisma.uploadIntent.deleteMany).not.toHaveBeenCalled();
     logError.mockRestore();
   });
+
+  it('deletes only expired unconfirmed dispute evidence intents', async () => {
+    const intents = [
+      {
+        id: 'expired-dispute',
+        purpose: UploadPurpose.DISPUTE_EVIDENCE,
+        objectKey: 'quarantine/expired-dispute.jpg',
+        expiresAt: new Date('2026-07-27T11:00:00.000Z'),
+        confirmedAt: null,
+      },
+      {
+        id: 'confirmed-dispute',
+        purpose: UploadPurpose.DISPUTE_EVIDENCE,
+        objectKey: 'quarantine/confirmed-dispute.jpg',
+        expiresAt: new Date('2026-07-27T11:00:00.000Z'),
+        confirmedAt: new Date('2026-07-27T11:30:00.000Z'),
+      },
+      {
+        id: 'active-dispute',
+        purpose: UploadPurpose.DISPUTE_EVIDENCE,
+        objectKey: 'quarantine/active-dispute.jpg',
+        expiresAt: new Date('2026-07-28T13:00:00.000Z'),
+        confirmedAt: null,
+      },
+    ];
+    const prisma = {
+      uploadIntent: {
+        findMany: jest.fn(
+          ({ where }: { where: { purpose: { in: UploadPurpose[] } } }) =>
+            Promise.resolve(
+              intents.filter((intent) =>
+                where.purpose.in.includes(intent.purpose),
+              ),
+            ),
+        ),
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      itemPhoto: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        deleteMany: jest.fn(),
+      },
+    };
+    const storage = {
+      getPrivateBucket: jest.fn().mockReturnValue('private-bucket'),
+      listObjects: jest.fn().mockResolvedValue([
+        {
+          key: 'quarantine/confirmed-dispute.jpg',
+          lastModified: new Date('2026-07-27T11:00:00.000Z'),
+        },
+      ]),
+      deleteObject: jest.fn().mockResolvedValue(undefined),
+    };
+    const service = new UploadCleanupService(
+      prisma as unknown as PrismaService,
+      storage as unknown as S3StorageService,
+    );
+
+    await expect(service.cleanupExpiredUploads(now)).resolves.toBe(1);
+    expect(storage.deleteObject).toHaveBeenCalledTimes(1);
+    expect(storage.deleteObject).toHaveBeenCalledWith(
+      'private-bucket',
+      'quarantine/expired-dispute.jpg',
+    );
+    expect(prisma.uploadIntent.deleteMany).toHaveBeenCalledWith({
+      where: { id: 'expired-dispute' },
+    });
+    expect(prisma.itemPhoto.findUnique).not.toHaveBeenCalled();
+  });
 });

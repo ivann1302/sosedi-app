@@ -178,11 +178,14 @@ class BookingActionController extends AsyncNotifier<String?> {
     }
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await command(_requestId!);
-      ref.invalidate(myBookingsProvider);
-      ref.invalidate(bookingDetailsProvider(bookingId));
-      ref.invalidate(bookingActsProvider(bookingId));
-      return bookingId;
+      try {
+        await command(_requestId!);
+        return bookingId;
+      } finally {
+        ref.invalidate(myBookingsProvider);
+        ref.invalidate(bookingDetailsProvider(bookingId));
+        ref.invalidate(bookingActsProvider(bookingId));
+      }
     });
   }
 }

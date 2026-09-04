@@ -54,7 +54,13 @@ export class UploadCleanupService
     );
     const intents = await this.prisma.uploadIntent.findMany({
       where: {
-        purpose: { in: [UploadPurpose.ITEM_PHOTO, UploadPurpose.AVATAR] },
+        purpose: {
+          in: [
+            UploadPurpose.ITEM_PHOTO,
+            UploadPurpose.AVATAR,
+            UploadPurpose.DISPUTE_EVIDENCE,
+          ],
+        },
       },
       select: {
         id: true,
@@ -74,12 +80,16 @@ export class UploadCleanupService
     let deleted = 0;
 
     for (const intent of intents) {
-      const photo = intent.confirmedAt
-        ? await this.prisma.itemPhoto.findUnique({
-            where: { uploadIntentId: intent.id },
-            select: { originalUrl: true },
-          })
-        : null;
+      const isDisputeEvidence =
+        intent.purpose === UploadPurpose.DISPUTE_EVIDENCE.toString();
+      const photo =
+        intent.confirmedAt &&
+        intent.purpose === UploadPurpose.ITEM_PHOTO.toString()
+          ? await this.prisma.itemPhoto.findUnique({
+              where: { uploadIntentId: intent.id },
+              select: { originalUrl: true },
+            })
+          : null;
       const isRejected =
         intent.purpose === UploadPurpose.ITEM_PHOTO.toString() &&
         intent.confirmedAt !== null &&
@@ -87,9 +97,11 @@ export class UploadCleanupService
         intent.confirmedAt <= rejectedCutoff;
       const isExpired =
         intent.expiresAt <= intentCutoff &&
-        (intent.confirmedAt === null ||
-          photo === null ||
-          Boolean(photo?.originalUrl));
+        (isDisputeEvidence
+          ? intent.confirmedAt === null
+          : intent.confirmedAt === null ||
+            photo === null ||
+            Boolean(photo?.originalUrl));
 
       if (!isRejected && !isExpired) {
         continue;
