@@ -98,5 +98,16 @@ describe('DisputeController OpenAPI contract', () => {
       },
       required: ['downloadUrl', 'expiresInSeconds'],
     });
+    expect(document.components?.schemas?.CreateDisputeDto).toEqual({
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          enum: ['ITEM_DAMAGED', 'ITEM_LOST', 'OTHER'],
+        },
+        description: { type: 'string', maxLength: 2_000 },
+      },
+      required: ['reason'],
+    });
   });
 });

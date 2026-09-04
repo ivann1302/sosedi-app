@@ -159,6 +159,7 @@ describe('DisputeService', () => {
           },
         ]),
       },
+      adminAuditLog: { create: jest.fn().mockResolvedValue({}) },
     };
     const service = new DisputeService(
       prisma as unknown as PrismaService,
@@ -166,7 +167,15 @@ describe('DisputeService', () => {
       {} as PaymentPolicyService,
     );
 
-    const response = await service.listForAdmin();
+    const response = await service.listForAdmin(
+      'admin-1',
+      AdminCapability.DISPUTE,
+      {
+        requestId: 'admin-queue-map-request',
+        ipAddress: '127.0.0.1',
+        deviceId: 'device-hash',
+      },
+    );
 
     expect(response).toEqual([
       {
@@ -207,6 +216,39 @@ describe('DisputeService', () => {
       expect.objectContaining({ orderBy: { openedAt: 'asc' } }),
     );
   });
+
+  it.each([AdminCapability.SUPPORT, AdminCapability.DISPUTE])(
+    'audits an admin queue read with the actual %s capability and safe count only',
+    async (capability) => {
+      const prisma = {
+        financialDispute: { findMany: jest.fn().mockResolvedValue([]) },
+        adminAuditLog: { create: jest.fn().mockResolvedValue({}) },
+      };
+      const service = new DisputeService(
+        prisma as unknown as PrismaService,
+        {} as UploadService,
+        {} as PaymentPolicyService,
+      );
+      await service.listForAdmin('admin-1', capability, {
+        requestId: 'admin-queue-request',
+        ipAddress: '127.0.0.1',
+        deviceId: 'device-hash',
+      });
+
+      expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+        data: {
+          adminId: 'admin-1',
+          action: 'FINANCIAL_DISPUTE_QUEUE_ACCESSED',
+          entityType: 'FinancialDispute',
+          capability,
+          requestId: 'admin-queue-request',
+          ipAddress: '127.0.0.1',
+          deviceId: 'device-hash',
+          metadata: { count: 0 },
+        },
+      });
+    },
+  );
 
   it.each([
     FinancialDisputeReason.ITEM_DAMAGED,
@@ -310,6 +352,25 @@ describe('DisputeService', () => {
 
     expect(errors.some((error) => error.property === 'reason')).toBe(true);
   });
+
+  it.each([
+    [2_000, false],
+    [2_001, true],
+  ])(
+    'validates the plan-authoritative description boundary at %i characters',
+    async (length, rejected) => {
+      const dto = plainToInstance(CreateDisputeDto, {
+        reason: FinancialDisputeReason.OTHER,
+        description: 'x'.repeat(length),
+      });
+
+      const errors = await validate(dto);
+
+      expect(errors.some((error) => error.property === 'description')).toBe(
+        rejected,
+      );
+    },
+  );
 
   it('consumes a bound upload intent and creates evidence atomically', async () => {
     const { service, tx, upload } = createService();

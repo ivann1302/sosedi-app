@@ -506,7 +506,7 @@ model FinancialDispute {
   openedById             String
   resolvedById           String?
   reason                 FinancialDisputeReason
-  description            String?                @db.VarChar(1000)
+  description            String?                @db.VarChar(2000)
   status                 DisputeStatus          @default(OPEN)
   decisionReason         String?                @db.VarChar(1000)
   refundToBorrowerAmount Decimal                @default(0) @db.Decimal(10, 2)

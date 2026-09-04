@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Headers,
   Param,
@@ -24,7 +25,11 @@ import { AdminAnyCapability } from '../admin/admin-any-capability.decorator';
 import { getAdminAuditContext } from '../admin/admin-audit-context';
 import { AdminSessionGuard } from '../admin/admin-session.guard';
 import { ADMIN_SESSION_COOKIE } from '../admin/admin-session.service';
-import type { AuthenticatedRequest, AuthUser } from '../auth/auth.types';
+import type {
+  AdminAuthUser,
+  AuthenticatedRequest,
+  AuthUser,
+} from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ok, type ApiResponse } from '../common/http/api-response';
 import { DepositService } from './deposit.service';
@@ -80,6 +85,16 @@ const depositOperationEnvelopeSchema = {
   },
 };
 
+function getDisputeReadCapability(user: AdminAuthUser): AdminCapability {
+  if (user.adminCapabilities.includes(AdminCapability.DISPUTE)) {
+    return AdminCapability.DISPUTE;
+  }
+  if (user.adminCapabilities.includes(AdminCapability.SUPPORT)) {
+    return AdminCapability.SUPPORT;
+  }
+  throw new ForbiddenException('Недостаточно административных полномочий');
+}
+
 @ApiTags('admin-disputes')
 @ApiCookieAuth(ADMIN_SESSION_COOKIE)
 @ApiExtraModels(
@@ -99,19 +114,36 @@ export class AdminDisputeController {
   @AdminAnyCapability(AdminCapability.SUPPORT, AdminCapability.DISPUTE)
   @ApiOkResponse({ schema: disputeListEnvelopeSchema })
   @Get('disputes')
-  async list(): Promise<ApiResponse<AdminDisputeResponseDto[]>> {
-    return ok(await this.disputes.listForAdmin());
+  async list(
+    @CurrentUser() user: AdminAuthUser,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ApiResponse<AdminDisputeResponseDto[]>> {
+    return ok(
+      await this.disputes.listForAdmin(
+        user.id,
+        getDisputeReadCapability(user),
+        getAdminAuditContext(request),
+      ),
+    );
   }
 
   @AdminAnyCapability(AdminCapability.SUPPORT, AdminCapability.DISPUTE)
   @ApiOkResponse({ schema: evidenceDownloadEnvelopeSchema })
   @Get('disputes/:id/evidence/:evidenceId/download-url')
   async downloadEvidence(
+    @CurrentUser() user: AdminAuthUser,
+    @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) disputeId: string,
     @Param('evidenceId', ParseUUIDPipe) evidenceId: string,
   ): Promise<ApiResponse<DisputeEvidenceDownloadResponseDto>> {
     return ok(
-      await this.disputes.getEvidenceDownloadUrlForAdmin(disputeId, evidenceId),
+      await this.disputes.getEvidenceDownloadUrlForAdmin(
+        user.id,
+        disputeId,
+        evidenceId,
+        getDisputeReadCapability(user),
+        getAdminAuditContext(request),
+      ),
     );
   }
 

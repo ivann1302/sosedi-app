@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { ItemStatus } from '@prisma/client';
+import { AdminCapability, ItemStatus } from '@prisma/client';
 import { createHash } from 'crypto';
 import sharp from 'sharp';
 import { PrismaService } from '../prisma/prisma.service';
@@ -1109,5 +1109,56 @@ describe('UploadService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(prisma.disputeEvidence.findFirst).toHaveBeenCalledTimes(2);
     expect(storage.createPresignedDownloadUrl).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not presign admin dispute evidence when its audit fails', async () => {
+    const auditError = new Error('audit unavailable');
+    const prisma = {
+      disputeEvidence: {
+        findFirst: jest.fn().mockResolvedValue({
+          uploadIntent: {
+            bucket: 'private-bucket',
+            objectKey: 'private/evidence.jpg',
+          },
+        }),
+      },
+      adminAuditLog: { create: jest.fn().mockRejectedValue(auditError) },
+    };
+    const storage = {
+      createPresignedDownloadUrl: jest.fn(),
+    };
+    const service = new UploadService(
+      prisma as unknown as PrismaService,
+      storage as unknown as S3StorageService,
+      {} as PhotoProcessingQueue,
+    );
+    await expect(
+      service.getAdminDisputeEvidenceDownloadUrl(
+        'admin-1',
+        'dispute-1',
+        'evidence-1',
+        AdminCapability.DISPUTE,
+        {
+          requestId: 'evidence-download-request',
+          ipAddress: '127.0.0.1',
+          deviceId: 'device-hash',
+        },
+      ),
+    ).rejects.toBe(auditError);
+
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        adminId: 'admin-1',
+        action: 'FINANCIAL_DISPUTE_EVIDENCE_DOWNLOAD_REQUESTED',
+        entityType: 'DisputeEvidence',
+        entityId: 'evidence-1',
+        capability: AdminCapability.DISPUTE,
+        requestId: 'evidence-download-request',
+        ipAddress: '127.0.0.1',
+        deviceId: 'device-hash',
+        metadata: { disputeId: 'dispute-1' },
+      },
+    });
+    expect(storage.createPresignedDownloadUrl).not.toHaveBeenCalled();
   });
 });

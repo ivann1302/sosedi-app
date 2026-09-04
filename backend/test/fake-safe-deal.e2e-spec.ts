@@ -733,12 +733,13 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
         },
       },
     });
+    const maxDisputeDescription = 'x'.repeat(2_000);
     const opened = await request(httpServer())
       .post(`/api/v1/bookings/${disputeBooking.id}/disputes`)
       .set('Authorization', borrowerAuthorization)
       .send({
         reason: FinancialDisputeReason.ITEM_DAMAGED,
-        description: 'Повреждение корпуса',
+        description: maxDisputeDescription,
       })
       .expect(201);
     const openedData = asRecord(asRecord(opened.body).data);
@@ -749,6 +750,26 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       status: 'OPEN',
       evidence: [],
     });
+    expect(openedData.description).toBe(maxDisputeDescription);
+    await expect(
+      prisma.financialDispute.findUniqueOrThrow({
+        where: { id: String(openedData.id) },
+      }),
+    ).resolves.toMatchObject({ description: maxDisputeDescription });
+    await request(httpServer())
+      .post(`/api/v1/bookings/${disputeBooking.id}/disputes`)
+      .set('Authorization', borrowerAuthorization)
+      .send({
+        reason: FinancialDisputeReason.OTHER,
+        description: 'x'.repeat(2_001),
+      })
+      .expect(400);
+    await expect(
+      prisma.financialDispute.update({
+        where: { id: String(openedData.id) },
+        data: { description: 'x'.repeat(2_001) },
+      }),
+    ).rejects.toBeDefined();
     expect(openedData).not.toHaveProperty('storageKey');
     await request(httpServer())
       .post(`/api/v1/bookings/${disputeBooking.id}/disputes`)

@@ -168,12 +168,31 @@ export class DisputeService {
     return this.toDisputeResponse(booking.financialDispute);
   }
 
-  async listForAdmin(): Promise<AdminDisputeResponseDto[]> {
+  async listForAdmin(
+    adminId: string,
+    readCapability: AdminCapability,
+    context: AdminAuditContext,
+  ): Promise<AdminDisputeResponseDto[]> {
     const disputes = await this.prisma.financialDispute.findMany({
       select: adminDisputeSelect,
       orderBy: { openedAt: 'asc' },
     });
-    return disputes.map((dispute) => this.toAdminDisputeResponse(dispute));
+    const response = disputes.map((dispute) =>
+      this.toAdminDisputeResponse(dispute),
+    );
+    await this.prisma.adminAuditLog.create({
+      data: {
+        adminId,
+        action: 'FINANCIAL_DISPUTE_QUEUE_ACCESSED',
+        entityType: 'FinancialDispute',
+        capability: readCapability,
+        requestId: context.requestId,
+        ipAddress: context.ipAddress,
+        deviceId: context.deviceId,
+        metadata: { count: response.length },
+      },
+    });
+    return response;
   }
 
   async resolveDispute(
@@ -391,10 +410,19 @@ export class DisputeService {
     );
   }
 
-  getEvidenceDownloadUrlForAdmin(disputeId: string, evidenceId: string) {
+  getEvidenceDownloadUrlForAdmin(
+    adminId: string,
+    disputeId: string,
+    evidenceId: string,
+    readCapability: AdminCapability,
+    context: AdminAuditContext,
+  ) {
     return this.upload.getAdminDisputeEvidenceDownloadUrl(
+      adminId,
       disputeId,
       evidenceId,
+      readCapability,
+      context,
     );
   }
 

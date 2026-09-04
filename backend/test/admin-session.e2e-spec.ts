@@ -1109,12 +1109,14 @@ describe('Admin session (e2e)', () => {
     await request(httpServer())
       .get('/api/v1/admin/disputes')
       .set('Cookie', session.cookie)
+      .set('X-Request-Id', 'support-dispute-queue-request')
       .expect(200);
     await request(httpServer())
       .get(
         `/api/v1/admin/disputes/${dispute.id}/evidence/${evidence.id}/download-url`,
       )
       .set('Cookie', session.cookie)
+      .set('X-Request-Id', 'support-dispute-evidence-request')
       .expect(200)
       .expect(({ body }) => {
         expect(asRecord(asRecord(body as unknown).data)).toEqual({
@@ -1122,6 +1124,33 @@ describe('Admin session (e2e)', () => {
           expiresInSeconds: 60,
         });
       });
+    await expect(
+      prisma.adminAuditLog.findFirstOrThrow({
+        where: {
+          adminId: admin.id,
+          action: 'FINANCIAL_DISPUTE_QUEUE_ACCESSED',
+          requestId: 'support-dispute-queue-request',
+        },
+      }),
+    ).resolves.toMatchObject({
+      entityType: 'FinancialDispute',
+      capability: AdminCapability.SUPPORT,
+      metadata: { count: 1 },
+    });
+    await expect(
+      prisma.adminAuditLog.findFirstOrThrow({
+        where: {
+          adminId: admin.id,
+          action: 'FINANCIAL_DISPUTE_EVIDENCE_DOWNLOAD_REQUESTED',
+          entityId: evidence.id,
+          requestId: 'support-dispute-evidence-request',
+        },
+      }),
+    ).resolves.toMatchObject({
+      entityType: 'DisputeEvidence',
+      capability: AdminCapability.SUPPORT,
+      metadata: { disputeId: dispute.id },
+    });
     await request(httpServer())
       .post(`/api/v1/admin/disputes/${dispute.id}/resolve`)
       .set('Cookie', session.cookie)
@@ -1141,7 +1170,40 @@ describe('Admin session (e2e)', () => {
     await request(httpServer())
       .get('/api/v1/admin/disputes')
       .set('Cookie', session.cookie)
+      .set('X-Request-Id', 'dispute-capability-queue-request')
       .expect(200);
+    await request(httpServer())
+      .get(
+        `/api/v1/admin/disputes/${dispute.id}/evidence/${evidence.id}/download-url`,
+      )
+      .set('Cookie', session.cookie)
+      .set('X-Request-Id', 'dispute-capability-evidence-request')
+      .expect(200);
+    await expect(
+      prisma.adminAuditLog.findFirstOrThrow({
+        where: {
+          adminId: admin.id,
+          action: 'FINANCIAL_DISPUTE_QUEUE_ACCESSED',
+          requestId: 'dispute-capability-queue-request',
+        },
+      }),
+    ).resolves.toMatchObject({
+      capability: AdminCapability.DISPUTE,
+      metadata: { count: 1 },
+    });
+    await expect(
+      prisma.adminAuditLog.findFirstOrThrow({
+        where: {
+          adminId: admin.id,
+          action: 'FINANCIAL_DISPUTE_EVIDENCE_DOWNLOAD_REQUESTED',
+          entityId: evidence.id,
+          requestId: 'dispute-capability-evidence-request',
+        },
+      }),
+    ).resolves.toMatchObject({
+      capability: AdminCapability.DISPUTE,
+      metadata: { disputeId: dispute.id },
+    });
     await request(httpServer())
       .post(`/api/v1/admin/disputes/${dispute.id}/resolve`)
       .set('Cookie', session.cookie)

@@ -12,10 +12,10 @@ export class CreateDisputeDto {
   @IsEnum(FinancialDisputeReason)
   reason: FinancialDisputeReason;
 
-  @ApiPropertyOptional({ maxLength: 1000 })
+  @ApiPropertyOptional({ maxLength: 2000 })
   @IsOptional()
   @Transform(trimString)
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(2000)
   description?: string;
 }

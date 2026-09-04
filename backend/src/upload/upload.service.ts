@@ -213,8 +213,11 @@ export class UploadService {
   }
 
   async getAdminDisputeEvidenceDownloadUrl(
+    adminId: string,
     disputeId: string,
     evidenceId: string,
+    readCapability: AdminCapability,
+    context: AdminAuditContext,
   ): Promise<PrivateFileDownloadResponse> {
     const evidence = await this.prisma.disputeEvidence.findFirst({
       where: {
@@ -231,6 +234,19 @@ export class UploadService {
     if (!evidence) {
       throw new NotFoundException('Evidence не найден');
     }
+    await this.prisma.adminAuditLog.create({
+      data: {
+        adminId,
+        action: 'FINANCIAL_DISPUTE_EVIDENCE_DOWNLOAD_REQUESTED',
+        entityType: 'DisputeEvidence',
+        entityId: evidenceId,
+        capability: readCapability,
+        requestId: context.requestId,
+        ipAddress: context.ipAddress,
+        deviceId: context.deviceId,
+        metadata: { disputeId },
+      },
+    });
     return {
       downloadUrl: await this.storage.createPresignedDownloadUrl(
         evidence.uploadIntent.bucket,
