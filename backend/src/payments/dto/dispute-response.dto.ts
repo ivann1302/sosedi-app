@@ -12,6 +12,14 @@ export class DisputeEvidenceResponseDto {
   createdAt: Date;
 }
 
+export class DisputeEvidenceDownloadResponseDto {
+  @ApiProperty({ format: 'uri' })
+  downloadUrl: string;
+
+  @ApiProperty({ example: 60 })
+  expiresInSeconds: number;
+}
+
 export class DisputeResponseDto {
   @ApiProperty({ format: 'uuid' })
   id: string;
