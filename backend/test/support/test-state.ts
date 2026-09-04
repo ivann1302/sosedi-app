@@ -15,6 +15,10 @@ export async function resetTestState(app: INestApplication): Promise<void> {
   await prisma.$transaction([
     prisma.adminRecoveryCode.deleteMany(),
     prisma.adminMfaCredential.deleteMany(),
+    prisma.disputeEvidence.deleteMany(),
+    prisma.financialDispute.deleteMany(),
+    prisma.depositOperation.deleteMany(),
+    prisma.bookingDeposit.deleteMany(),
     prisma.payment.deleteMany(),
     prisma.supportAttachment.deleteMany(),
     prisma.supportMessage.deleteMany(),

@@ -2,6 +2,7 @@ import { type INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import {
+  AdminCapability,
   BookingActStage,
   BookingStatus,
   DepositOperationKind,
@@ -85,7 +86,7 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
   });
 
   it('gates exact Item deposits and snapshots one pending Booking deposit', async () => {
-    const [lender, borrower, outsider, category] = await Promise.all([
+    const [lender, borrower, outsider, resolver, category] = await Promise.all([
       prisma.user.create({
         data: { phone: '+79990000901', role: UserRole.USER },
       }),
@@ -94,6 +95,13 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       }),
       prisma.user.create({
         data: { phone: '+79990000903', role: UserRole.USER },
+      }),
+      prisma.user.create({
+        data: {
+          phone: '+79990000904',
+          role: UserRole.ADMIN,
+          adminCapabilities: [AdminCapability.DISPUTE, AdminCapability.FINANCE],
+        },
       }),
       prisma.category.create({
         data: {
@@ -764,6 +772,41 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       status: BookingStatus.RETURNED,
       payment: null,
       deposit: { status: DepositStatus.DISPUTED },
+    });
+    const resolutionNow = new Date();
+    await disputes.resolveDispute(
+      resolver.id,
+      String(openedData.id),
+      {
+        refundToBorrowerMinor: 2_000,
+        releaseToLenderMinor: 3_000,
+        reason: 'Подтверждено частичное повреждение вещи',
+      },
+      'fake-e2e-resolution',
+      {
+        requestId: 'fake-e2e-resolution-request',
+        ipAddress: '127.0.0.1',
+        deviceId: 'fake-e2e-device',
+      },
+      resolutionNow,
+    );
+    await expect(operations.processPending(resolutionNow)).resolves.toBe(2);
+    await expect(
+      prisma.booking.findUniqueOrThrow({
+        where: { id: disputeBooking.id },
+        include: { deposit: true, financialDispute: true },
+      }),
+    ).resolves.toMatchObject({
+      status: BookingStatus.COMPLETED,
+      deposit: {
+        status: DepositStatus.RESOLVED,
+        refundedAmount: new Prisma.Decimal(20),
+        releasedToLenderAmount: new Prisma.Decimal(30),
+      },
+      financialDispute: {
+        status: 'RESOLVED',
+        resolvedById: resolver.id,
+      },
     });
 
     const raceDeadline = new Date(Date.now() + 60_000);

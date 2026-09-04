@@ -56,6 +56,7 @@ function fakePolicy(): PaymentPolicyService {
 
 function createProcessor(
   result: ProviderOperationResult | Promise<ProviderOperationResult>,
+  withDispute = false,
 ) {
   const operation = {
     id: 'operation-1',
@@ -85,6 +86,15 @@ function createProcessor(
     id: 'booking-1',
     status: BookingStatus.RETURNED,
   };
+  const dispute = withDispute
+    ? {
+        id: 'dispute-1',
+        status: 'UNDER_REVIEW' as const,
+        refundToBorrowerAmount: new Prisma.Decimal(50),
+        releaseToLenderAmount: new Prisma.Decimal(0),
+        resolvedAt: null as Date | null,
+      }
+    : null;
   const audit: Array<Record<string, unknown>> = [];
   const history: Array<Record<string, unknown>> = [];
   const outbox: Array<Record<string, unknown>> = [];
@@ -109,7 +119,18 @@ function createProcessor(
       findUnique: jest
         .fn()
         .mockImplementation(() => Promise.resolve(operationRecord())),
-      findFirst: jest.fn().mockResolvedValue(null),
+      findFirst: jest
+        .fn()
+        .mockImplementation(({ where }: { where: Record<string, unknown> }) => {
+          if (
+            operation.status === DepositOperationStatus.SUCCEEDED &&
+            where.depositId === operation.depositId &&
+            where.kind === operation.kind
+          ) {
+            return Promise.resolve(operationRecord());
+          }
+          return Promise.resolve(null);
+        }),
       updateMany: jest
         .fn()
         .mockImplementation(({ where, data }: OperationUpdateArgs) => {
@@ -178,12 +199,22 @@ function createProcessor(
           return Promise.resolve({ ...deposit });
         }),
     },
+    financialDispute: {
+      findUnique: jest.fn().mockImplementation(() => Promise.resolve(dispute)),
+      updateMany: jest.fn().mockImplementation(() => {
+        if (dispute) {
+          dispute.status = 'RESOLVED';
+          dispute.resolvedAt = now;
+        }
+        return Promise.resolve({ count: dispute ? 1 : 0 });
+      }),
+    },
     booking: {
       findUnique: jest.fn().mockImplementation(() =>
         Promise.resolve({
           ...booking,
           deposit: { ...deposit },
-          financialDispute: null,
+          financialDispute: dispute,
         }),
       ),
       updateMany: jest.fn().mockImplementation(() => {
@@ -238,6 +269,7 @@ function createProcessor(
         const operationBefore = { ...operation };
         const depositBefore = { ...deposit };
         const bookingStatusBefore = booking.status;
+        const disputeBefore = dispute ? { ...dispute } : null;
         const auditLength = audit.length;
         const historyLength = history.length;
         const outboxLength = outbox.length;
@@ -248,6 +280,9 @@ function createProcessor(
           Object.assign(operation, operationBefore);
           Object.assign(deposit, depositBefore);
           booking.status = bookingStatusBefore;
+          if (dispute && disputeBefore) {
+            Object.assign(dispute, disputeBefore);
+          }
           audit.splice(auditLength);
           history.splice(historyLength);
           outbox.splice(outboxLength);
@@ -270,6 +305,7 @@ function createProcessor(
     booking,
     history,
     outbox,
+    dispute,
     provider: provider.executeDepositOperation,
     failCompletion: () => {
       failCompletion = true;
@@ -415,5 +451,20 @@ describe('DepositOperationProcessor', () => {
     expect(deposit.refundedAmount).toEqual(new Prisma.Decimal(0));
     expect(booking.status).toBe(BookingStatus.RETURNED);
     expect(history).toHaveLength(0);
+  });
+
+  it('resolves a financial dispute only after its required leg succeeds', async () => {
+    const { processor, dispute, deposit, booking } = createProcessor(
+      {
+        outcome: 'SUCCEEDED',
+        providerOperationId: 'fake_dispute_refund-1',
+      },
+      true,
+    );
+
+    await expect(processor.processPending(now)).resolves.toBe(1);
+    expect(dispute).toMatchObject({ status: 'RESOLVED', resolvedAt: now });
+    expect(deposit.status).toBe(DepositStatus.RESOLVED);
+    expect(booking.status).toBe(BookingStatus.COMPLETED);
   });
 });

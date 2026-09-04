@@ -8,6 +8,7 @@ import {
   DepositOperationKind,
   DepositOperationStatus,
   DepositStatus,
+  DisputeStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { completeBookingAfterReturnInTransaction } from './deposit.service';
@@ -232,7 +233,7 @@ export class DepositOperationProcessor
       ) {
         throw new Error('Deposit operation exceeds unsettled amount');
       }
-      const resolved = nextRefunded + nextReleased === totalMinor;
+      let resolved = nextRefunded + nextReleased === totalMinor;
       const succeeded = await tx.depositOperation.updateMany({
         where: {
           id: operation.id,
@@ -249,6 +250,53 @@ export class DepositOperationProcessor
       });
       if (succeeded.count === 0) {
         return;
+      }
+      const dispute = resolved
+        ? await tx.financialDispute.findUnique({
+            where: { bookingId },
+            select: {
+              id: true,
+              status: true,
+              refundToBorrowerAmount: true,
+              releaseToLenderAmount: true,
+            },
+          })
+        : null;
+      if (dispute?.status === DisputeStatus.UNDER_REVIEW) {
+        const requiredLegs = [
+          {
+            kind: DepositOperationKind.REFUND,
+            amount: dispute.refundToBorrowerAmount,
+          },
+          {
+            kind: DepositOperationKind.RELEASE_TO_LENDER,
+            amount: dispute.releaseToLenderAmount,
+          },
+        ];
+        for (const leg of requiredLegs) {
+          if (decimalToMinor(leg.amount) === 0n) {
+            continue;
+          }
+          const successfulAttempt = await tx.depositOperation.findFirst({
+            where: {
+              depositId: operation.depositId,
+              kind: leg.kind,
+              amount: leg.amount,
+              status: DepositOperationStatus.SUCCEEDED,
+            },
+            select: { id: true },
+          });
+          if (!successfulAttempt) {
+            resolved = false;
+            break;
+          }
+        }
+        if (resolved) {
+          await tx.financialDispute.updateMany({
+            where: { id: dispute.id, status: DisputeStatus.UNDER_REVIEW },
+            data: { status: DisputeStatus.RESOLVED, resolvedAt: now },
+          });
+        }
       }
       await tx.bookingDeposit.update({
         where: { id: operation.depositId },

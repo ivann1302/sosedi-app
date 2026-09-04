@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { AdminCapability } from '@prisma/client';
 import { AuthenticatedRequest } from '../auth/auth.types';
 import { ADMIN_CAPABILITIES_KEY } from './admin-capabilities.decorator';
+import { ADMIN_ANY_CAPABILITY_KEY } from './admin-any-capability.decorator';
 import {
   ADMIN_SESSION_COOKIE,
   AdminSessionService,
@@ -30,10 +31,22 @@ export class AdminSessionGuard implements CanActivate {
       ADMIN_CAPABILITIES_KEY,
       [context.getHandler(), context.getClass()],
     );
+    const requiredAny = this.reflector.getAllAndOverride<AdminCapability[]>(
+      ADMIN_ANY_CAPABILITY_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     if (
       required?.some(
         (capability) => !session.user.adminCapabilities.includes(capability),
+      )
+    ) {
+      throw new ForbiddenException('Недостаточно административных полномочий');
+    }
+    if (
+      requiredAny?.length &&
+      !requiredAny.some((capability) =>
+        session.user.adminCapabilities.includes(capability),
       )
     ) {
       throw new ForbiddenException('Недостаточно административных полномочий');

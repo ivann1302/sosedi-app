@@ -1,14 +1,27 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, DepositStatus, Prisma } from '@prisma/client';
+import {
+  AdminCapability,
+  BookingStatus,
+  DepositOperationKind,
+  DepositOperationStatus,
+  DepositStatus,
+  DisputeStatus,
+  Prisma,
+} from '@prisma/client';
+import type { AdminAuditContext } from '../admin/admin-audit-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { UploadPurpose } from '../upload/upload.types';
+import { decimalToMinor, minorToDecimal } from './money-minor';
 import { AddDisputeEvidenceDto } from './dto/add-dispute-evidence.dto';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
+import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
+import { PaymentPolicyService } from './payment-policy.service';
 import {
   DisputeEvidenceResponseDto,
   DisputeResponseDto,
@@ -27,6 +40,7 @@ export class DisputeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly upload: UploadService,
+    private readonly paymentPolicy: PaymentPolicyService,
   ) {}
 
   openDispute(
@@ -96,6 +110,155 @@ export class DisputeService {
       throw new NotFoundException('Спор не найден');
     }
     return this.toDisputeResponse(booking.financialDispute);
+  }
+
+  async listForAdmin(): Promise<DisputeResponseDto[]> {
+    const disputes = await this.prisma.financialDispute.findMany({
+      include: disputeInclude,
+      orderBy: { openedAt: 'asc' },
+    });
+    return disputes.map((dispute) => this.toDisputeResponse(dispute));
+  }
+
+  async resolveDispute(
+    adminId: string,
+    disputeId: string,
+    dto: ResolveDisputeDto,
+    idempotencyKey: string,
+    context: AdminAuditContext,
+    now = new Date(),
+  ): Promise<DisputeResponseDto> {
+    this.paymentPolicy.requireFakeSafeDeal();
+    const commandKey = idempotencyKey.trim();
+    if (!commandKey) {
+      throw new BadRequestException('Idempotency-Key обязателен');
+    }
+    this.assertResolutionLeg(dto.refundToBorrowerMinor);
+    this.assertResolutionLeg(dto.releaseToLenderMinor);
+
+    const target = await this.prisma.financialDispute.findUnique({
+      where: { id: disputeId },
+      select: { bookingId: true },
+    });
+    if (!target) {
+      throw new NotFoundException('Спор не найден');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${target.bookingId}))`;
+      const dispute = await tx.financialDispute.findUnique({
+        where: { id: disputeId },
+        include: {
+          ...disputeInclude,
+          booking: { include: { deposit: true } },
+        },
+      });
+      if (!dispute?.booking.deposit) {
+        throw new NotFoundException('Спор не найден');
+      }
+      const deposit = dispute.booking.deposit;
+      const refundMinor = BigInt(dto.refundToBorrowerMinor);
+      const releaseMinor = BigInt(dto.releaseToLenderMinor);
+      if (refundMinor + releaseMinor !== decimalToMinor(deposit.amount)) {
+        throw new ConflictException('Сумма решения не равна сумме залога');
+      }
+
+      if (
+        dispute.status === DisputeStatus.UNDER_REVIEW ||
+        dispute.status === DisputeStatus.RESOLVED
+      ) {
+        if (
+          dispute.resolvedById !== adminId ||
+          dispute.decisionReason !== dto.reason ||
+          decimalToMinor(dispute.refundToBorrowerAmount) !== refundMinor ||
+          decimalToMinor(dispute.releaseToLenderAmount) !== releaseMinor ||
+          !(await this.hasResolutionOperations(
+            tx,
+            disputeId,
+            deposit.id,
+            dto,
+            commandKey,
+          ))
+        ) {
+          throw new ConflictException('Спор уже имеет другое решение');
+        }
+        return this.toDisputeResponse(dispute);
+      }
+      if (
+        dispute.status !== DisputeStatus.OPEN ||
+        dispute.booking.status !== BookingStatus.RETURNED ||
+        deposit.status !== DepositStatus.DISPUTED
+      ) {
+        throw new ConflictException(
+          'Спор нельзя разрешить в текущем состоянии',
+        );
+      }
+
+      await this.createResolutionOperation(
+        tx,
+        disputeId,
+        deposit.id,
+        DepositOperationKind.REFUND,
+        dto.refundToBorrowerMinor,
+        commandKey,
+        now,
+      );
+      await this.createResolutionOperation(
+        tx,
+        disputeId,
+        deposit.id,
+        DepositOperationKind.RELEASE_TO_LENDER,
+        dto.releaseToLenderMinor,
+        commandKey,
+        now,
+      );
+      await tx.bookingDeposit.update({
+        where: { id: deposit.id },
+        data: { status: DepositStatus.RESOLVING },
+      });
+      const updated = await tx.financialDispute.update({
+        where: { id: dispute.id },
+        data: {
+          status: DisputeStatus.UNDER_REVIEW,
+          resolvedById: adminId,
+          decisionReason: dto.reason,
+          refundToBorrowerAmount: minorToDecimal(refundMinor),
+          releaseToLenderAmount: minorToDecimal(releaseMinor),
+        },
+        include: disputeInclude,
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          adminId,
+          action: 'FINANCIAL_DISPUTE_RESOLUTION_STARTED',
+          entityType: 'FinancialDispute',
+          entityId: dispute.id,
+          capability: AdminCapability.FINANCE,
+          reason: dto.reason,
+          requestId: context.requestId,
+          ipAddress: context.ipAddress,
+          deviceId: context.deviceId,
+          before: {
+            status: DisputeStatus.OPEN,
+            depositStatus: DepositStatus.DISPUTED,
+          },
+          after: {
+            status: DisputeStatus.UNDER_REVIEW,
+            depositStatus: DepositStatus.RESOLVING,
+          },
+          metadata: {
+            depositId: deposit.id,
+            refundToBorrowerMinor: dto.refundToBorrowerMinor,
+            releaseToLenderMinor: dto.releaseToLenderMinor,
+            requiredCapabilities: [
+              AdminCapability.DISPUTE,
+              AdminCapability.FINANCE,
+            ],
+          },
+        },
+      });
+      return this.toDisputeResponse(updated);
+    });
   }
 
   async addEvidence(
@@ -170,6 +333,93 @@ export class DisputeService {
       disputeId,
       evidenceId,
     );
+  }
+
+  getEvidenceDownloadUrlForAdmin(disputeId: string, evidenceId: string) {
+    return this.upload.getAdminDisputeEvidenceDownloadUrl(
+      disputeId,
+      evidenceId,
+    );
+  }
+
+  private assertResolutionLeg(value: number): void {
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new ConflictException('Сумма решения должна быть целым числом');
+    }
+  }
+
+  private resolutionOperationKey(
+    disputeId: string,
+    commandKey: string,
+    kind: DepositOperationKind,
+  ): string {
+    const leg =
+      kind === DepositOperationKind.REFUND ? 'refund' : 'release-to-lender';
+    return `dispute:${disputeId}:resolve:${commandKey}:${leg}`;
+  }
+
+  private async createResolutionOperation(
+    tx: Prisma.TransactionClient,
+    disputeId: string,
+    depositId: string,
+    kind: DepositOperationKind,
+    amountMinor: number,
+    commandKey: string,
+    now: Date,
+  ): Promise<void> {
+    if (amountMinor === 0) {
+      return;
+    }
+    await tx.depositOperation.create({
+      data: {
+        depositId,
+        kind,
+        amount: minorToDecimal(BigInt(amountMinor)),
+        status: DepositOperationStatus.PENDING,
+        idempotencyKey: this.resolutionOperationKey(
+          disputeId,
+          commandKey,
+          kind,
+        ),
+        nextAttemptAt: now,
+      },
+    });
+  }
+
+  private async hasResolutionOperations(
+    tx: Prisma.TransactionClient,
+    disputeId: string,
+    depositId: string,
+    dto: ResolveDisputeDto,
+    commandKey: string,
+  ): Promise<boolean> {
+    for (const [kind, amountMinor] of [
+      [DepositOperationKind.REFUND, dto.refundToBorrowerMinor],
+      [DepositOperationKind.RELEASE_TO_LENDER, dto.releaseToLenderMinor],
+    ] as const) {
+      if (amountMinor === 0) {
+        continue;
+      }
+      const operation = await tx.depositOperation.findUnique({
+        where: {
+          idempotencyKey: this.resolutionOperationKey(
+            disputeId,
+            commandKey,
+            kind,
+          ),
+        },
+        select: { depositId: true, kind: true, amount: true },
+      });
+      if (
+        !operation ||
+        operation.depositId !== depositId ||
+        operation.kind !== kind ||
+        decimalToMinor(operation.amount) !== BigInt(amountMinor)
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private toDisputeResponse(dispute: DisputeWithEvidence): DisputeResponseDto {

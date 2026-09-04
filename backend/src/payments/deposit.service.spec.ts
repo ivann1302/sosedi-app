@@ -8,6 +8,7 @@ import {
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
+import type { AdminAuditContext } from '../admin/admin-audit-context';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   assertDepositSettledForCompletionOrPayout,
@@ -344,5 +345,183 @@ describe('DepositService local completion command', () => {
       unresolved.service.completeAfterDepositSettled('booking-1', now),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(unresolved.history).toHaveLength(0);
+  });
+});
+
+describe('DepositService failed operation retry', () => {
+  const context: AdminAuditContext = {
+    requestId: 'retry-request-1',
+    ipAddress: '127.0.0.1',
+    deviceId: 'device-hash',
+  };
+
+  function retryService() {
+    const failed = {
+      id: 'failed-operation-1',
+      depositId: 'deposit-1',
+      kind: DepositOperationKind.REFUND,
+      amount: new Prisma.Decimal(40),
+      status: DepositOperationStatus.FAILED as DepositOperationStatus,
+      idempotencyKey: 'original-key',
+      providerOperationId: null as string | null,
+      providerErrorCode: 'FAKE_DECLINED',
+      attempts: 1,
+      completedAt: new Date('2026-09-06T11:00:00.000Z'),
+      retryOfId: null,
+      deposit: {
+        bookingId: 'booking-1',
+        status: DepositStatus.RESOLVING,
+        booking: {
+          financialDispute: {
+            status: 'UNDER_REVIEW',
+            refundToBorrowerAmount: new Prisma.Decimal(40),
+            releaseToLenderAmount: new Prisma.Decimal(60),
+          },
+        },
+      },
+    };
+    const retries: Array<Record<string, unknown>> = [];
+    const audits: Array<Record<string, unknown>> = [];
+    const findOperation = ({
+      where,
+    }: {
+      where: { id?: string; idempotencyKey?: string };
+    }) => {
+      if (where.id === failed.id) {
+        return Promise.resolve(failed);
+      }
+      return Promise.resolve(
+        retries.find(
+          (retry) => retry.idempotencyKey === where.idempotencyKey,
+        ) ?? null,
+      );
+    };
+    const tx = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      depositOperation: {
+        findUnique: jest.fn(findOperation),
+        findFirst: jest.fn(() =>
+          Promise.resolve(
+            retries.find(
+              (retry) =>
+                retry.retryOfId === failed.id &&
+                retry.status !== DepositOperationStatus.FAILED,
+            ) ?? null,
+          ),
+        ),
+        create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
+          const retry = { id: 'retry-operation-1', ...data };
+          retries.push(retry);
+          return Promise.resolve(retry);
+        }),
+      },
+      adminAuditLog: {
+        create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
+          audits.push(data);
+          return Promise.resolve(data);
+        }),
+      },
+    };
+    const prisma = {
+      depositOperation: { findUnique: jest.fn(findOperation) },
+      $transaction: jest.fn(
+        (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+      ),
+    };
+    return {
+      service: new DepositService(
+        prisma as unknown as PrismaService,
+        policy(),
+        new FakeSafeDealProvider(),
+      ),
+      failed,
+      retries,
+      audits,
+    };
+  }
+
+  it('keeps a failed operation immutable and creates one linked pending retry', async () => {
+    const { service, failed, retries, audits } = retryService();
+
+    await expect(
+      service.retryFailedOperation(
+        'admin-1',
+        'failed-operation-1',
+        'retry-key-1',
+        context,
+      ),
+    ).resolves.toMatchObject({
+      id: 'retry-operation-1',
+      retryOfId: 'failed-operation-1',
+      status: DepositOperationStatus.PENDING,
+    });
+
+    expect(failed).toMatchObject({
+      status: DepositOperationStatus.FAILED,
+      providerErrorCode: 'FAKE_DECLINED',
+      attempts: 1,
+    });
+    expect(retries).toEqual([
+      expect.objectContaining({
+        depositId: 'deposit-1',
+        kind: DepositOperationKind.REFUND,
+        amount: new Prisma.Decimal(40),
+        status: DepositOperationStatus.PENDING,
+        retryOfId: 'failed-operation-1',
+      }),
+    ]);
+    expect(audits).toEqual([
+      expect.objectContaining({
+        adminId: 'admin-1',
+        action: 'DEPOSIT_OPERATION_RETRY_CREATED',
+        entityType: 'DepositOperation',
+        entityId: 'retry-operation-1',
+        requestId: context.requestId,
+      }),
+    ]);
+  });
+
+  it('returns the same retry for a duplicate key and rejects a parallel retry', async () => {
+    const { service, retries } = retryService();
+
+    const first = await service.retryFailedOperation(
+      'admin-1',
+      'failed-operation-1',
+      'retry-key-1',
+      context,
+    );
+    await expect(
+      service.retryFailedOperation(
+        'admin-1',
+        'failed-operation-1',
+        'retry-key-1',
+        context,
+      ),
+    ).resolves.toEqual(first);
+    await expect(
+      service.retryFailedOperation(
+        'admin-1',
+        'failed-operation-1',
+        'different-key',
+        context,
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(retries).toHaveLength(1);
+  });
+
+  it('never retries an already succeeded provider operation', async () => {
+    const { service, failed, retries } = retryService();
+    failed.status = DepositOperationStatus.SUCCEEDED;
+    failed.providerOperationId = 'provider-operation-1';
+
+    await expect(
+      service.retryFailedOperation(
+        'admin-1',
+        'failed-operation-1',
+        'retry-key-1',
+        context,
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(retries).toHaveLength(0);
   });
 });

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AdminCapability,
   BookingStatus,
   DepositOperationKind,
   DepositOperationStatus,
@@ -13,6 +14,7 @@ import {
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
+import type { AdminAuditContext } from '../admin/admin-audit-context';
 import { readBoundBookingTermsSnapshot } from '../booking/booking-terms';
 import { BookingEventType, bookingEventKey } from '../booking/booking-events';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,6 +35,15 @@ type SettlementAmounts = {
   amount: Prisma.Decimal;
   refundedAmount: Prisma.Decimal;
   releasedToLenderAmount: Prisma.Decimal;
+};
+
+export type DepositOperationCommandResponse = {
+  id: string;
+  depositId: string;
+  kind: DepositOperationKind;
+  amountMinor: number;
+  status: DepositOperationStatus;
+  retryOfId: string | null;
 };
 
 export function assertDepositSettledForCompletionOrPayout(
@@ -85,9 +96,12 @@ export async function completeBookingAfterReturnInTransaction(
     }
     assertDepositSettledForCompletionOrPayout(null);
   } else {
+    if (!booking.deposit?.disputeWindowEndsAt) {
+      return 0;
+    }
     if (
-      !booking.deposit?.disputeWindowEndsAt ||
-      booking.deposit.disputeWindowEndsAt > now
+      booking.deposit.disputeWindowEndsAt > now &&
+      booking.financialDispute?.status !== DisputeStatus.RESOLVED
     ) {
       return 0;
     }
@@ -299,5 +313,143 @@ export class DepositService {
         'DEPOSIT_SETTLED',
       );
     });
+  }
+
+  async retryFailedOperation(
+    adminId: string,
+    operationId: string,
+    idempotencyKey: string,
+    context: AdminAuditContext,
+    now = new Date(),
+  ): Promise<DepositOperationCommandResponse> {
+    this.paymentPolicy.requireFakeSafeDeal();
+    const commandKey = idempotencyKey.trim();
+    if (!commandKey) {
+      throw new BadRequestException('Idempotency-Key обязателен');
+    }
+    const target = await this.prisma.depositOperation.findUnique({
+      where: { id: operationId },
+      select: { deposit: { select: { bookingId: true } } },
+    });
+    if (!target) {
+      throw new NotFoundException('Операция залога не найдена');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${target.deposit.bookingId}))`;
+      const operation = await tx.depositOperation.findUnique({
+        where: { id: operationId },
+        include: {
+          deposit: {
+            include: {
+              booking: {
+                select: {
+                  financialDispute: {
+                    select: {
+                      status: true,
+                      refundToBorrowerAmount: true,
+                      releaseToLenderAmount: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!operation) {
+        throw new NotFoundException('Операция залога не найдена');
+      }
+      const retryKey = `deposit-operation:${operation.id}:retry:${commandKey}`;
+      const existing = await tx.depositOperation.findUnique({
+        where: { idempotencyKey: retryKey },
+      });
+      if (existing) {
+        if (
+          existing.retryOfId !== operation.id ||
+          existing.depositId !== operation.depositId ||
+          existing.kind !== operation.kind ||
+          decimalToMinor(existing.amount) !== decimalToMinor(operation.amount)
+        ) {
+          throw new ConflictException('Idempotency-Key уже использован');
+        }
+        return this.toOperationResponse(existing);
+      }
+      const dispute = operation.deposit.booking.financialDispute;
+      const requiredAmount =
+        operation.kind === DepositOperationKind.REFUND
+          ? dispute?.refundToBorrowerAmount
+          : operation.kind === DepositOperationKind.RELEASE_TO_LENDER
+            ? dispute?.releaseToLenderAmount
+            : null;
+      if (
+        operation.status !== DepositOperationStatus.FAILED ||
+        operation.deposit.status !== DepositStatus.RESOLVING ||
+        dispute?.status !== DisputeStatus.UNDER_REVIEW ||
+        !requiredAmount ||
+        decimalToMinor(requiredAmount) <= 0n ||
+        decimalToMinor(requiredAmount) !== decimalToMinor(operation.amount)
+      ) {
+        throw new ConflictException('Операцию нельзя повторить');
+      }
+      const anotherRetry = await tx.depositOperation.findFirst({
+        where: { retryOfId: operation.id },
+        select: { id: true },
+      });
+      if (anotherRetry) {
+        throw new ConflictException('Повтор уже создан');
+      }
+
+      const retry = await tx.depositOperation.create({
+        data: {
+          depositId: operation.depositId,
+          kind: operation.kind,
+          amount: operation.amount,
+          status: DepositOperationStatus.PENDING,
+          idempotencyKey: retryKey,
+          retryOfId: operation.id,
+          nextAttemptAt: now,
+        },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          adminId,
+          action: 'DEPOSIT_OPERATION_RETRY_CREATED',
+          entityType: 'DepositOperation',
+          entityId: retry.id,
+          capability: AdminCapability.FINANCE,
+          requestId: context.requestId,
+          ipAddress: context.ipAddress,
+          deviceId: context.deviceId,
+          metadata: {
+            retryOfId: operation.id,
+            depositId: operation.depositId,
+            requiredCapabilities: [
+              AdminCapability.DISPUTE,
+              AdminCapability.FINANCE,
+            ],
+          },
+        },
+      });
+      return this.toOperationResponse(retry);
+    });
+  }
+
+  private toOperationResponse(operation: {
+    id: string;
+    depositId: string;
+    kind: DepositOperationKind;
+    amount: Prisma.Decimal;
+    status: DepositOperationStatus;
+    retryOfId: string | null;
+  }): DepositOperationCommandResponse {
+    return {
+      id: operation.id,
+      depositId: operation.depositId,
+      kind: operation.kind,
+      amountMinor: minorToSafeNumber(decimalToMinor(operation.amount)),
+      status: operation.status,
+      retryOfId: operation.retryOfId,
+    };
   }
 }

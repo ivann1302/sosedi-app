@@ -1,16 +1,27 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
 import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  AdminCapability,
   BookingStatus,
+  DepositOperationKind,
+  DepositOperationStatus,
   DepositStatus,
   DisputeStatus,
   FinancialDisputeReason,
+  Prisma,
 } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
+import type { AdminAuditContext } from '../admin/admin-audit-context';
 import { UploadService } from '../upload/upload.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
+import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
 import { DisputeService } from './dispute.service';
+import { PaymentPolicyService } from './payment-policy.service';
 
 const deadline = new Date('2026-09-05T12:00:00.000Z');
 const beforeDeadline = new Date(deadline.getTime() - 1);
@@ -91,6 +102,7 @@ function createService(currentBooking = booking()) {
     service: new DisputeService(
       prisma as unknown as PrismaService,
       upload as unknown as UploadService,
+      { requireFakeSafeDeal: jest.fn() } as unknown as PaymentPolicyService,
     ),
     prisma,
     tx,
@@ -266,5 +278,323 @@ describe('DisputeService', () => {
     await expect(
       service.getDispute('outsider-1', 'booking-1'),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('DisputeService financial resolution', () => {
+  const now = new Date('2026-09-06T12:00:00.000Z');
+  const context: AdminAuditContext = {
+    requestId: 'resolve-request-1',
+    ipAddress: '127.0.0.1',
+    deviceId: 'device-hash',
+  };
+
+  function resolutionService() {
+    const operations: Array<Record<string, unknown>> = [];
+    const audit: Array<Record<string, unknown>> = [];
+    const state = {
+      status: DisputeStatus.OPEN,
+      resolvedById: null as string | null,
+      decisionReason: null as string | null,
+      refundToBorrowerAmount: new Prisma.Decimal(0),
+      releaseToLenderAmount: new Prisma.Decimal(0),
+      depositStatus: DepositStatus.DISPUTED,
+    };
+    const disputeRecord = () => ({
+      id: 'dispute-1',
+      bookingId: 'booking-1',
+      openedById: 'borrower-1',
+      reason: FinancialDisputeReason.ITEM_DAMAGED,
+      description: 'Повреждение',
+      status: state.status,
+      resolvedById: state.resolvedById,
+      decisionReason: state.decisionReason,
+      refundToBorrowerAmount: state.refundToBorrowerAmount,
+      releaseToLenderAmount: state.releaseToLenderAmount,
+      openedAt: beforeDeadline,
+      resolvedAt: null,
+      evidence: [],
+      booking: {
+        status: BookingStatus.RETURNED,
+        deposit: {
+          id: 'deposit-1',
+          amount: new Prisma.Decimal(100),
+          status: state.depositStatus,
+        },
+      },
+    });
+    const tx = {
+      $executeRaw: jest.fn().mockResolvedValue(1),
+      financialDispute: {
+        findUnique: jest.fn().mockImplementation(() => disputeRecord()),
+        update: jest
+          .fn()
+          .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+            state.status = data.status as DisputeStatus;
+            state.resolvedById = data.resolvedById as string;
+            state.decisionReason = data.decisionReason as string;
+            state.refundToBorrowerAmount =
+              data.refundToBorrowerAmount as Prisma.Decimal;
+            state.releaseToLenderAmount =
+              data.releaseToLenderAmount as Prisma.Decimal;
+            return Promise.resolve(disputeRecord());
+          }),
+      },
+      bookingDeposit: {
+        update: jest.fn().mockImplementation(() => {
+          state.depositStatus = DepositStatus.RESOLVING;
+          return Promise.resolve({});
+        }),
+      },
+      depositOperation: {
+        findUnique: jest.fn(
+          ({ where }: { where: { idempotencyKey: string } }) =>
+            Promise.resolve(
+              operations.find(
+                (operation) =>
+                  operation.idempotencyKey === where.idempotencyKey,
+              ) ?? null,
+            ),
+        ),
+        create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
+          const operation = {
+            id: `operation-${operations.length + 1}`,
+            ...data,
+          };
+          operations.push(operation);
+          return Promise.resolve(operation);
+        }),
+      },
+      adminAuditLog: {
+        create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
+          audit.push(data);
+          return Promise.resolve(data);
+        }),
+      },
+    };
+    const prisma = {
+      financialDispute: {
+        findUnique: jest.fn().mockResolvedValue({ bookingId: 'booking-1' }),
+        findMany: jest.fn(),
+      },
+      $transaction: jest.fn(
+        (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+      ),
+    };
+    const upload = {};
+    return {
+      service: new DisputeService(
+        prisma as unknown as PrismaService,
+        upload as UploadService,
+        { requireFakeSafeDeal: jest.fn() } as unknown as PaymentPolicyService,
+      ),
+      operations,
+      audit,
+      state,
+      tx,
+    };
+  }
+
+  it.each([
+    [10_000, 0, [DepositOperationKind.REFUND]],
+    [
+      4_000,
+      6_000,
+      [DepositOperationKind.REFUND, DepositOperationKind.RELEASE_TO_LENDER],
+    ],
+    [0, 10_000, [DepositOperationKind.RELEASE_TO_LENDER]],
+  ] as const)(
+    'persists an exact %i/%i resolution with only positive legs',
+    async (refundToBorrowerMinor, releaseToLenderMinor, expectedKinds) => {
+      const { service, operations, audit, state } = resolutionService();
+
+      await service.resolveDispute(
+        'admin-1',
+        'dispute-1',
+        {
+          refundToBorrowerMinor,
+          releaseToLenderMinor,
+          reason: 'Проверенное решение по спору',
+        },
+        'resolution-key-1',
+        context,
+        now,
+      );
+
+      expect(state).toMatchObject({
+        status: DisputeStatus.UNDER_REVIEW,
+        resolvedById: 'admin-1',
+        decisionReason: 'Проверенное решение по спору',
+        depositStatus: DepositStatus.RESOLVING,
+      });
+      expect(operations.map((operation) => operation.kind)).toEqual(
+        expectedKinds,
+      );
+      expect(operations).toHaveLength(expectedKinds.length);
+      expectedKinds.forEach((kind, index) => {
+        expect(operations[index]).toMatchObject({
+          id: `operation-${index + 1}`,
+          depositId: 'deposit-1',
+          kind,
+          status: DepositOperationStatus.PENDING,
+        });
+      });
+      expect(audit).toEqual([
+        expect.objectContaining({
+          adminId: 'admin-1',
+          action: 'FINANCIAL_DISPUTE_RESOLUTION_STARTED',
+          entityType: 'FinancialDispute',
+          entityId: 'dispute-1',
+          capability: AdminCapability.FINANCE,
+          reason: 'Проверенное решение по спору',
+          requestId: context.requestId,
+          ipAddress: context.ipAddress,
+          deviceId: context.deviceId,
+          metadata: {
+            depositId: 'deposit-1',
+            refundToBorrowerMinor,
+            releaseToLenderMinor,
+            requiredCapabilities: [
+              AdminCapability.DISPUTE,
+              AdminCapability.FINANCE,
+            ],
+          },
+        }),
+      ]);
+      expect(JSON.stringify(audit)).not.toContain('phone');
+      expect(JSON.stringify(audit)).not.toContain('address');
+      expect(JSON.stringify(audit)).not.toContain('provider');
+    },
+  );
+
+  it.each([
+    [-1, 10_001],
+    [10_001, 0],
+    [9_999, 0],
+    [Number.MAX_SAFE_INTEGER + 1, 0],
+  ])('rejects invalid resolution amounts %p/%p', async (refund, release) => {
+    const { service, operations, audit } = resolutionService();
+
+    await expect(
+      service.resolveDispute(
+        'admin-1',
+        'dispute-1',
+        {
+          refundToBorrowerMinor: refund,
+          releaseToLenderMinor: release,
+          reason: 'Проверенное решение по спору',
+        },
+        'resolution-key-1',
+        context,
+        now,
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(operations).toHaveLength(0);
+    expect(audit).toHaveLength(0);
+  });
+
+  it('returns the original result for the same key and rejects a conflicting key', async () => {
+    const { service, operations, audit } = resolutionService();
+    const dto = {
+      refundToBorrowerMinor: 4_000,
+      releaseToLenderMinor: 6_000,
+      reason: 'Проверенное решение по спору',
+    };
+
+    await service.resolveDispute(
+      'admin-1',
+      'dispute-1',
+      dto,
+      'resolution-key-1',
+      context,
+      now,
+    );
+    await expect(
+      service.resolveDispute(
+        'admin-1',
+        'dispute-1',
+        dto,
+        'resolution-key-1',
+        context,
+        now,
+      ),
+    ).resolves.toMatchObject({ status: DisputeStatus.UNDER_REVIEW });
+    await expect(
+      service.resolveDispute(
+        'admin-1',
+        'dispute-1',
+        dto,
+        'different-key',
+        context,
+        now,
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(operations).toHaveLength(2);
+    expect(audit).toHaveLength(1);
+  });
+
+  it('keeps the same resolution key idempotent after settlement completes', async () => {
+    const { service, state, operations, audit } = resolutionService();
+    const dto = {
+      refundToBorrowerMinor: 10_000,
+      releaseToLenderMinor: 0,
+      reason: 'Проверенное решение по спору',
+    };
+    await service.resolveDispute(
+      'admin-1',
+      'dispute-1',
+      dto,
+      'resolution-key-1',
+      context,
+      now,
+    );
+    state.status = DisputeStatus.RESOLVED;
+
+    await expect(
+      service.resolveDispute(
+        'admin-1',
+        'dispute-1',
+        dto,
+        'resolution-key-1',
+        context,
+        now,
+      ),
+    ).resolves.toMatchObject({ status: DisputeStatus.RESOLVED });
+    expect(operations).toHaveLength(1);
+    expect(audit).toHaveLength(1);
+  });
+
+  it('requires an idempotency key before opening a transaction', async () => {
+    const { service, tx } = resolutionService();
+
+    await expect(
+      service.resolveDispute(
+        'admin-1',
+        'dispute-1',
+        {
+          refundToBorrowerMinor: 10_000,
+          releaseToLenderMinor: 0,
+          reason: 'Проверенное решение по спору',
+        },
+        ' ',
+        context,
+        now,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(tx.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('validates safe integer legs and a 10–1000 character reason', async () => {
+    const invalid = plainToInstance(ResolveDisputeDto, {
+      refundToBorrowerMinor: Number.MAX_SAFE_INTEGER + 1,
+      releaseToLenderMinor: 0,
+      reason: 'коротко',
+    });
+
+    const errors = await validate(invalid);
+    expect(errors.map((error) => error.property).sort()).toEqual([
+      'reason',
+      'refundToBorrowerMinor',
+    ]);
   });
 });

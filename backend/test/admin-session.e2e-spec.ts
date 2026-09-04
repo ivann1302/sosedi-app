@@ -7,8 +7,11 @@ import {
   BookingMessageAuthorRole,
   BookingStatus,
   CategoryListingPolicy,
+  DepositStatus,
+  FinancialDisputeReason,
   ItemCondition,
   ItemStatus,
+  Prisma,
   ReportReason,
   ReportTargetType,
   SupportTicketStatus,
@@ -30,6 +33,13 @@ import { PrismaService } from './../src/prisma/prisma.service';
 import { RedisService } from './../src/redis/redis.service';
 import { S3StorageService } from './../src/upload/s3-storage.service';
 import { resetTestState } from './support/test-state';
+
+const PAYMENT_ENV = {
+  PAYMENT_SCENARIO: 'FAKE_SAFE_DEAL',
+  FAKE_SAFE_DEAL_DEPOSIT_MAX_MINOR: '10000000',
+  FAKE_SAFE_DEAL_POLICY_VERSION: 'admin-e2e-policy-v1',
+  FAKE_SAFE_DEAL_DISPUTE_WINDOW_SECONDS: '86400',
+} as const;
 
 class FakeSmsService {
   private readonly codes = new Map<string, string>();
@@ -114,6 +124,7 @@ describe('Admin session (e2e)', () => {
   let jwt: JwtService;
   let prisma: PrismaService;
   let redis: ReturnType<RedisService['getClient']>;
+  const previousPaymentEnv = new Map<string, string | undefined>();
   const storage = {
     createPresignedDownloadUrl: jest.fn((bucket: string, key: string) =>
       Promise.resolve(`https://download.test/${bucket}/${key}?signed=true`),
@@ -167,6 +178,10 @@ describe('Admin session (e2e)', () => {
   }
 
   beforeAll(async () => {
+    for (const [name, value] of Object.entries(PAYMENT_ENV)) {
+      previousPaymentEnv.set(name, process.env[name]);
+      process.env[name] = value;
+    }
     fakeSms = new FakeSmsService();
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
@@ -980,6 +995,256 @@ describe('Admin session (e2e)', () => {
     await request(httpServer()).post('/api/v1/admin/promote').expect(404);
   });
 
+  it('enforces any-of reads and all-of audited dispute resolution', async () => {
+    const [admin, lender, borrower] = await Promise.all([
+      prisma.user.create({
+        data: {
+          phone: '+79990003201',
+          role: UserRole.ADMIN,
+          adminCapabilities: [AdminCapability.SUPPORT],
+        },
+      }),
+      prisma.user.create({
+        data: { phone: '+79990003202', role: UserRole.USER },
+      }),
+      prisma.user.create({
+        data: { phone: '+79990003203', role: UserRole.USER },
+      }),
+    ]);
+    const category = await prisma.category.create({
+      data: {
+        name: 'Financial dispute admin',
+        slug: 'financial-dispute-admin',
+        isAllowedForListings: true,
+        listingPolicy: CategoryListingPolicy.ALLOWED,
+      },
+    });
+    const item = await prisma.item.create({
+      data: {
+        ownerId: lender.id,
+        categoryId: category.id,
+        title: 'Спорная вещь',
+        description: 'Fixture для проверки финансового решения',
+        condition: ItemCondition.GOOD,
+        completeness: 'Полный комплект',
+        handoverTerms: 'Личная передача',
+        pricePerDay: 100,
+        status: ItemStatus.APPROVED,
+        publicArea: 'Центральный округ',
+        address: 'Приватный адрес',
+        latitude: 55.75,
+        longitude: 37.61,
+      },
+    });
+    const booking = await prisma.booking.create({
+      data: {
+        itemId: item.id,
+        borrowerId: borrower.id,
+        lenderId: lender.id,
+        startDate: new Date('2026-09-05T00:00:00.000Z'),
+        endDate: new Date('2026-09-05T00:00:00.000Z'),
+        totalAmount: new Prisma.Decimal(200),
+        status: BookingStatus.RETURNED,
+        deposit: {
+          create: {
+            amount: new Prisma.Decimal(100),
+            policyVersion: 'admin-dispute-e2e-v1',
+            disputeWindowSeconds: 86_400,
+            status: DepositStatus.DISPUTED,
+            disputeWindowEndsAt: new Date(Date.now() + 86_400_000),
+          },
+        },
+      },
+      include: { deposit: true },
+    });
+    const dispute = await prisma.financialDispute.create({
+      data: {
+        bookingId: booking.id,
+        openedById: borrower.id,
+        reason: FinancialDisputeReason.ITEM_DAMAGED,
+        description: 'Повреждение подтверждается фотографией',
+      },
+    });
+    const evidenceKey = `quarantine/dispute-evidence/${dispute.id}/${borrower.id}/evidence.jpg`;
+    const intent = await prisma.uploadIntent.create({
+      data: {
+        actorId: borrower.id,
+        purpose: 'DISPUTE_EVIDENCE',
+        entityId: dispute.id,
+        bucket: 'private-bucket',
+        objectKey: evidenceKey,
+        contentType: 'image/jpeg',
+        sizeBytes: 1024,
+        expiresAt: new Date(Date.now() + 86_400_000),
+        confirmedAt: new Date(),
+      },
+    });
+    const evidence = await prisma.disputeEvidence.create({
+      data: {
+        disputeId: dispute.id,
+        uploadIntentId: intent.id,
+        storageKey: evidenceKey,
+        sha256: 'c'.repeat(64),
+      },
+    });
+    const accessToken = await jwt.signAsync(
+      {
+        sub: admin.id,
+        phone: admin.phone,
+        role: admin.role,
+        tokenType: 'access',
+        sessionVersion: 0,
+      },
+      { secret: 'e2e-access-secret', expiresIn: '15m' },
+    );
+    const enrollment = await enrollAdminTotp(accessToken);
+    const stepUp = await request(httpServer())
+      .post('/api/v1/admin/session/step-up')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ code: enrollment.recoveryCodes[0] })
+      .expect(201);
+    const session = adminBrowserSessionFrom(stepUp.headers['set-cookie']);
+
+    await request(httpServer()).get('/api/v1/admin/disputes').expect(401);
+    await request(httpServer())
+      .get('/api/v1/admin/disputes')
+      .set('Cookie', session.cookie)
+      .expect(200);
+    await request(httpServer())
+      .get(
+        `/api/v1/admin/disputes/${dispute.id}/evidence/${evidence.id}/download-url`,
+      )
+      .set('Cookie', session.cookie)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(asRecord(asRecord(body as unknown).data)).toEqual({
+          downloadUrl: `https://download.test/private-bucket/${evidenceKey}?signed=true`,
+          expiresInSeconds: 60,
+        });
+      });
+    await request(httpServer())
+      .post(`/api/v1/admin/disputes/${dispute.id}/resolve`)
+      .set('Cookie', session.cookie)
+      .set('X-CSRF-Token', session.csrfToken)
+      .set('Idempotency-Key', 'admin-resolution-1')
+      .send({
+        refundToBorrowerMinor: 4_000,
+        releaseToLenderMinor: 6_000,
+        reason: 'Подтверждено частичное повреждение вещи',
+      })
+      .expect(403);
+
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: { adminCapabilities: [AdminCapability.DISPUTE] },
+    });
+    await request(httpServer())
+      .get('/api/v1/admin/disputes')
+      .set('Cookie', session.cookie)
+      .expect(200);
+    await request(httpServer())
+      .post(`/api/v1/admin/disputes/${dispute.id}/resolve`)
+      .set('Cookie', session.cookie)
+      .set('X-CSRF-Token', session.csrfToken)
+      .set('Idempotency-Key', 'admin-resolution-1')
+      .send({
+        refundToBorrowerMinor: 4_000,
+        releaseToLenderMinor: 6_000,
+        reason: 'Подтверждено частичное повреждение вещи',
+      })
+      .expect(403);
+
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: { adminCapabilities: [AdminCapability.FINANCE] },
+    });
+    await request(httpServer())
+      .get('/api/v1/admin/disputes')
+      .set('Cookie', session.cookie)
+      .expect(403);
+    await request(httpServer())
+      .post(`/api/v1/admin/disputes/${dispute.id}/resolve`)
+      .set('Cookie', session.cookie)
+      .set('X-CSRF-Token', session.csrfToken)
+      .set('Idempotency-Key', 'admin-resolution-1')
+      .send({
+        refundToBorrowerMinor: 4_000,
+        releaseToLenderMinor: 6_000,
+        reason: 'Подтверждено частичное повреждение вещи',
+      })
+      .expect(403);
+
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: {
+        adminCapabilities: [AdminCapability.DISPUTE, AdminCapability.FINANCE],
+      },
+    });
+    const resolved = await request(httpServer())
+      .post(`/api/v1/admin/disputes/${dispute.id}/resolve`)
+      .set('Cookie', session.cookie)
+      .set('X-CSRF-Token', session.csrfToken)
+      .set('X-Request-Id', 'financial-resolution-request')
+      .set('User-Agent', 'sosedi-finance-e2e')
+      .set('Idempotency-Key', 'admin-resolution-1')
+      .send({
+        refundToBorrowerMinor: 4_000,
+        releaseToLenderMinor: 6_000,
+        reason: 'Подтверждено частичное повреждение вещи',
+      })
+      .expect(201);
+    expect(asRecord(asRecord(resolved.body as unknown).data)).toMatchObject({
+      id: dispute.id,
+      status: 'UNDER_REVIEW',
+    });
+    await request(httpServer())
+      .post(`/api/v1/admin/disputes/${dispute.id}/resolve`)
+      .set('Cookie', session.cookie)
+      .set('X-CSRF-Token', session.csrfToken)
+      .set('Idempotency-Key', 'admin-resolution-1')
+      .send({
+        refundToBorrowerMinor: 4_000,
+        releaseToLenderMinor: 6_000,
+        reason: 'Подтверждено частичное повреждение вещи',
+      })
+      .expect(201);
+    await expect(
+      prisma.depositOperation.count({
+        where: { depositId: booking.deposit!.id },
+      }),
+    ).resolves.toBe(2);
+    const audit = await prisma.adminAuditLog.findFirstOrThrow({
+      where: {
+        action: 'FINANCIAL_DISPUTE_RESOLUTION_STARTED',
+        entityId: dispute.id,
+      },
+    });
+    expect(audit).toMatchObject({
+      adminId: admin.id,
+      capability: AdminCapability.FINANCE,
+      reason: 'Подтверждено частичное повреждение вещи',
+      requestId: 'financial-resolution-request',
+      metadata: {
+        depositId: booking.deposit!.id,
+        refundToBorrowerMinor: 4_000,
+        releaseToLenderMinor: 6_000,
+        requiredCapabilities: [
+          AdminCapability.DISPUTE,
+          AdminCapability.FINANCE,
+        ],
+      },
+    });
+    expect(audit.deviceId).toMatch(/^[a-f0-9]{32}$/);
+    expect(JSON.stringify(audit)).not.toContain(admin.phone);
+    expect(JSON.stringify(audit)).not.toContain(item.address);
+
+    await redis.expire(`auth:admin-session:${session.sessionId}`, 0);
+    await request(httpServer())
+      .get('/api/v1/admin/disputes')
+      .set('Cookie', session.cookie)
+      .expect(401);
+  });
+
   it('revokes a blocked user session before protected actions run', async () => {
     const admin = await prisma.user.create({
       data: {
@@ -1139,6 +1404,16 @@ describe('Admin session (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app?.close();
+    try {
+      await app?.close();
+    } finally {
+      for (const [name, value] of previousPaymentEnv) {
+        if (value === undefined) {
+          delete process.env[name];
+        } else {
+          process.env[name] = value;
+        }
+      }
+    }
   });
 });

@@ -212,6 +212,35 @@ export class UploadService {
     };
   }
 
+  async getAdminDisputeEvidenceDownloadUrl(
+    disputeId: string,
+    evidenceId: string,
+  ): Promise<PrivateFileDownloadResponse> {
+    const evidence = await this.prisma.disputeEvidence.findFirst({
+      where: {
+        id: evidenceId,
+        disputeId,
+        uploadIntent: { confirmedAt: { not: null } },
+      },
+      select: {
+        uploadIntent: {
+          select: { bucket: true, objectKey: true },
+        },
+      },
+    });
+    if (!evidence) {
+      throw new NotFoundException('Evidence не найден');
+    }
+    return {
+      downloadUrl: await this.storage.createPresignedDownloadUrl(
+        evidence.uploadIntent.bucket,
+        evidence.uploadIntent.objectKey,
+        PRESIGNED_DOWNLOAD_EXPIRES_SECONDS,
+      ),
+      expiresInSeconds: PRESIGNED_DOWNLOAD_EXPIRES_SECONDS,
+    };
+  }
+
   async getBookingEvidenceDownloadUrl(
     userId: string,
     bookingId: string,

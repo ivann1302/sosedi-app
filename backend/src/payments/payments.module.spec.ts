@@ -1,4 +1,5 @@
 import { MODULE_METADATA } from '@nestjs/common/constants';
+import { AdminDisputeController } from './admin-dispute.controller';
 import { DepositDeadlineService } from './deposit-deadline.service';
 import { DepositOperationProcessor } from './deposit-operation.processor';
 import { DepositService } from './deposit.service';
@@ -19,6 +20,7 @@ describe('PaymentsModule payment policy boundary', () => {
       MarketplacePolicyController,
       FakeSafeDealController,
       DisputeController,
+      AdminDisputeController,
     ]);
     expect(
       Reflect.getMetadata(MODULE_METADATA.PROVIDERS, PaymentsModule),

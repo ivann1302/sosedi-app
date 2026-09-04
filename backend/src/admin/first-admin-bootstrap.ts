@@ -5,6 +5,8 @@ const BOOTSTRAP_LOCK_ID = 736625041;
 const BOOTSTRAP_CAPABILITIES = new Set<AdminCapability>([
   AdminCapability.MODERATION,
   AdminCapability.SUPPORT,
+  AdminCapability.DISPUTE,
+  AdminCapability.FINANCE,
 ]);
 
 export type FirstAdminBootstrapInput = {
