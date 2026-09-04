@@ -73,10 +73,16 @@ Sosedi должен получать вознаграждение с завер�
 
 - Черновые legal-страницы могут описывать целевую модель без обещания процента и
   без включения checkout.
-- Fake provider и доменные тесты разрешены.
-- Рабочая формула реализована только как чистый расчёт в minor units и не
-  подключена к Booking/API.
-- Production schema/API/provider integration остаются заблокированными.
+- Репозиторий содержит gated `FAKE_SAFE_DEAL` test slice: schema и миграции,
+  exact-minor Booking snapshot/checkout/deposit/dispute operations, race и auth
+  tests, безопасную operator queue и server-backed mobile UX. Режим требует
+  явной non-production конфигурации и запрещён release-gate в production.
+- Fake provider исполняет только тестовые hold/refund/release outcomes; live
+  provider adapter, checkout URL/webhook, payout, чеки и reconciliation не
+  реализованы.
+- Этот test slice не выбирает release-provider, fee payer, production dispute
+  window или KYC-ветку, не закрывает ни один provider/legal/accounting gate и не
+  меняет статус ADR `PROPOSED`.
 - После предложения провайдера нужно утвердить price formula/fee payer/provider-
   cost coverage, KYC-ветку, cancellation/dispute/payment-timeout matrix, чеки и
   reconciliation.

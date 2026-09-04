@@ -1265,6 +1265,15 @@ MapKit, геолокацию или точный адрес и всегда ск
 > **Почему:** после успешной выплаты владельцу provider может не позволить
 > автоматический возврат, поэтому спор должен уметь остановить payout заранее.
 
+**DOING 04.09.2026:** репозиторий содержит только gated `FAKE_SAFE_DEAL` test
+slice: один participant-only финансовый спор на Booking открывается до
+immutable deadline под общим advisory lock с deadline worker; private evidence,
+race и outsider tests готовы. SUPPORT/DISPUTE read и DISPUTE+FINANCE resolution/
+retry требуют точных capabilities, а финансовое решение — свежей MFA admin-
+session и PII-free audit. Operator/mobile используют тот же server state. Это не
+утверждает production dispute window или возможности provider, не закрывает ни
+один checkbox/provider gate и не меняет готовность 339/488 (69,5%).
+
 - [ ] Зафиксировать отличие обычного support ticket от финансового dispute и
   допустимое окно финансового спора для каждого payment scenario.
   **DOING 29.07.2026:** Support API принудительно создаёт и во всех
@@ -1343,6 +1352,14 @@ Fake provider и доменные TDD-тесты не блокируются.
   по брони, а отказ можно безопасно повторить как успех. Деньги, Payment и Booking
   server state не меняются; production/release всегда скрывает заглушку. Это не
   разрешает и не закрывает production payment flow.
+  **DOING 04.09.2026:** local-only demo заменён gated `FAKE_SAFE_DEAL` test
+  slice: schema/migrations, exact-minor Booking snapshot, borrower-only
+  idempotent checkout под lock, Payment/deposit hold, lease-based exactly-once
+  deposit settlement, dispute race/auth/MFA resolution, безопасная operator
+  queue и server-backed mobile UX покрыты unit/e2e. `FAKE_SAFE_DEAL` запрещён в
+  production; live provider adapter, checkout URL/webhook, rental payout, чеки и
+  reconciliation отсутствуют. Ни один checkbox/provider gate не закрыт,
+  готовность остаётся 339/488 (69,5%).
 - [ ] Зафиксировать формулу цены: кто платит platform fee, процент/фиксированная
   часть, база, min/max, округление до копеек, НДС/комиссия provider, owner payout
   и правило сохранения равенства всех сумм. Версионировать минимальным контрактом
