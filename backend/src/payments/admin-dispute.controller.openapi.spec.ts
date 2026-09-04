@@ -46,7 +46,7 @@ describe('AdminDisputeController OpenAPI contract', () => {
           document.paths['/api/v1/admin/disputes']?.get?.responses['200'],
         data: {
           type: 'array',
-          items: { $ref: '#/components/schemas/DisputeResponseDto' },
+          items: { $ref: '#/components/schemas/AdminDisputeResponseDto' },
         },
       },
       {
@@ -128,6 +128,73 @@ describe('AdminDisputeController OpenAPI contract', () => {
         'amountMinor',
         'status',
         'retryOfId',
+      ],
+    });
+    expect(document.components?.schemas?.AdminDisputeResponseDto).toEqual({
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        bookingId: { type: 'string', format: 'uuid' },
+        reason: {
+          type: 'string',
+          enum: ['ITEM_DAMAGED', 'ITEM_LOST', 'OTHER'],
+        },
+        description: { type: 'string', nullable: true },
+        status: {
+          type: 'string',
+          enum: ['OPEN', 'UNDER_REVIEW', 'RESOLVED'],
+        },
+        refundToBorrowerMinor: { type: 'number', minimum: 0 },
+        releaseToLenderMinor: { type: 'number', minimum: 0 },
+        depositAmountMinor: { type: 'number', minimum: 0 },
+        depositStatus: {
+          type: 'string',
+          enum: [
+            'PENDING',
+            'HELD',
+            'DISPUTED',
+            'RESOLVING',
+            'RESOLVED',
+            'CANCELLED',
+          ],
+        },
+        disputeWindowEndsAt: {
+          type: 'string',
+          format: 'date-time',
+          nullable: true,
+        },
+        openedAt: { type: 'string', format: 'date-time' },
+        resolvedAt: {
+          type: 'string',
+          format: 'date-time',
+          nullable: true,
+        },
+        evidence: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/DisputeEvidenceResponseDto' },
+        },
+        failedOperations: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/AdminFailedDepositOperationResponseDto',
+          },
+        },
+      },
+      required: [
+        'id',
+        'bookingId',
+        'reason',
+        'description',
+        'status',
+        'refundToBorrowerMinor',
+        'releaseToLenderMinor',
+        'depositAmountMinor',
+        'depositStatus',
+        'disputeWindowEndsAt',
+        'openedAt',
+        'resolvedAt',
+        'evidence',
+        'failedOperations',
       ],
     });
   });

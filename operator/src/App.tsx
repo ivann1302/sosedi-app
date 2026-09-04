@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import {
+  AdminDispute,
   api,
   ApiError,
   Item,
@@ -12,7 +13,7 @@ import {
 } from './api';
 
 type AuthStep = 'loading' | 'phone' | 'otp' | 'mfa' | 'ready';
-type Page = 'support' | 'users' | 'moderation' | 'reports';
+type Page = 'support' | 'disputes' | 'users' | 'moderation' | 'reports';
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
 export function App() {
@@ -30,6 +31,7 @@ export function App() {
   >({});
   const [supportFiles, setSupportFiles] = useState<Record<string, File[]>>({});
   const [reports, setReports] = useState<Report[]>([]);
+  const [disputes, setDisputes] = useState<AdminDispute[]>([]);
   const [reviewContexts, setReviewContexts] = useState<
     Record<string, ReportedReviewContext>
   >({});
@@ -78,6 +80,8 @@ export function App() {
       setError('');
       if (target === 'support') {
         setTickets(await api.supportTickets());
+      } else if (target === 'disputes') {
+        setDisputes(await api.disputes());
       } else if (target === 'users') {
         setUsers(await api.users());
       } else if (target === 'reports') {
@@ -141,6 +145,7 @@ export function App() {
     setSupportMessages({});
     setSupportFiles({});
     setReports([]);
+    setDisputes([]);
     setReviewContexts({});
     setPhone('');
     setCode('');
@@ -191,6 +196,10 @@ export function App() {
           {session?.capabilities.includes('SUPPORT') && (
             <button onClick={() => setPage('support')}>Поддержка</button>
           )}
+          {(session?.capabilities.includes('SUPPORT') ||
+            session?.capabilities.includes('DISPUTE')) && (
+            <button onClick={() => setPage('disputes')}>Споры по залогам</button>
+          )}
           {session?.capabilities.includes('MODERATION') && (
             <>
               <button onClick={() => setPage('users')}>Пользователи</button>
@@ -205,7 +214,10 @@ export function App() {
         <header>
           <h1>{pageTitle(page)}</h1>
           {page === 'support' && (
-            <p>Обычные обращения. Финансовые споры появятся после утверждения ADR.</p>
+            <p>Обычные обращения пользователей.</p>
+          )}
+          {page === 'disputes' && (
+            <p>Безопасная очередь финансовых споров по тестовым сделкам.</p>
           )}
         </header>
         {error && <div className="error">{error}</div>}
@@ -335,6 +347,143 @@ export function App() {
                         <span>Загружаем переписку…</span>
                       )}
                     </div>
+                  )}
+                </article>
+              ))
+            : page === 'disputes'
+            ? disputes.length === 0
+              ? <article>Открытых или обработанных споров пока нет.</article>
+              : disputes.map((dispute) => (
+                <article key={dispute.id}>
+                  <div className="ticket-head">
+                    <strong>Бронь {shortId(dispute.bookingId)}</strong>
+                    <span className={`sla ${disputeStatusClass(dispute.status)}`}>
+                      {disputeStatusLabel(dispute.status)}
+                    </span>
+                  </div>
+                  <span>
+                    {disputeReasonLabel(dispute.reason)} · открыт{' '}
+                    {formatDateTime(dispute.openedAt)}
+                  </span>
+                  <p>{dispute.description ?? 'Описание не добавлено'}</p>
+                  <div className="dispute-details">
+                    <strong>Залог</strong>
+                    <span>{formatMinorRub(dispute.depositAmountMinor)} ₽</span>
+                    <strong>Статус залога</strong>
+                    <span>{depositStatusLabel(dispute.depositStatus)}</span>
+                    <strong>Дедлайн спора</strong>
+                    <span>
+                      {dispute.disputeWindowEndsAt
+                        ? formatDateTime(dispute.disputeWindowEndsAt)
+                        : 'не установлен'}
+                    </span>
+                    {dispute.status !== 'OPEN' && (
+                      <>
+                        <strong>Возврат арендатору</strong>
+                        <span>
+                          {formatMinorRub(dispute.refundToBorrowerMinor)} ₽
+                        </span>
+                        <strong>Передача владельцу</strong>
+                        <span>
+                          {formatMinorRub(dispute.releaseToLenderMinor)} ₽
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="evidence-list">
+                    <strong>Доказательства ({dispute.evidence.length})</strong>
+                    {dispute.evidence.map((evidence) => (
+                      <button
+                        className="attachment"
+                        key={evidence.id}
+                        onClick={() =>
+                          void openDisputeEvidence(dispute.id, evidence.id)
+                        }
+                        type="button"
+                      >
+                        {shortId(evidence.id)} · {shortHash(evidence.sha256)} ·{' '}
+                        {formatDateTime(evidence.createdAt)}
+                      </button>
+                    ))}
+                    {dispute.evidence.length === 0 && (
+                      <span>Доказательства не приложены</span>
+                    )}
+                  </div>
+                  {dispute.failedOperations.length > 0 && (
+                    <div className="failed-operations">
+                      <strong>Неуспешные операции</strong>
+                      {dispute.failedOperations.map((operation) => (
+                        <div className="failed-operation" key={operation.id}>
+                          <span>
+                            {depositOperationLabel(operation.kind)} ·{' '}
+                            {formatMinorRub(operation.amountMinor)} ₽ · попыток{' '}
+                            {operation.attempts}
+                          </span>
+                          <span>
+                            Код: {operation.errorCode ?? 'не указан'} ·{' '}
+                            {formatDateTime(operation.completedAt ?? operation.createdAt)}
+                          </span>
+                          {operation.retryOfId && (
+                            <span>Повтор операции {shortId(operation.retryOfId)}</span>
+                          )}
+                          {operation.retryId ? (
+                            <span>Создан повтор {shortId(operation.retryId)}</span>
+                          ) : canResolveFinancial(session) ? (
+                            <button
+                              className="secondary"
+                              onClick={() =>
+                                void act(
+                                  () => api.retryDepositOperation(operation.id),
+                                  'disputes',
+                                )
+                              }
+                              type="button"
+                            >
+                              Повторить операцию
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {dispute.status === 'OPEN' &&
+                    canResolveFinancial(session) && (
+                    <form
+                      className="resolution"
+                      onSubmit={(event) =>
+                        void resolveFinancialDispute(event, dispute)
+                      }
+                    >
+                      <strong>Решение спора</strong>
+                      <label>
+                        Возврат арендатору, ₽
+                        <input
+                          inputMode="decimal"
+                          name="refund"
+                          placeholder="0,00"
+                          required
+                        />
+                      </label>
+                      <label>
+                        Передача владельцу, ₽
+                        <input
+                          inputMode="decimal"
+                          name="release"
+                          placeholder="0,00"
+                          required
+                        />
+                      </label>
+                      <label className="resolution-reason">
+                        Основание решения
+                        <input
+                          maxLength={1000}
+                          minLength={10}
+                          name="reason"
+                          required
+                        />
+                      </label>
+                      <button type="submit">Зафиксировать решение</button>
+                    </form>
                   )}
                 </article>
               ))
@@ -614,6 +763,63 @@ export function App() {
       }
     }
   }
+
+  async function openDisputeEvidence(
+    disputeId: string,
+    evidenceId: string,
+  ) {
+    try {
+      setError('');
+      const result = await api.disputeEvidenceUrl(disputeId, evidenceId);
+      const url = new URL(result.downloadUrl);
+      if (url.protocol !== 'https:') {
+        throw new Error('Небезопасная ссылка доказательства');
+      }
+      window.open(url.toString(), '_blank', 'noopener,noreferrer');
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 401) {
+        resetToLogin();
+      } else {
+        setError(message(caught));
+      }
+    }
+  }
+
+  async function resolveFinancialDispute(
+    event: FormEvent<HTMLFormElement>,
+    dispute: AdminDispute,
+  ) {
+    event.preventDefault();
+    const values = new FormData(event.currentTarget);
+    try {
+      const refundMinor = parseRublesToMinor(String(values.get('refund') ?? ''));
+      const releaseMinor = parseRublesToMinor(
+        String(values.get('release') ?? ''),
+      );
+      const reason = String(values.get('reason') ?? '').trim();
+      if (
+        BigInt(refundMinor) + BigInt(releaseMinor) !==
+        BigInt(dispute.depositAmountMinor)
+      ) {
+        throw new Error('Сумма частей должна точно равняться сумме залога');
+      }
+      if (reason.length < 10 || reason.length > 1000) {
+        throw new Error('Основание должно содержать от 10 до 1000 символов');
+      }
+      await act(
+        () =>
+          api.resolveDispute(
+            dispute.id,
+            refundMinor,
+            releaseMinor,
+            reason,
+          ),
+        'disputes',
+      );
+    } catch (caught) {
+      setError(message(caught));
+    }
+  }
 }
 
 function message(error: unknown): string {
@@ -623,6 +829,7 @@ function message(error: unknown): string {
 
 function initialPage(session: OperatorSession): Page | undefined {
   if (session.capabilities.includes('SUPPORT')) return 'support';
+  if (session.capabilities.includes('DISPUTE')) return 'disputes';
   if (session.capabilities.includes('MODERATION')) return 'moderation';
   return undefined;
 }
@@ -636,6 +843,7 @@ function canCurrentOperatorAct(
 
 function pageTitle(page: Page | undefined): string {
   if (page === 'support') return 'Очередь поддержки';
+  if (page === 'disputes') return 'Споры по залогам';
   if (page === 'users') return 'Пользователи';
   if (page === 'moderation') return 'Очередь модерации';
   if (page === 'reports') return 'Жалобы';
@@ -704,6 +912,81 @@ function sortTickets(tickets: SupportTicket[]): SupportTicket[] {
 
 function shortId(id: string): string {
   return id.slice(0, 8);
+}
+
+function shortHash(hash: string): string {
+  return hash.length > 12 ? `${hash.slice(0, 12)}…` : hash;
+}
+
+function canResolveFinancial(session: OperatorSession | undefined): boolean {
+  return Boolean(
+    session?.capabilities.includes('DISPUTE') &&
+      session.capabilities.includes('FINANCE'),
+  );
+}
+
+function parseRublesToMinor(value: string): number {
+  const match = /^(\d+)(?:[.,](\d{1,2}))?$/.exec(value.trim());
+  if (!match) {
+    throw new Error('Введите неотрицательную сумму с точностью до копеек');
+  }
+  const fraction = (match[2] ?? '').padEnd(2, '0');
+  const minor = BigInt(match[1]) * 100n + BigInt(fraction || '0');
+  if (minor > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error('Сумма слишком велика');
+  }
+  return Number(minor);
+}
+
+function formatMinorRub(value: number): string {
+  const minor = BigInt(value);
+  return `${minor / 100n},${(minor % 100n).toString().padStart(2, '0')}`;
+}
+
+function disputeReasonLabel(reason: AdminDispute['reason']): string {
+  return {
+    ITEM_DAMAGED: 'Вещь повреждена',
+    ITEM_LOST: 'Вещь потеряна',
+    OTHER: 'Другая причина',
+  }[reason];
+}
+
+function disputeStatusLabel(status: AdminDispute['status']): string {
+  return {
+    OPEN: 'Открыт',
+    UNDER_REVIEW: 'Решение исполняется',
+    RESOLVED: 'Разрешён',
+  }[status];
+}
+
+function disputeStatusClass(status: AdminDispute['status']): string {
+  return {
+    OPEN: 'high',
+    UNDER_REVIEW: 'progress',
+    RESOLVED: 'closed',
+  }[status];
+}
+
+function depositStatusLabel(status: AdminDispute['depositStatus']): string {
+  return {
+    PENDING: 'Ожидает удержания',
+    HELD: 'Удержан',
+    DISPUTED: 'Оспаривается',
+    RESOLVING: 'Решение исполняется',
+    RESOLVED: 'Распределён',
+    CANCELLED: 'Отменён',
+  }[status];
+}
+
+function depositOperationLabel(
+  kind: AdminDispute['failedOperations'][number]['kind'],
+): string {
+  return {
+    HOLD: 'Удержание',
+    CANCEL: 'Отмена удержания',
+    REFUND: 'Возврат арендатору',
+    RELEASE_TO_LENDER: 'Передача владельцу',
+  }[kind];
 }
 
 function bookingIssueLabel(reason: SupportTicket['bookingIssueReason']): string {

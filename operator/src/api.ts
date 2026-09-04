@@ -136,6 +136,86 @@ export type ReportedReviewContext = {
   createdAt: string;
 };
 
+export type FinancialDisputeReason =
+  | 'ITEM_DAMAGED'
+  | 'ITEM_LOST'
+  | 'OTHER';
+
+export type DisputeStatus = 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED';
+
+export type DepositStatus =
+  | 'PENDING'
+  | 'HELD'
+  | 'DISPUTED'
+  | 'RESOLVING'
+  | 'RESOLVED'
+  | 'CANCELLED';
+
+export type DepositOperationKind =
+  | 'HOLD'
+  | 'CANCEL'
+  | 'REFUND'
+  | 'RELEASE_TO_LENDER';
+
+export type DepositOperationStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED';
+
+export type DisputeEvidence = {
+  id: string;
+  sha256: string;
+  createdAt: string;
+};
+
+export type FailedDepositOperation = {
+  id: string;
+  kind: DepositOperationKind;
+  amountMinor: number;
+  status: 'FAILED';
+  errorCode: string | null;
+  attempts: number;
+  retryOfId: string | null;
+  retryId: string | null;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+export type AdminDispute = {
+  id: string;
+  bookingId: string;
+  reason: FinancialDisputeReason;
+  description: string | null;
+  status: DisputeStatus;
+  refundToBorrowerMinor: number;
+  releaseToLenderMinor: number;
+  depositAmountMinor: number;
+  depositStatus: DepositStatus;
+  disputeWindowEndsAt: string | null;
+  openedAt: string;
+  resolvedAt: string | null;
+  evidence: DisputeEvidence[];
+  failedOperations: FailedDepositOperation[];
+};
+
+export type DisputeCommandResponse = {
+  id: string;
+  bookingId: string;
+  openedById: string;
+  reason: FinancialDisputeReason;
+  description: string | null;
+  status: DisputeStatus;
+  openedAt: string;
+  resolvedAt: string | null;
+  evidence: DisputeEvidence[];
+};
+
+export type DepositOperationCommandResponse = {
+  id: string;
+  depositId: string;
+  kind: DepositOperationKind;
+  amountMinor: number;
+  status: DepositOperationStatus;
+  retryOfId: string | null;
+};
+
 async function call<T>(
   path: string,
   init: RequestInit = {},
@@ -288,6 +368,34 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ decision, reason }),
     }),
+  disputes: () => call<AdminDispute[]>('/admin/disputes'),
+  disputeEvidenceUrl: (disputeId: string, evidenceId: string) =>
+    call<{ downloadUrl: string; expiresInSeconds: number }>(
+      `/admin/disputes/${disputeId}/evidence/${evidenceId}/download-url`,
+    ),
+  resolveDispute: (
+    disputeId: string,
+    refundToBorrowerMinor: number,
+    releaseToLenderMinor: number,
+    reason: string,
+  ) =>
+    call<DisputeCommandResponse>(`/admin/disputes/${disputeId}/resolve`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+      body: JSON.stringify({
+        refundToBorrowerMinor,
+        releaseToLenderMinor,
+        reason,
+      }),
+    }),
+  retryDepositOperation: (operationId: string) =>
+    call<DepositOperationCommandResponse>(
+      `/admin/deposit-operations/${operationId}/retry`,
+      {
+        method: 'POST',
+        headers: { 'Idempotency-Key': crypto.randomUUID() },
+      },
+    ),
   cancelPendingRequests: () => {
     pendingRequests.abort();
     pendingRequests = new AbortController();

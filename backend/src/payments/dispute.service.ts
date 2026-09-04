@@ -17,7 +17,12 @@ import type { AdminAuditContext } from '../admin/admin-audit-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { UploadPurpose } from '../upload/upload.types';
-import { decimalToMinor, minorToDecimal } from './money-minor';
+import {
+  decimalToMinor,
+  minorToDecimal,
+  minorToSafeNumber,
+} from './money-minor';
+import { AdminDisputeResponseDto } from './dto/admin-dispute-response.dto';
 import { AddDisputeEvidenceDto } from './dto/add-dispute-evidence.dto';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
@@ -31,8 +36,59 @@ const disputeInclude = {
   evidence: { orderBy: { createdAt: 'asc' as const } },
 };
 
+const adminDisputeSelect = {
+  id: true,
+  bookingId: true,
+  reason: true,
+  description: true,
+  status: true,
+  refundToBorrowerAmount: true,
+  releaseToLenderAmount: true,
+  openedAt: true,
+  resolvedAt: true,
+  evidence: {
+    orderBy: { createdAt: 'asc' as const },
+    select: { id: true, sha256: true, createdAt: true },
+  },
+  booking: {
+    select: {
+      deposit: {
+        select: {
+          amount: true,
+          status: true,
+          disputeWindowEndsAt: true,
+          operations: {
+            where: { status: DepositOperationStatus.FAILED },
+            orderBy: { createdAt: 'asc' as const },
+            select: {
+              id: true,
+              kind: true,
+              amount: true,
+              status: true,
+              providerErrorCode: true,
+              attempts: true,
+              retryOfId: true,
+              createdAt: true,
+              completedAt: true,
+              retries: {
+                orderBy: { createdAt: 'asc' as const },
+                select: { id: true },
+                take: 1,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.FinancialDisputeSelect;
+
 type DisputeWithEvidence = Prisma.FinancialDisputeGetPayload<{
   include: typeof disputeInclude;
+}>;
+
+type AdminDisputeWithQueue = Prisma.FinancialDisputeGetPayload<{
+  select: typeof adminDisputeSelect;
 }>;
 
 @Injectable()
@@ -112,12 +168,12 @@ export class DisputeService {
     return this.toDisputeResponse(booking.financialDispute);
   }
 
-  async listForAdmin(): Promise<DisputeResponseDto[]> {
+  async listForAdmin(): Promise<AdminDisputeResponseDto[]> {
     const disputes = await this.prisma.financialDispute.findMany({
-      include: disputeInclude,
+      select: adminDisputeSelect,
       orderBy: { openedAt: 'asc' },
     });
-    return disputes.map((dispute) => this.toDisputeResponse(dispute));
+    return disputes.map((dispute) => this.toAdminDisputeResponse(dispute));
   }
 
   async resolveDispute(
@@ -436,6 +492,50 @@ export class DisputeService {
         id,
         sha256,
         createdAt,
+      })),
+    };
+  }
+
+  private toAdminDisputeResponse(
+    dispute: AdminDisputeWithQueue,
+  ): AdminDisputeResponseDto {
+    const deposit = dispute.booking.deposit;
+    if (!deposit) {
+      throw new ConflictException('Спор не связан с залогом');
+    }
+    return {
+      id: dispute.id,
+      bookingId: dispute.bookingId,
+      reason: dispute.reason,
+      description: dispute.description,
+      status: dispute.status,
+      refundToBorrowerMinor: minorToSafeNumber(
+        decimalToMinor(dispute.refundToBorrowerAmount),
+      ),
+      releaseToLenderMinor: minorToSafeNumber(
+        decimalToMinor(dispute.releaseToLenderAmount),
+      ),
+      depositAmountMinor: minorToSafeNumber(decimalToMinor(deposit.amount)),
+      depositStatus: deposit.status,
+      disputeWindowEndsAt: deposit.disputeWindowEndsAt,
+      openedAt: dispute.openedAt,
+      resolvedAt: dispute.resolvedAt,
+      evidence: dispute.evidence.map(({ id, sha256, createdAt }) => ({
+        id,
+        sha256,
+        createdAt,
+      })),
+      failedOperations: deposit.operations.map((operation) => ({
+        id: operation.id,
+        kind: operation.kind,
+        amountMinor: minorToSafeNumber(decimalToMinor(operation.amount)),
+        status: DepositOperationStatus.FAILED,
+        errorCode: operation.providerErrorCode,
+        attempts: operation.attempts,
+        retryOfId: operation.retryOfId,
+        retryId: operation.retries[0]?.id ?? null,
+        createdAt: operation.createdAt,
+        completedAt: operation.completedAt,
       })),
     };
   }

@@ -112,6 +112,102 @@ function createService(currentBooking = booking()) {
 }
 
 describe('DisputeService', () => {
+  it('maps the admin queue to safe deposit and failed-operation fields', async () => {
+    const prisma = {
+      financialDispute: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'dispute-1',
+            bookingId: 'booking-1',
+            reason: FinancialDisputeReason.ITEM_DAMAGED,
+            description: 'Повреждение корпуса',
+            status: DisputeStatus.UNDER_REVIEW,
+            refundToBorrowerAmount: new Prisma.Decimal('40.25'),
+            releaseToLenderAmount: new Prisma.Decimal('59.75'),
+            openedAt: beforeDeadline,
+            resolvedAt: null,
+            evidence: [
+              {
+                id: 'evidence-1',
+                sha256: 'safe-hash',
+                createdAt: beforeDeadline,
+                storageKey: 'must-not-leak',
+              },
+            ],
+            booking: {
+              deposit: {
+                amount: new Prisma.Decimal('100.00'),
+                status: DepositStatus.RESOLVING,
+                disputeWindowEndsAt: deadline,
+                operations: [
+                  {
+                    id: 'operation-1',
+                    kind: DepositOperationKind.REFUND,
+                    amount: new Prisma.Decimal('40.25'),
+                    status: DepositOperationStatus.FAILED,
+                    providerErrorCode: 'DECLINED',
+                    providerOperationId: 'must-not-leak',
+                    attempts: 2,
+                    retryOfId: null,
+                    createdAt: beforeDeadline,
+                    completedAt: beforeDeadline,
+                    retries: [{ id: 'operation-2' }],
+                  },
+                ],
+              },
+            },
+          },
+        ]),
+      },
+    };
+    const service = new DisputeService(
+      prisma as unknown as PrismaService,
+      {} as UploadService,
+      {} as PaymentPolicyService,
+    );
+
+    const response = await service.listForAdmin();
+
+    expect(response).toEqual([
+      {
+        id: 'dispute-1',
+        bookingId: 'booking-1',
+        reason: FinancialDisputeReason.ITEM_DAMAGED,
+        description: 'Повреждение корпуса',
+        status: DisputeStatus.UNDER_REVIEW,
+        refundToBorrowerMinor: 4_025,
+        releaseToLenderMinor: 5_975,
+        depositAmountMinor: 10_000,
+        depositStatus: DepositStatus.RESOLVING,
+        disputeWindowEndsAt: deadline,
+        openedAt: beforeDeadline,
+        resolvedAt: null,
+        evidence: [
+          { id: 'evidence-1', sha256: 'safe-hash', createdAt: beforeDeadline },
+        ],
+        failedOperations: [
+          {
+            id: 'operation-1',
+            kind: DepositOperationKind.REFUND,
+            amountMinor: 4_025,
+            status: DepositOperationStatus.FAILED,
+            errorCode: 'DECLINED',
+            attempts: 2,
+            retryOfId: null,
+            retryId: 'operation-2',
+            createdAt: beforeDeadline,
+            completedAt: beforeDeadline,
+          },
+        ],
+      },
+    ]);
+    expect(JSON.stringify(response)).not.toContain('storageKey');
+    expect(JSON.stringify(response)).not.toContain('providerOperationId');
+    expect(prisma.financialDispute.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { openedAt: 'asc' } }),
+    );
+  });
+
   it.each([
     FinancialDisputeReason.ITEM_DAMAGED,
     FinancialDisputeReason.ITEM_LOST,

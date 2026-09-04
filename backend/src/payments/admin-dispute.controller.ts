@@ -29,6 +29,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ok, type ApiResponse } from '../common/http/api-response';
 import { DepositService } from './deposit.service';
 import { DisputeService } from './dispute.service';
+import { AdminDisputeResponseDto } from './dto/admin-dispute-response.dto';
 import { DepositOperationCommandResponseDto } from './dto/deposit-operation-command-response.dto';
 import {
   DisputeEvidenceDownloadResponseDto,
@@ -43,7 +44,7 @@ const disputeListEnvelopeSchema = {
     success: { type: 'boolean', example: true },
     data: {
       type: 'array',
-      items: { $ref: getSchemaPath(DisputeResponseDto) },
+      items: { $ref: getSchemaPath(AdminDisputeResponseDto) },
     },
     error: { type: 'object', nullable: true, example: null },
   },
@@ -82,6 +83,7 @@ const depositOperationEnvelopeSchema = {
 @ApiTags('admin-disputes')
 @ApiCookieAuth(ADMIN_SESSION_COOKIE)
 @ApiExtraModels(
+  AdminDisputeResponseDto,
   DisputeResponseDto,
   DisputeEvidenceDownloadResponseDto,
   DepositOperationCommandResponseDto,
@@ -97,7 +99,7 @@ export class AdminDisputeController {
   @AdminAnyCapability(AdminCapability.SUPPORT, AdminCapability.DISPUTE)
   @ApiOkResponse({ schema: disputeListEnvelopeSchema })
   @Get('disputes')
-  async list(): Promise<ApiResponse<DisputeResponseDto[]>> {
+  async list(): Promise<ApiResponse<AdminDisputeResponseDto[]>> {
     return ok(await this.disputes.listForAdmin());
   }
 
