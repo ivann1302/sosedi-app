@@ -7,6 +7,7 @@ import {
   DepositOperationKind,
   DepositOperationStatus,
   DepositStatus,
+  FinancialDisputeReason,
   ItemCondition,
   ItemStatus,
   Prisma,
@@ -18,6 +19,7 @@ import { App } from 'supertest/types';
 import { configureApp } from '../src/app.setup';
 import { DepositDeadlineService } from '../src/payments/deposit-deadline.service';
 import { DepositOperationProcessor } from '../src/payments/deposit-operation.processor';
+import { DisputeService } from '../src/payments/dispute.service';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { resetTestState } from './support/test-state';
 
@@ -41,6 +43,7 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
   let prisma: PrismaService;
   let deadlines: DepositDeadlineService;
   let operations: DepositOperationProcessor;
+  let disputes: DisputeService;
   const previousEnv = new Map<string, string | undefined>();
 
   beforeAll(async () => {
@@ -63,6 +66,9 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
     prisma = app.get(PrismaService);
     deadlines = app.get(DepositDeadlineService);
     operations = app.get(DepositOperationProcessor);
+    disputes = app.get(DisputeService);
+    await prisma.disputeEvidence.deleteMany();
+    await prisma.financialDispute.deleteMany();
     await prisma.depositOperation.deleteMany();
     await prisma.bookingDeposit.deleteMany();
     await resetTestState(app);
@@ -79,12 +85,15 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
   });
 
   it('gates exact Item deposits and snapshots one pending Booking deposit', async () => {
-    const [lender, borrower, category] = await Promise.all([
+    const [lender, borrower, outsider, category] = await Promise.all([
       prisma.user.create({
         data: { phone: '+79990000901', role: UserRole.USER },
       }),
       prisma.user.create({
         data: { phone: '+79990000902', role: UserRole.USER },
+      }),
+      prisma.user.create({
+        data: { phone: '+79990000903', role: UserRole.USER },
       }),
       prisma.category.create({
         data: {
@@ -95,10 +104,12 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
         },
       }),
     ]);
-    const [lenderAuthorization, borrowerAuthorization] = await Promise.all([
-      authorization(lender),
-      authorization(borrower),
-    ]);
+    const [lenderAuthorization, borrowerAuthorization, outsiderAuthorization] =
+      await Promise.all([
+        authorization(lender),
+        authorization(borrower),
+        authorization(outsider),
+      ]);
     const baseItem = {
       categoryId: category.id,
       title: 'Проектор с залогом',
@@ -692,12 +703,132 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
         },
       }),
     ).resolves.toBe(1);
+
+    const disputeDeadline = new Date(Date.now() + 86_400_000);
+    const disputeBooking = await prisma.booking.create({
+      data: {
+        itemId,
+        borrowerId: borrower.id,
+        lenderId: lender.id,
+        startDate: new Date('2026-11-04T00:00:00.000Z'),
+        endDate: new Date('2026-11-04T00:00:00.000Z'),
+        totalAmount: new Prisma.Decimal(150),
+        status: BookingStatus.RETURNED,
+        deposit: {
+          create: {
+            amount: new Prisma.Decimal(50),
+            policyVersion: 'e2e-fake-deposit-v1',
+            disputeWindowSeconds: 86_400,
+            disputeWindowEndsAt: disputeDeadline,
+            status: DepositStatus.HELD,
+          },
+        },
+      },
+    });
+    const opened = await request(httpServer())
+      .post(`/api/v1/bookings/${disputeBooking.id}/disputes`)
+      .set('Authorization', borrowerAuthorization)
+      .send({
+        reason: FinancialDisputeReason.ITEM_DAMAGED,
+        description: 'Повреждение корпуса',
+      })
+      .expect(201);
+    const openedData = asRecord(asRecord(opened.body).data);
+    expect(openedData).toMatchObject({
+      bookingId: disputeBooking.id,
+      openedById: borrower.id,
+      reason: FinancialDisputeReason.ITEM_DAMAGED,
+      status: 'OPEN',
+      evidence: [],
+    });
+    expect(openedData).not.toHaveProperty('storageKey');
+    await request(httpServer())
+      .post(`/api/v1/bookings/${disputeBooking.id}/disputes`)
+      .set('Authorization', lenderAuthorization)
+      .send({ reason: FinancialDisputeReason.OTHER })
+      .expect(409);
+    await request(httpServer())
+      .get(`/api/v1/bookings/${disputeBooking.id}/dispute`)
+      .set('Authorization', outsiderAuthorization)
+      .expect(404);
+    await request(httpServer())
+      .get(`/api/v1/bookings/${disputeBooking.id}/dispute`)
+      .set('Authorization', lenderAuthorization)
+      .expect(200);
+    await expect(
+      prisma.booking.findUniqueOrThrow({
+        where: { id: disputeBooking.id },
+        include: { deposit: true, payment: true },
+      }),
+    ).resolves.toMatchObject({
+      status: BookingStatus.RETURNED,
+      payment: null,
+      deposit: { status: DepositStatus.DISPUTED },
+    });
+
+    const raceDeadline = new Date(Date.now() + 60_000);
+    const raceBooking = await prisma.booking.create({
+      data: {
+        itemId,
+        borrowerId: borrower.id,
+        lenderId: lender.id,
+        startDate: new Date('2026-11-05T00:00:00.000Z'),
+        endDate: new Date('2026-11-05T00:00:00.000Z'),
+        totalAmount: new Prisma.Decimal(150),
+        status: BookingStatus.RETURNED,
+        deposit: {
+          create: {
+            amount: new Prisma.Decimal(50),
+            policyVersion: 'e2e-fake-deposit-v1',
+            disputeWindowSeconds: 86_400,
+            disputeWindowEndsAt: raceDeadline,
+            status: DepositStatus.HELD,
+          },
+        },
+      },
+      include: { deposit: true },
+    });
+    await Promise.allSettled([
+      disputes.openDispute(
+        borrower.id,
+        raceBooking.id,
+        { reason: FinancialDisputeReason.ITEM_LOST },
+        new Date(raceDeadline.getTime() - 1),
+      ),
+      deadlines.processDue(raceDeadline),
+    ]);
+    const [raceState, raceDispute, raceRefund] = await Promise.all([
+      prisma.bookingDeposit.findUniqueOrThrow({
+        where: { bookingId: raceBooking.id },
+      }),
+      prisma.financialDispute.findUnique({
+        where: { bookingId: raceBooking.id },
+      }),
+      prisma.depositOperation.findUnique({
+        where: {
+          idempotencyKey: `deposit:${raceBooking.deposit!.id}:auto-refund`,
+        },
+      }),
+    ]);
+    const disputeWon =
+      raceState.status === DepositStatus.DISPUTED &&
+      raceDispute !== null &&
+      raceRefund === null;
+    const deadlineWon =
+      [DepositStatus.RESOLVING, DepositStatus.RESOLVED].includes(
+        raceState.status,
+      ) &&
+      raceDispute === null &&
+      raceRefund !== null;
+    expect(Number(disputeWon) + Number(deadlineWon)).toBe(1);
   });
 
   afterAll(async () => {
     try {
       if (app) {
         try {
+          await prisma.disputeEvidence.deleteMany();
+          await prisma.financialDispute.deleteMany();
           await prisma.depositOperation.deleteMany();
           await prisma.bookingDeposit.deleteMany();
           await resetTestState(app);

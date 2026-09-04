@@ -46,6 +46,11 @@ export class RequestUploadUrlDto {
   @IsUUID()
   bookingId?: string;
 
+  @ApiPropertyOptional({ description: 'Обязательно для evidence спора' })
+  @IsOptional()
+  @IsUUID()
+  disputeId?: string;
+
   @ApiPropertyOptional({
     description: 'Обязательно для вложения обычного обращения',
   })

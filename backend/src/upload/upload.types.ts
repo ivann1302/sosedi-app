@@ -2,6 +2,7 @@ export enum UploadPurpose {
   ITEM_PHOTO = 'ITEM_PHOTO',
   AVATAR = 'AVATAR',
   BOOKING_EVIDENCE = 'BOOKING_EVIDENCE',
+  DISPUTE_EVIDENCE = 'DISPUTE_EVIDENCE',
   SUPPORT_ATTACHMENT = 'SUPPORT_ATTACHMENT',
   KYC_DOCUMENT = 'KYC_DOCUMENT',
 }
@@ -47,6 +48,8 @@ export type VerifiedBookingEvidence = {
   objectKey: string;
   sha256: string;
 };
+
+export type VerifiedDisputeEvidence = VerifiedBookingEvidence;
 
 export type VerifiedSupportAttachment = {
   intentId: string;

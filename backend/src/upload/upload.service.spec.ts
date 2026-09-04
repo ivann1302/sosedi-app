@@ -877,4 +877,237 @@ describe('UploadService', () => {
     });
     expect(storage.createPresignedDownloadUrl).not.toHaveBeenCalled();
   });
+
+  it('creates a participant-bound private dispute evidence intent', async () => {
+    const prisma = {
+      financialDispute: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'dispute-1' }),
+      },
+      uploadIntent: {
+        create: jest
+          .fn<Promise<{ id: string }>, [unknown]>()
+          .mockResolvedValue({ id: 'intent-1' }),
+      },
+    };
+    const storage = {
+      getPrivateBucket: jest.fn().mockReturnValue('private-bucket'),
+      createPresignedPostUpload: jest.fn().mockResolvedValue({
+        uploadUrl: 'https://private.example/upload',
+        fields: {},
+      }),
+    };
+    const service = new UploadService(
+      prisma as unknown as PrismaService,
+      storage as unknown as S3StorageService,
+      {} as PhotoProcessingQueue,
+    );
+
+    const result = await service.requestUploadUrl('borrower-1', {
+      purpose: UploadPurpose.DISPUTE_EVIDENCE,
+      disputeId: '11111111-1111-4111-8111-111111111111',
+      fileName: 'evidence.jpg',
+      contentType: 'image/jpeg',
+      sizeBytes: 1024,
+    });
+
+    expect(prisma.financialDispute.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: '11111111-1111-4111-8111-111111111111',
+        booking: {
+          OR: [{ borrowerId: 'borrower-1' }, { lenderId: 'borrower-1' }],
+        },
+      },
+      select: { id: true },
+    });
+    expect(prisma.uploadIntent.create).toHaveBeenCalledTimes(1);
+    const createCall = prisma.uploadIntent.create.mock.calls[0][0] as {
+      data: Record<string, unknown>;
+      select: Record<string, unknown>;
+    };
+    expect(createCall.data).toMatchObject({
+      actorId: 'borrower-1',
+      purpose: UploadPurpose.DISPUTE_EVIDENCE,
+      entityId: '11111111-1111-4111-8111-111111111111',
+      bucket: 'private-bucket',
+    });
+    expect(createCall.data.objectKey).toEqual(expect.any(String));
+    expect(String(createCall.data.objectKey)).toMatch(
+      /^quarantine\/dispute-evidence\/11111111-1111-4111-8111-111111111111\/borrower-1\/.+\.jpg$/,
+    );
+    expect(createCall.select).toEqual({ id: true });
+    expect(result.publicUrl).toBeNull();
+  });
+
+  it('does not create a dispute evidence intent for an outsider', async () => {
+    const prisma = {
+      financialDispute: { findFirst: jest.fn().mockResolvedValue(null) },
+      uploadIntent: { create: jest.fn() },
+    };
+    const storage = {
+      getPrivateBucket: jest.fn().mockReturnValue('private-bucket'),
+      createPresignedPostUpload: jest.fn(),
+    };
+    const service = new UploadService(
+      prisma as unknown as PrismaService,
+      storage as unknown as S3StorageService,
+      {} as PhotoProcessingQueue,
+    );
+
+    await expect(
+      service.requestUploadUrl('outsider-1', {
+        purpose: UploadPurpose.DISPUTE_EVIDENCE,
+        disputeId: '11111111-1111-4111-8111-111111111111',
+        fileName: 'evidence.jpg',
+        contentType: 'image/jpeg',
+        sizeBytes: 1024,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.uploadIntent.create).not.toHaveBeenCalled();
+    expect(storage.createPresignedPostUpload).not.toHaveBeenCalled();
+  });
+
+  it('sanitizes and hashes immutable dispute evidence intent bytes', async () => {
+    const image = await sharp({
+      create: {
+        width: 2,
+        height: 2,
+        channels: 3,
+        background: '#0f766e',
+      },
+    })
+      .jpeg()
+      .toBuffer();
+    const unsafeMarker = Buffer.from('UNSAFE-TRAILER');
+    const objectBytes = Buffer.concat([image, unsafeMarker]);
+    const prisma = {
+      financialDispute: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'dispute-1' }),
+      },
+      uploadIntent: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: '11111111-1111-4111-8111-111111111111',
+          entityId: 'dispute-1',
+          bucket: 'private-bucket',
+          objectKey:
+            'quarantine/dispute-evidence/dispute-1/borrower-1/evidence.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: objectBytes.length,
+        }),
+      },
+    };
+    const storage = {
+      getPrivateBucket: jest.fn().mockReturnValue('private-bucket'),
+      inspectUploadedObject: jest.fn().mockResolvedValue({
+        sizeBytes: objectBytes.length,
+        contentType: 'image/jpeg',
+        prefix: objectBytes,
+      }),
+      getObjectBuffer: jest.fn().mockResolvedValue(objectBytes),
+      putObject: jest
+        .fn<Promise<void>, [string, string, Buffer, string]>()
+        .mockResolvedValue(undefined),
+    };
+    const service = new UploadService(
+      prisma as unknown as PrismaService,
+      storage as unknown as S3StorageService,
+      {} as PhotoProcessingQueue,
+    );
+
+    const result = await service.verifyDisputeEvidenceIntent(
+      'borrower-1',
+      'dispute-1',
+      '11111111-1111-4111-8111-111111111111',
+    );
+    const sanitized = storage.putObject.mock.calls[0][2];
+
+    expect(result.sha256).toBe(
+      createHash('sha256').update(sanitized).digest('hex'),
+    );
+    expect(sanitized.includes(unsafeMarker)).toBe(false);
+    expect(result.objectKey).toBe(
+      'quarantine/dispute-evidence/dispute-1/borrower-1/evidence.jpg',
+    );
+  });
+
+  it('rejects a dispute intent whose immutable actor path is changed', async () => {
+    const prisma = {
+      uploadIntent: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'intent-1',
+          entityId: 'dispute-1',
+          bucket: 'private-bucket',
+          objectKey:
+            'quarantine/dispute-evidence/dispute-1/other-user/evidence.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: 10,
+        }),
+      },
+    };
+    const storage = {
+      getPrivateBucket: jest.fn().mockReturnValue('private-bucket'),
+      inspectUploadedObject: jest.fn(),
+    };
+    const service = new UploadService(
+      prisma as unknown as PrismaService,
+      storage as unknown as S3StorageService,
+      {} as PhotoProcessingQueue,
+    );
+
+    await expect(
+      service.verifyDisputeEvidenceIntent(
+        'borrower-1',
+        'dispute-1',
+        'intent-1',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(storage.inspectUploadedObject).not.toHaveBeenCalled();
+  });
+
+  it('re-authorizes every private dispute evidence download', async () => {
+    const prisma = {
+      disputeEvidence: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            uploadIntent: {
+              bucket: 'private-bucket',
+              objectKey: 'private/evidence.jpg',
+            },
+          })
+          .mockResolvedValueOnce(null),
+      },
+    };
+    const storage = {
+      createPresignedDownloadUrl: jest
+        .fn()
+        .mockResolvedValue('https://private.example/download'),
+    };
+    const service = new UploadService(
+      prisma as unknown as PrismaService,
+      storage as unknown as S3StorageService,
+      {} as PhotoProcessingQueue,
+    );
+
+    await expect(
+      service.getDisputeEvidenceDownloadUrl(
+        'borrower-1',
+        'booking-1',
+        'dispute-1',
+        'evidence-1',
+      ),
+    ).resolves.toEqual({
+      downloadUrl: 'https://private.example/download',
+      expiresInSeconds: 60,
+    });
+    await expect(
+      service.getDisputeEvidenceDownloadUrl(
+        'outsider-1',
+        'booking-1',
+        'dispute-1',
+        'evidence-1',
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.disputeEvidence.findFirst).toHaveBeenCalledTimes(2);
+    expect(storage.createPresignedDownloadUrl).toHaveBeenCalledTimes(1);
+  });
 });

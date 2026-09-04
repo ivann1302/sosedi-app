@@ -30,6 +30,7 @@ import {
   PrivateFileDownloadResponse,
   UploadPurpose,
   VerifiedBookingEvidence,
+  VerifiedDisputeEvidence,
   VerifiedSupportAttachment,
 } from './upload.types';
 
@@ -64,6 +65,9 @@ export class UploadService {
     }
     if (dto.purpose === UploadPurpose.BOOKING_EVIDENCE) {
       return this.createBookingEvidenceUploadUrl(userId, dto);
+    }
+    if (dto.purpose === UploadPurpose.DISPUTE_EVIDENCE) {
+      return this.createDisputeEvidenceUploadUrl(userId, dto);
     }
     if (dto.purpose === UploadPurpose.SUPPORT_ATTACHMENT) {
       return this.createSupportAttachmentUploadUrl(userId, dto, false);
@@ -125,6 +129,86 @@ export class UploadService {
       bucket: intent.bucket,
       objectKey: intent.objectKey,
       sha256: createHash('sha256').update(sanitized).digest('hex'),
+    };
+  }
+
+  async verifyDisputeEvidenceIntent(
+    userId: string,
+    disputeId: string,
+    intentId: string,
+  ): Promise<VerifiedDisputeEvidence> {
+    const intent = await this.prisma.uploadIntent.findFirst({
+      where: {
+        id: intentId,
+        actorId: userId,
+        entityId: disputeId,
+        purpose: UploadPurpose.DISPUTE_EVIDENCE,
+        confirmedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        entityId: true,
+        bucket: true,
+        objectKey: true,
+        contentType: true,
+        sizeBytes: true,
+      },
+    });
+    if (!intent) {
+      throw new NotFoundException('Upload intent не найден');
+    }
+
+    this.ensureDisputeEvidenceIntentBinding(userId, intent);
+    await this.ensureDisputeParticipant(userId, disputeId);
+    await this.ensureUploadedObject(intent);
+    const bytes = await this.storage.getObjectBuffer(
+      intent.bucket,
+      intent.objectKey,
+    );
+    const sanitized = await this.sanitizePrivateImage(intent, bytes);
+    return {
+      intentId: intent.id,
+      bucket: intent.bucket,
+      objectKey: intent.objectKey,
+      sha256: createHash('sha256').update(sanitized).digest('hex'),
+    };
+  }
+
+  async getDisputeEvidenceDownloadUrl(
+    userId: string,
+    bookingId: string,
+    disputeId: string,
+    evidenceId: string,
+  ): Promise<PrivateFileDownloadResponse> {
+    const evidence = await this.prisma.disputeEvidence.findFirst({
+      where: {
+        id: evidenceId,
+        disputeId,
+        dispute: {
+          bookingId,
+          booking: {
+            OR: [{ borrowerId: userId }, { lenderId: userId }],
+          },
+        },
+        uploadIntent: { confirmedAt: { not: null } },
+      },
+      select: {
+        uploadIntent: {
+          select: { bucket: true, objectKey: true },
+        },
+      },
+    });
+    if (!evidence) {
+      throw new NotFoundException('Evidence не найден');
+    }
+    return {
+      downloadUrl: await this.storage.createPresignedDownloadUrl(
+        evidence.uploadIntent.bucket,
+        evidence.uploadIntent.objectKey,
+        PRESIGNED_DOWNLOAD_EXPIRES_SECONDS,
+      ),
+      expiresInSeconds: PRESIGNED_DOWNLOAD_EXPIRES_SECONDS,
     };
   }
 
@@ -534,7 +618,7 @@ export class UploadService {
     userId: string,
     dto: RequestUploadUrlDto,
   ): Promise<PresignedUploadResponse> {
-    if (!dto.itemId || dto.bookingId || dto.supportTicketId) {
+    if (!dto.itemId || dto.bookingId || dto.disputeId || dto.supportTicketId) {
       throw new BadRequestException('Для фото вещи нужен itemId');
     }
 
@@ -553,7 +637,7 @@ export class UploadService {
     userId: string,
     dto: RequestUploadUrlDto,
   ): Promise<PresignedUploadResponse> {
-    if (dto.itemId || dto.bookingId || dto.supportTicketId) {
+    if (dto.itemId || dto.bookingId || dto.disputeId || dto.supportTicketId) {
       throw new BadRequestException('Для аватара itemId не используется');
     }
     return this.createPresignedUpload(
@@ -568,7 +652,7 @@ export class UploadService {
     userId: string,
     dto: RequestUploadUrlDto,
   ): Promise<PresignedUploadResponse> {
-    if (!dto.bookingId || dto.itemId || dto.supportTicketId) {
+    if (!dto.bookingId || dto.itemId || dto.disputeId || dto.supportTicketId) {
       throw new BadRequestException('Для evidence нужен bookingId без itemId');
     }
     await this.ensureBookingParticipant(userId, dto.bookingId);
@@ -580,12 +664,30 @@ export class UploadService {
     );
   }
 
+  private async createDisputeEvidenceUploadUrl(
+    userId: string,
+    dto: RequestUploadUrlDto,
+  ): Promise<PresignedUploadResponse> {
+    if (!dto.disputeId || dto.itemId || dto.bookingId || dto.supportTicketId) {
+      throw new BadRequestException(
+        'Для evidence спора нужен disputeId без других entity ID',
+      );
+    }
+    await this.ensureDisputeParticipant(userId, dto.disputeId);
+    return this.createPresignedUpload(
+      userId,
+      dto,
+      dto.disputeId,
+      this.getDisputeEvidenceQuarantinePrefix(dto.disputeId, userId),
+    );
+  }
+
   private async createSupportAttachmentUploadUrl(
     actorId: string,
     dto: RequestUploadUrlDto,
     allowAdmin: boolean,
   ): Promise<PresignedUploadResponse> {
-    if (!dto.supportTicketId || dto.itemId || dto.bookingId) {
+    if (!dto.supportTicketId || dto.itemId || dto.bookingId || dto.disputeId) {
       throw new BadRequestException(
         'Для вложения нужен supportTicketId без itemId/bookingId',
       );
@@ -689,6 +791,13 @@ export class UploadService {
     return `quarantine/booking-evidence/${bookingId}/${userId}/`;
   }
 
+  private getDisputeEvidenceQuarantinePrefix(
+    disputeId: string,
+    userId: string,
+  ): string {
+    return `quarantine/dispute-evidence/${disputeId}/${userId}/`;
+  }
+
   private getSupportAttachmentQuarantinePrefix(
     ticketId: string,
     actorId: string,
@@ -706,6 +815,34 @@ export class UploadService {
     },
   ): void {
     const prefix = this.getBookingEvidenceQuarantinePrefix(
+      intent.entityId,
+      userId,
+    );
+    const extension = this.getExtension(intent.contentType);
+    const fileName = intent.objectKey.slice(prefix.length);
+    if (
+      intent.bucket !== this.storage.getPrivateBucket() ||
+      !intent.objectKey.startsWith(prefix) ||
+      !fileName ||
+      fileName.includes('/') ||
+      !fileName.endsWith(`.${extension}`)
+    ) {
+      throw new BadRequestException(
+        'Bucket или object key не соответствует upload intent',
+      );
+    }
+  }
+
+  private ensureDisputeEvidenceIntentBinding(
+    userId: string,
+    intent: {
+      entityId: string;
+      bucket: string;
+      objectKey: string;
+      contentType: string;
+    },
+  ): void {
+    const prefix = this.getDisputeEvidenceQuarantinePrefix(
       intent.entityId,
       userId,
     );
@@ -772,6 +909,24 @@ export class UploadService {
     });
     if (!booking) {
       throw new NotFoundException('Бронирование не найдено');
+    }
+  }
+
+  private async ensureDisputeParticipant(
+    userId: string,
+    disputeId: string,
+  ): Promise<void> {
+    const dispute = await this.prisma.financialDispute.findFirst({
+      where: {
+        id: disputeId,
+        booking: {
+          OR: [{ borrowerId: userId }, { lenderId: userId }],
+        },
+      },
+      select: { id: true },
+    });
+    if (!dispute) {
+      throw new NotFoundException('Спор не найден');
     }
   }
 
