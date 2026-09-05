@@ -41,6 +41,8 @@ import 'package:mobile/features/item/presentation/owned_items_screen.dart';
 import 'package:mobile/features/notifications/data/inbox_event.dart';
 import 'package:mobile/features/notifications/data/inbox_service.dart';
 import 'package:mobile/features/notifications/presentation/inbox_screen.dart';
+import 'package:mobile/features/payments/data/marketplace_policy_models.dart';
+import 'package:mobile/features/payments/data/marketplace_policy_service.dart';
 import 'package:mobile/features/profile/data/profile_models.dart';
 import 'package:mobile/features/profile/data/profile_service.dart';
 import 'package:mobile/features/profile/domain/session_controller.dart';
@@ -200,7 +202,7 @@ void main() {
       overrides: [
         bookingDetailsProvider(
           'booking-confirmed',
-        ).overrideWith((ref) async => _confirmedBooking),
+        ).overrideWith((ref) async => _successfulFakeBooking),
         bookingActsProvider(
           'booking-confirmed',
         ).overrideWith((ref) async => <BookingAct>[]),
@@ -209,8 +211,6 @@ void main() {
     prepare: (tester) async {
       await tester.drag(find.byType(ListView).first, const Offset(0, -650));
       await tester.pump(const Duration(milliseconds: 200));
-      await tester.tap(find.widgetWithText(FilledButton, 'Успешная оплата'));
-      await tester.pump(const Duration(milliseconds: 500));
     },
   );
   _screenshot(
@@ -464,7 +464,11 @@ Widget _scope(
   List<Object> overrides = const [],
 }) {
   return ProviderScope(
-    overrides: [?authOverride, ...overrides].cast(),
+    overrides: [
+      marketplacePolicyProvider.overrideWith((ref) async => _fakePolicy),
+      ?authOverride,
+      ...overrides,
+    ].cast(),
     child: RepaintBoundary(
       key: _captureKey,
       child: MaterialApp(
@@ -699,6 +703,17 @@ const _category = CatalogCategory(
   safetyNotice: 'Проверьте состояние вещи при передаче.',
 );
 
+const _fakePolicy = MarketplacePolicy(
+  paymentScenario: PaymentScenario.fakeSafeDeal,
+  deposit: MarketplaceDepositPolicy(
+    enabled: true,
+    currency: 'RUB',
+    maximumMinor: 10000000,
+    policyVersion: 'fake-v1',
+    disputeWindowSeconds: 86400,
+  ),
+);
+
 final _catalogItems = [
   _catalogItem(
     id: 'item-1',
@@ -814,6 +829,46 @@ final _confirmedBooking = _booking(
     description: 'Согласуйте время в чате и проверьте акт передачи.',
   ),
   handover: _confirmedHandover,
+);
+
+final _successfulFakeBooking = _confirmedBooking.copyWith(
+  terms: const BookingTerms(
+    itemTitle: 'Проектор для домашнего кино',
+    lenderDisplayName: 'Иван',
+    pricePerDay: 650,
+    days: 2,
+    rentalSubtotal: 1300,
+    depositAmount: 50,
+    platformFee: 13,
+    ownerPayout: 1287,
+    total: 1350,
+    currency: 'RUB',
+    paymentScenario: 'FAKE_SAFE_DEAL',
+    moneyMinor: BookingMoneyMinor(
+      pricePerDay: 65000,
+      rentalSubtotal: 130000,
+      deposit: 5000,
+      platformFee: 1300,
+      ownerPayout: 128700,
+      total: 135000,
+    ),
+    depositTerms: BookingDepositTerms(
+      policyVersion: 'fake-v1',
+      disputeWindowSeconds: 86400,
+    ),
+    listingVersion: '2026-08-10:1',
+    offerVersion: 'demo-2026-08-21',
+    cancellationPolicyVersion: 'demo-2026-08-21',
+  ),
+  payment: const ParticipantPayment(amountMinor: 135000, status: 'SUCCEEDED'),
+  deposit: const ParticipantDeposit(
+    amountMinor: 5000,
+    status: 'HELD',
+    refundedMinor: 0,
+    releasedToLenderMinor: 0,
+    policyVersion: 'fake-v1',
+    disputeWindowEndsAt: null,
+  ),
 );
 
 final _activeBooking = _booking(
