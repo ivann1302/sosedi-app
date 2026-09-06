@@ -661,15 +661,17 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             Owner lane · от простого к сложному
           </div>
-          <div class="tl-item"><div><strong>0 · inventory получен:</strong> store accounts ждут юрлицо заказчика; наличие real devices и проектных OTP numbers пока unknown.</div></div>
+          <div class="tl-item"><div><strong>AUTO-first:</strong> при новом сеансе Codex читает <code>.codex/HANDOFF.md</code>, исчерпывает локальный код/config/test остаток текущего пункта и только затем просит одно минимальное действие владельца.</div></div>
+          <div class="tl-item"><div><strong>0 · inventory получен:</strong> store accounts ждут юрлицо заказчика; физические Android и iPhone есть, но ещё не подключены к Mac; отдельный Android без GMS и проектный OTP-номер не подтверждены.</div></div>
           <div class="tl-item"><div><strong>1 · DONE:</strong> публичный support-контакт — <code>sosedi.rs@yandex.ru</code>; local support/account-deletion routes проверены.</div></div>
-          <div class="tl-item"><div><strong>2–4 · до 90 мин каждый:</strong> доступ/recovery домена → независимый Git backup → российский OCI registry.</div></div>
-          <div class="tl-item"><div><strong>5–7 · несколько часов:</strong> store accounts/signing → MapKit и device smoke → SMS/push/S3 accounts.</div></div>
-          <div class="tl-item"><div><strong>8–10 · дни/недели:</strong> production РФ → marketplace legal/privacy → Safe Deal, экономика 1% и одна KYC-ветка.</div></div>
-          <div class="tl-item"><div><strong>11 · операционная ступень:</strong> районы, плотное предложение, поддержка и usability smoke с пятью новыми пользователями.</div></div>
-          <div class="tl-item"><div><strong>Public hosting decision:</strong> переносим <code>sosedi-app.ru</code> из SprintHost в Timeweb только через technical preview; SprintHost и старые DNS сохраняются как rollback минимум на 7 дней. Live Next.js source пока отсутствует в workspace.</div></div>
+          <div class="tl-item"><div><strong>2 · 5–10 мин:</strong> после автономной Android debug-подготовки подключить оба телефона, разблокировать и подтвердить USB trust/debug; магазины, MapKit и provider accounts не нужны.</div></div>
+          <div class="tl-item"><div><strong>3–5 · до 90 мин каждый:</strong> source/export промосайта → независимый Git backup → российский OCI registry.</div></div>
+          <div class="tl-item"><div><strong>6–8 · после внешних prerequisites:</strong> юрлицо и store accounts/signing → MapKit smoke → SMS/push/S3 accounts.</div></div>
+          <div class="tl-item"><div><strong>9–11 · дни/недели:</strong> production РФ → marketplace legal/privacy → Safe Deal, экономика 1% и одна KYC-ветка.</div></div>
+          <div class="tl-item"><div><strong>12 · операционная ступень:</strong> районы, плотное предложение, поддержка и usability smoke с пятью новыми пользователями.</div></div>
+          <div class="tl-item"><div><strong>Public hosting decision:</strong> <code>sosedi-app.ru</code> занят отдельным landing на SprintHost; перенос в Timeweb — только через technical preview с rollback. Аккаунт Timeweb есть, но VPS/OCI/S3 ещё не созданы, source Next.js landing отсутствует в workspace.</div></div>
           <div class="tl-item"><div>Codex сначала готовит инструкцию, после действия владельца сам проверяет evidence и закрывает техническую часть. Подробный шаблон текущей ступени — <code>OWNER_ACTIONS.md</code>.</div></div>
-          <div class="tl-item"><div><strong>Сейчас:</strong> получить repository/local path Next.js-промолендинга либо полный SprintHost export; без source DNS не переключать. Product work: утверждённый refresh из checklist 8.2 можно реализовать автономно; checkbox останется открыт до Store readiness → MapKit и visual smoke на реальных iPhone/Android.</div></div>
+          <div class="tl-item"><div><strong>Сейчас:</strong> Codex автономно закрывает debug-доступ Android к локальному API и пересобирает APK; затем владелец только подключает телефоны. Канонический пункт 8.2 останется открыт до Store readiness → MapKit и полного visual smoke.</div></div>
         </div>
       </div>
 
