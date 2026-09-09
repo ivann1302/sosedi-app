@@ -959,6 +959,9 @@ Backend startup DI исправлен отдельным module regression test;
 
 - [x] Получить Tiles API key для Sosedi и проверить его на Android-устройстве.
 - [ ] Настроить доступные ограничения Tiles key.
+  **PARTIAL 09.09.2026:** оба Flutter слоя передают Referer `https://sosedi-app.ru/`;
+  реальный HTTP smoke вернул 200 image/png. Кабинет и проверка обновлённого
+  приложения после ограничения ещё ожидаются; инструкция: `docs/mobile-tiles-ci.md`.
 - [x] Передавать ключи через CI/secrets и не коммитить их в репозиторий.
   **DONE 09.09.2026:** release AAB/IPA wrapper передаёт Tiles key из env через
   private temporary JSON и удаляет его после успеха/ошибки; manifest не содержит

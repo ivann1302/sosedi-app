@@ -40,7 +40,10 @@ class _CatalogMapState extends State<CatalogMap> {
   Set<String> _expandedItemIds = const {};
   late final TileProvider _tileProvider =
       widget.tileProvider ??
-      NetworkTileProvider(cachingProvider: const DisabledMapCachingProvider());
+      NetworkTileProvider(
+        headers: {'Referer': yandexTilesReferer},
+        cachingProvider: const DisabledMapCachingProvider(),
+      );
 
   @override
   Widget build(BuildContext context) {

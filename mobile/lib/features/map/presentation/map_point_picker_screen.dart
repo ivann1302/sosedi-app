@@ -77,6 +77,7 @@ class _MapPointPickerScreenState extends ConsumerState<MapPointPickerScreen> {
                   userAgentPackageName: 'ru.sosedi.app',
                   maxZoom: 19,
                   tileProvider: NetworkTileProvider(
+                    headers: {'Referer': yandexTilesReferer},
                     cachingProvider: const DisabledMapCachingProvider(),
                   ),
                 ),
