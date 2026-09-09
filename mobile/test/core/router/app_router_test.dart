@@ -15,6 +15,34 @@ void main() {
     isBlocked: false,
   );
 
+  test(
+    'session revalidation preserves the booking and still gates invalid sessions',
+    () {
+      final waiting = appRedirect(
+        const AuthState.loading(),
+        true,
+        '/bookings/booking-1',
+      );
+      expect(waiting, '/?returnTo=%2Fbookings%2Fbooking-1');
+      expect(
+        appRedirect(const AuthState.authenticated(user: user), true, waiting!),
+        '/bookings/booking-1',
+      );
+      expect(
+        appRedirect(const AuthState.unauthenticated(), true, waiting),
+        '/auth/phone?returnTo=%2Fbookings%2Fbooking-1',
+      );
+      expect(
+        appRedirect(
+          const AuthState.authenticated(user: user),
+          true,
+          '/?returnTo=https%3A%2F%2Fexample.org',
+        ),
+        '/catalog',
+      );
+    },
+  );
+
   final cases =
       <
         ({
@@ -66,7 +94,7 @@ void main() {
           authState: const AuthState.loading(),
           onboardingCompleted: true,
           location: '/home',
-          expected: '/',
+          expected: '/?returnTo=%2Fhome',
         ),
         (
           description: 'keeps public item details available while loading',

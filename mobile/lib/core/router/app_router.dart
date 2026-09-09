@@ -38,11 +38,15 @@ import 'app_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = _RouterRefreshNotifier();
+  late final GoRouter router;
+  String? resumeLocation;
 
-  ref.listen<AuthState>(
-    authControllerProvider,
-    (_, _) => refreshNotifier.refresh(),
-  );
+  ref.listen<AuthState>(authControllerProvider, (previous, next) {
+    resumeLocation = previous is AuthAuthenticated && next is AuthLoading
+        ? router.state.uri.toString()
+        : null;
+    refreshNotifier.refresh();
+  });
   ref.listen<bool>(
     onboardingCompletedProvider,
     (_, _) => refreshNotifier.refresh(),
@@ -52,14 +56,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     (_, _) => refreshNotifier.refresh(),
   );
 
-  final router = GoRouter(
+  router = GoRouter(
     initialLocation: '/',
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
       return appRedirect(
         ref.read(authControllerProvider),
         ref.read(onboardingCompletedProvider),
-        state.uri.toString(),
+        state.uri.path == '/'
+            ? state.uri.toString()
+            : resumeLocation ?? state.uri.toString(),
         updateRequirement: ref.read(compatibilityRequirementProvider),
       );
     },
@@ -280,7 +286,8 @@ String? appRedirect(
     if (path == '/' || isPublicAppPath(path)) {
       return null;
     }
-    return '/';
+    final returnTo = safeAppReturnTo(location);
+    return returnTo == null ? '/' : routeWithReturnTo('/', returnTo);
   }
 
   if (authState is AuthAuthenticated) {
@@ -289,14 +296,17 @@ String? appRedirect(
       return safeAppReturnTo(uri.queryParameters['returnTo']) ?? '/catalog';
     }
     if (path == '/' || path == '/onboarding') {
-      return '/catalog';
+      return safeAppReturnTo(uri.queryParameters['returnTo']) ?? '/catalog';
     }
 
     return null;
   }
 
   if (path == '/' || path == '/onboarding') {
-    return '/catalog';
+    final returnTo = safeAppReturnTo(uri.queryParameters['returnTo']);
+    return returnTo == null
+        ? '/catalog'
+        : routeWithReturnTo('/auth/phone', returnTo);
   }
 
   if (isPublicAppPath(path)) {

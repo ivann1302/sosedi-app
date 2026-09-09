@@ -64,7 +64,13 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
             final days = _start != null && _end != null
                 ? inclusiveBookingDays(_start!, _end!)
                 : null;
+            final unsupportedDeposit =
+                (value.depositAmount ?? 0) > 0 &&
+                (paymentPolicy.value?.paymentScenario ??
+                        PaymentScenario.payOnHandover) ==
+                    PaymentScenario.payOnHandover;
             final canSubmit =
+                !unsupportedDeposit &&
                 marketplaceTerms.isBookingReady &&
                 days != null &&
                 availability.value?.available == true &&
@@ -131,6 +137,15 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
                     days: days,
                     depositAmount: value.depositAmount,
                     policy: paymentPolicy.value,
+                  ),
+                ],
+                if (unsupportedDeposit) ...[
+                  const SizedBox(height: 16),
+                  const _Notice(
+                    icon: Icons.info_outline,
+                    title: 'Бронирование с залогом пока недоступно',
+                    description:
+                        'Выберите вещь без залога, чтобы отправить заявку.',
                   ),
                 ],
                 const SizedBox(height: 20),
@@ -394,7 +409,7 @@ class _PriceBreakdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final rentalMinor = _rublesMinor(pricePerDay) * days;
     final isFake = policy?.paymentScenario == PaymentScenario.fakeSafeDeal;
-    final depositMinor = isFake ? _rublesMinor(depositAmount ?? 0) : 0;
+    final depositMinor = _rublesMinor(depositAmount ?? 0);
     final totalMinor = rentalMinor + depositMinor;
     final rows = [
       _PriceLine(

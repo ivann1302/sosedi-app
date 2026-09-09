@@ -1,3 +1,4 @@
+import 'package:mobile/features/booking/domain/booking_action_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -145,6 +146,39 @@ void main() {
     expect(find.text('Создано booking-created'), findsOneWidget);
   });
 
+  testWidgets('shows an unsupported deposit before allowing submission', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final service = _CreateBookingService();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          itemDetailsProvider(
+            item.id,
+          ).overrideWith((ref) async => item.copyWith(depositAmount: 500)),
+          bookingServiceProvider.overrideWithValue(service),
+          marketplaceDocumentsConfigProvider.overrideWithValue(approvedTerms),
+        ],
+        child: MaterialApp(home: BookingCreateScreen(itemId: item.id)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Начало: выберите'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('500 ₽'), findsOneWidget);
+    expect(find.text('Бронирование с залогом пока недоступно'), findsOneWidget);
+    await tester.tap(find.text('Принимаю оферту'));
+    await tester.pump();
+    await tester.tap(find.text('Принимаю правила аренды и отмены'));
+    await tester.pump();
+    final submit = find.widgetWithText(FilledButton, 'Отправить заявку');
+    expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+    expect(service.createCalls, 0);
+  });
+
   testWidgets('shows separate provisional fake checkout price rows', (
     tester,
   ) async {
@@ -283,21 +317,16 @@ void main() {
     expect(find.text('Владелец'), findsOneWidget);
     expect(find.text('Иван'), findsOneWidget);
     expect(find.text('900 ₽'), findsAtLeastNWidgets(2));
-    expect(find.text('Выплата владельцу'), findsOneWidget);
-    expect(find.text('Комиссия Sosedi (офлайн-пилот)'), findsOneWidget);
-    expect(find.text('0 ₽'), findsOneWidget);
+    expect(find.text('Выплата владельцу'), findsNothing);
+    expect(find.text('Комиссия Sosedi (офлайн-пилот)'), findsNothing);
     expect(find.text('Оплата'), findsOneWidget);
     expect(find.text('При передаче вещи'), findsOneWidget);
-    expect(find.text('Валюта'), findsOneWidget);
-    expect(find.text('RUB'), findsOneWidget);
-    expect(find.text('Технические детали'), findsOneWidget);
+    expect(find.text('Валюта'), findsNothing);
+    expect(find.text('RUB'), findsNothing);
+    expect(find.text('Технические детали'), findsNothing);
+    expect(find.text('Версия объявления'), findsNothing);
     expect(find.text('2026-07-28:1'), findsNothing);
-    await tester.tap(find.text('Технические детали'));
-    await tester.pumpAndSettle();
-    expect(find.text('Версия объявления'), findsOneWidget);
-    expect(find.text('2026-07-28:1'), findsOneWidget);
     expect(find.text('Ответ владельца до'), findsOneWidget);
-    expect(find.text('Ожидает публикации'), findsAtLeastNWidgets(1));
     expect(find.text('Адрес'), findsNothing);
     expect(find.text('Контакт'), findsNothing);
     expect(find.text('Отменить заявку'), findsOneWidget);
@@ -792,6 +821,7 @@ void main() {
   ) async {
     _useTallSurface(tester);
     final service = _ActBookingService()..acts.clear();
+    final picker = _FakeEvidencePicker();
     final confirmedBooking = booking.copyWith(
       status: 'CONFIRMED',
       actorRole: 'LENDER',
@@ -813,9 +843,7 @@ void main() {
           authControllerProvider.overrideWith(
             _AuthenticatedLenderController.new,
           ),
-          bookingEvidencePickerProvider.overrideWithValue(
-            _FakeEvidencePicker(),
-          ),
+          bookingEvidencePickerProvider.overrideWithValue(picker),
           appPermissionGatewayProvider.overrideWithValue(
             _GrantedPermissionGateway(),
           ),
@@ -825,6 +853,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(BookingDetailsScreen)),
+    );
+    picker.onPick = () => container.invalidate(bookingActionProvider);
     await tester.tap(find.text('Создать акт передачи'));
     await tester.pumpAndSettle();
     expect(find.text('Готовность к передаче'), findsOneWidget);
@@ -1026,9 +1058,13 @@ class _ActBookingService extends BookingService {
 class _FakeEvidencePicker extends BookingEvidencePicker {
   _FakeEvidencePicker() : super(ImagePicker());
 
+  VoidCallback? onPick;
+
   @override
-  Future<XFile?> pick() async =>
-      XFile('/private/tmp/handover.jpg', mimeType: 'image/jpeg');
+  Future<XFile?> pick() async {
+    onPick?.call();
+    return XFile('/private/tmp/handover.jpg', mimeType: 'image/jpeg');
+  }
 }
 
 class _GrantedPermissionGateway implements AppPermissionGateway {

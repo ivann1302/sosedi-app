@@ -57,9 +57,8 @@ export function bookingNextAction(
   if (status === BookingStatus.RETURNED) {
     return {
       code: 'REVIEW_RETURN',
-      title: 'Завершите возврат',
-      description:
-        'Проверьте акт возврата и зафиксируйте проблему, если она есть.',
+      title: 'Возврат подтверждён',
+      description: 'Если есть вопрос по аренде, напишите в поддержку.',
     };
   }
   if (status === BookingStatus.COMPLETED) {

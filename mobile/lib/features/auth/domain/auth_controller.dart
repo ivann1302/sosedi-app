@@ -97,6 +97,9 @@ class AuthController extends Notifier<AuthState> {
     return restoreSession();
   }
 
+  Future<void> waitForSessionValidation() =>
+      _sessionRestore ?? Future<void>.value();
+
   Future<void> restoreSession() {
     final activeRestore = _sessionRestore;
     if (activeRestore != null) {

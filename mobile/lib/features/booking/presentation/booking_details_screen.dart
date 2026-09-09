@@ -171,6 +171,9 @@ class BookingDetailsScreen extends ConsumerWidget {
     WidgetRef ref,
     ParticipantBooking booking,
   ) async {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final initialAuth = container.read(authControllerProvider);
+    if (initialAuth is! AuthAuthenticated) return;
     final stage = booking.status == 'CONFIRMED' ? 'HANDOVER' : 'RETURN';
     final label = stage == 'HANDOVER' ? 'передачи' : 'возврата';
     HandoverReadinessInput? readiness;
@@ -212,14 +215,27 @@ class BookingDetailsScreen extends ConsumerWidget {
       ref: ref,
       permission: AppPermission.photos,
     );
-    if (!allowed || !context.mounted) {
+    if (!allowed) {
       return;
     }
-    final photo = await ref.read(bookingEvidencePickerProvider).pick();
-    if (photo == null || !context.mounted) {
+    final photo = await container.read(bookingEvidencePickerProvider).pick();
+    if (photo == null) {
       return;
     }
-    await ref
+    await container
+        .read(authControllerProvider.notifier)
+        .waitForSessionValidation();
+    if (container.read(bookingActionProvider).isLoading) {
+      await container
+          .read(bookingActionProvider.future)
+          .catchError((Object _) => null);
+    }
+    final currentAuth = container.read(authControllerProvider);
+    if (currentAuth is! AuthAuthenticated ||
+        currentAuth.user.id != initialAuth.user.id) {
+      return;
+    }
+    await container
         .read(bookingActionProvider.notifier)
         .createAct(
           bookingId: booking.id,
@@ -227,7 +243,8 @@ class BookingDetailsScreen extends ConsumerWidget {
           photo: photo,
           readiness: readiness,
         );
-    if (context.mounted && !ref.read(bookingActionProvider).hasError) {
+    if (context.mounted &&
+        container.read(bookingActionProvider).asData?.value == booking.id) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Акт $label создан')));
@@ -629,44 +646,27 @@ class _Content extends StatelessWidget {
                 ? 'Нет'
                 : '${_money(terms.depositAmount!)} ₽',
           ),
-          _Row(
-            label: terms.paymentScenario == 'PAY_ON_HANDOVER'
-                ? 'Комиссия Sosedi (офлайн-пилот)'
-                : 'Комиссия Sosedi',
-            value:
-                '${_bookingMoney(terms.moneyMinor?.platformFee, terms.platformFee)} ₽',
-          ),
-          _Row(
-            label: 'Выплата владельцу',
-            value:
-                '${_bookingMoney(terms.moneyMinor?.ownerPayout, terms.ownerPayout)} ₽',
-          ),
+          if (terms.paymentScenario != 'PAY_ON_HANDOVER')
+            _Row(
+              label: 'Комиссия сервиса',
+              value:
+                  '${_bookingMoney(terms.moneyMinor?.platformFee, terms.platformFee)} ₽',
+            ),
+          if (booking.actorRole == 'LENDER' && booking.status != 'CANCELLED')
+            _Row(
+              label: 'Вы получите',
+              value:
+                  '${_bookingMoney(terms.moneyMinor?.ownerPayout, terms.ownerPayout)} ₽',
+            ),
           _Row(
             label: 'Итого',
             value: '${_bookingMoney(terms.moneyMinor?.total, terms.total)} ₽',
           ),
-          _Row(label: 'Валюта', value: terms.currency),
           _Row(
             label: 'Оплата',
             value: terms.paymentScenario == 'PAY_ON_HANDOVER'
                 ? 'При передаче вещи'
-                : terms.paymentScenario,
-          ),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: EdgeInsets.zero,
-            title: const Text('Технические детали'),
-            children: [
-              _Row(label: 'Версия объявления', value: terms.listingVersion),
-              _Row(
-                label: 'Оферта',
-                value: terms.offerVersion ?? 'Ожидает публикации',
-              ),
-              _Row(
-                label: 'Правила отмены',
-                value: terms.cancellationPolicyVersion ?? 'Ожидают публикации',
-              ),
-            ],
+                : 'В приложении',
           ),
         ],
         if (terms?.paymentScenario == 'FAKE_SAFE_DEAL' &&

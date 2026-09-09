@@ -20,6 +20,8 @@ Production должен брать те же digest из российского 
 закрытия следующего supply-chain пункта; замена hostname зеркала не разрешает
 менять содержимое образа.
 
+Пошаговая подготовка кабинета и прав: [registry-setup.md](registry-setup.md).
+
 После создания repository и `docker login` образы копируются и проверяются:
 
 ```bash
