@@ -32,3 +32,21 @@ After the first successful verification, test recovery into a temporary
 directory and record only the provider, date, commit SHA and restore result.
 Do not record the repository URL if it contains organization identifiers that
 should remain private.
+
+## Verified recovery — 2026-09-09
+
+Provider: private GitLab, remote `backup`, default branch `main`. A dedicated
+project Deploy key is configured through repository-local `core.sshCommand`;
+its private file remains outside Git. The owner reported completing MFA setup;
+account settings were not inspected programmatically. The unauthenticated
+project API returned 404 while authenticated SSH read/write succeeded.
+
+Source checkpoint: `088693781adae7e9c25dc06e0d5e6e6530ca62ad`.
+`make check` and redacted source/history secret scans passed. All local refs
+(one branch, no tags) passed `make git-backup-verify`. A separate clone using
+GitLab alone resolved to the same SHA; `git fsck --full` passed. The initial
+GitLab README commit was preserved as a merge parent without replacing source.
+
+Updates are manual: commit changes, push all branches and tags, then run the
+verifier. This backup covers this repository only, excluding ignored secrets,
+local runtime data and the separate `projects/sosedi` promotional site repo.

@@ -54,7 +54,7 @@
 | 1 | DONE — утверждён публичный support-контакт `sosedi.rs@yandex.ru` | 10–20 мин |
 | 2 | Android local smoke DONE; подключает iPhone к Mac и подтверждает trust/Developer Mode | 5 мин |
 | 3 | DONE — передан `/Users/ivan/projects/sosedi`, актуальность подтверждена | 10–30 мин |
-| 4 | Создаёт независимый private Git backup | 30–60 мин |
+| 4 | DONE 09.09: GitLab backup и восстановление проверены | Выполнено |
 | 5 | Создаёт private OCI registry в РФ | 45–90 мин |
 | 6 | После появления юрлица закрывает Apple/Google/RuStore accounts, signing backup и internal uploads | 2–4 ч плюс review |
 | 7 | DONE — Tiles API key создан и проверен на Android; production-настройку закрыть после Store readiness | 30–60 мин |
@@ -176,45 +176,28 @@ Git-репозиторий содержит исходный код и исто�
 архива на том же компьютере недостаточно: поломка или потеря компьютера затронет
 и код, и такой «backup» одновременно.
 
-### Что сделать
+### Выполнено 09.09.2026
 
-- [ ] Выбрать Git-провайдера с hostname, отличным от `github.com`.
-- [ ] Создать приватный пустой репозиторий для backup.
-- [ ] Включить MFA владельца и сохранить recovery codes.
-- [ ] Создать repository-scoped credential, который может писать только в backup
-  repository.
-- [ ] Настроить credential через provider CLI или Git credential helper. Не
-  добавлять token в remote URL.
-- [ ] Передать Codex несекретный clone URL и расположение credential.
+Приватный GitLab подключён как `backup` отдельным project Deploy key
+`~/.ssh/sosedi_gitlab_backup` (private, mode 600). Завершение настройки MFA
+сообщено владельцем; настройки аккаунта программно не проверялись.
+Публичная API-проверка не раскрывает проект, SSH-доступ и запись работают.
+Все локальные ветки и теги отправлены; отдельное восстановление из GitLab
+и проверка целостности истории прошли.
 
-### Что сообщить Codex
+### Как обновлять копию
 
-Для предложенного GitLab-варианта 09.09.2026 подготовлена отдельная SSH-пара:
-`~/.ssh/sosedi_gitlab_backup` (private, mode 600) и
-`~/.ssh/sosedi_gitlab_backup.pub` (публичная часть для project Deploy key).
-Ключ ещё не подключён к внешнему репозиторию; backup и restore не выполнены.
-Владелец создаёт пустой private project и добавляет публичную часть как Deploy
-key с правом записи только в этот проект, затем сообщает clone URL.
-
-```text
-Git backup provider: <название>
-Backup clone URL: <URL без token>
-Credential location: <название secret/helper, без значения>
-Default branch: main
-```
-
-### Что затем сделает Codex
+После сохранения изменений в коммитах:
 
 ```bash
-git remote add backup <private-independent-repository-url>
-git push backup --all
-git push backup --tags
+git push -o ci.skip backup --all
+git push -o ci.skip backup --tags
 make git-backup-verify
 ```
 
-Затем будет выполнен отдельный test clone в temporary directory. В evidence
-попадут только provider, дата, commit SHA и результат восстановления. Критерии:
-[`docs/source-backup.md`](docs/source-backup.md).
+Обновление пока ручное. Копия включает этот Git-репозиторий; отдельный
+промосайт в `projects/sosedi`, локальные secrets и ignored-файлы в неё не входят.
+Evidence: [`docs/source-backup.md`](docs/source-backup.md).
 
 ## 3. Подготовить аккаунты магазинов
 

@@ -127,7 +127,7 @@ Definition of Done остаются у канонических задач по 
 | 1 | DONE — утвердить публичный support-контакт | 10–20 мин | `7.2`, `7.3` |
 | 2 | DONE — пройти local smoke на физических Android и iPhone | 5 мин | local часть `8.2`, затем `18` |
 | 3 | DONE — передан `/Users/ivan/projects/sosedi`, актуальность подтверждена | 10–30 мин | `7.3` |
-| 4 | Создать независимый private Git backup repository и scoped credential | 30–60 мин | `0.1` |
+| 4 | DONE 09.09: независимый private Git backup и восстановление проверены | Выполнено | `0.1` |
 | 5 | Создать private OCI registry в РФ и две scoped identity | 45–90 мин | `0.1` |
 | 6 | После появления юрлица закрыть кабинеты Apple/Google/RuStore, signing backup и первые internal builds | 2–4 ч плюс проверка магазинов | `7.1` |
 | 7 | DONE — создать Tiles API key и пройти Android device smoke; production-настройку закрыть после `7.1` | 30–60 мин | `8.2`, `9`, `12`, `18` |
@@ -240,12 +240,11 @@ TDD не является отдельной фазой перед разраб�
   provider/repository и нет отдельных scoped credentials для CI push и
   production pull.
 - [x] Кешировать используемые npm, pub, CocoaPods и Prisma build-артефакты.
-- [ ] Настроить резервную копию исходного Git-репозитория в независимом месте.
-  **BLOCKED 28.07.2026:** существует только GitHub `origin`; независимый remote
-  и scoped credentials отсутствуют. Read-only verifier отклоняет local/file и
-  credential-bearing URLs, тот же host, dirty tree и отсутствие любого
-  локального branch/tag; fail-closed guards покрыты smoke-тестом. Критерии:
-  `docs/source-backup.md`.
+- [x] Настроить резервную копию исходного Git-репозитория в независимом месте.
+  **DONE 09.09.2026:** private GitLab remote `backup`, отдельный project Deploy
+  key; завершение настройки MFA сообщено владельцем. Все локальные branches/tags
+  проверены `make git-backup-verify`; отдельный clone только из GitLab совпал
+  с HEAD, `git fsck --full` прошёл. Evidence: `docs/source-backup.md`.
 - [ ] Проверить сборку и deploy при недоступности внешнего Docker registry.
   **BLOCKED 28.07.2026:** зависит от успешного российского OCI mirror; production
   app image/deploy target ещё не созданы соответствующим инфраструктурным этапом.
