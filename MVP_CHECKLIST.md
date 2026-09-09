@@ -959,13 +959,14 @@ Backend startup DI исправлен отдельным module regression test;
 
 - [x] Получить Tiles API key для Sosedi и проверить его на Android-устройстве.
 - [ ] Настроить доступные ограничения Tiles key.
-- [ ] Передавать ключи через CI/secrets и не коммитить их в репозиторий.
-  **PARTIAL 09.09.2026:** release AAB/IPA wrapper передаёт Tiles key из env через
+- [x] Передавать ключи через CI/secrets и не коммитить их в репозиторий.
+  **DONE 09.09.2026:** release AAB/IPA wrapper передаёт Tiles key из env через
   private temporary JSON и удаляет его после успеха/ошибки; manifest не содержит
   ключ. Добавлен manual/default-branch workflow `Mobile Tiles smoke` с environment
   `mobile-map-smoke`, без artifact upload. 18 release checks, ESLint, YAML checks
-  и реальная fixture-key APK сборка прошли. Закрытие ждёт environment secret и
-  успешный GitHub run; production store/privacy/provider gates остаются открыты.
+  и реальная fixture-key APK сборка прошли. Владелец добавил environment secret;
+  окружение ограничено main. GitHub run `34342751765` на `1322e4b` успешно собрал
+  debug APK и очистил build artifacts; production store/privacy/provider gates открыты.
   Инструкция: `docs/mobile-tiles-ci.md`.
 - [x] Зафиксировать ожидаемую частоту запросов, бесплатные лимиты и бюджет.
 - [x] Описать цель, минимизацию, срок хранения и согласие на точную геолокацию.

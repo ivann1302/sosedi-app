@@ -36,7 +36,13 @@ Workflow `.github/workflows/mobile-tiles-smoke.yml` запускается то�
 4. Запустить `Mobile Tiles smoke` вручную и сохранить URL успешного run.
    Если ключ отсутствует, build завершается ошибкой, а не успешной сборкой без карты.
 
-Hosted workflow и environment secret в этой задаче не создавались/не запускались.
+Hosted проверка выполнена 09.09.2026: environment `mobile-map-smoke`
+ограничен веткой `main`, владелец добавил `YANDEX_TILES_API_KEY`.
+[Run 34342751765](https://github.com/ivann1302/sosedi-app/actions/runs/34342751765)
+на коммите `1322e4bfd77eb03805e5ed1961eebf1c8ebdc4d9` завершился успешно:
+проверки helpers, сборка debug APK и очистка build artifacts прошли.
+Это подтверждает сборку с CI secret, но не HTTP-запрос к Яндексу из этой APK.
+Ограничения ключа в кабинете Яндекса ещё не настроены/не подтверждены.
 Local fixture build не подтверждает production privacy/store/provider gates.
 
 ## Локальная проверка
