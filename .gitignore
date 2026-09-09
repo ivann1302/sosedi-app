@@ -16,3 +16,4 @@ APP_MAP_LOCAL.md
 /public-web/.astro/
 /public-web/*.tsbuildinfo
 /.worktrees/
+/backend/.env.storage.local

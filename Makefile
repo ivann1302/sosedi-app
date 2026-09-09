@@ -303,9 +303,9 @@ security-scan:
 	gitleaks git --no-banner --redact --exit-code=1 .
 	gitleaks dir --no-banner --redact --exit-code=1 .
 
-check: environment-isolation-test time-sync-test alerts-verify alerts-test backup-scheduler-verify backup-scheduler-test git-backup-test production-boundary-test release-gates-test production-release-test mobile-release-config-test backend-lint-check backend-test operator-build public-web-check mobile-analyze mobile-test
+check: environment-isolation-test time-sync-test alerts-verify alerts-test backup-scheduler-verify backup-scheduler-test git-backup-test production-boundary-test release-gates-test production-release-test mobile-release-config-test backend-lint-check backend-test operator-build operator-test public-web-check mobile-analyze mobile-test
 
-ci: environment-isolation-test time-sync-test alerts-verify alerts-test backup-scheduler-verify backup-scheduler-test git-backup-test production-boundary production-boundary-test release-gates-test production-release-test mobile-release-config-test backend-lint-check backend-test-coverage backend-build backend-test-e2e operator-build public-web-check mobile-analyze mobile-test-coverage
+ci: environment-isolation-test time-sync-test alerts-verify alerts-test backup-scheduler-verify backup-scheduler-test git-backup-test production-boundary production-boundary-test release-gates-test production-release-test mobile-release-config-test backend-lint-check backend-test-coverage backend-build backend-test-e2e operator-build operator-test public-web-check mobile-analyze mobile-test-coverage
 
 hooks-install:
 	git config core.hooksPath .githooks
@@ -314,3 +314,17 @@ hooks-install:
 
 hooks-run:
 	.githooks/pre-commit
+
+.PHONY: local-storage-up local-storage-down backend-local
+local-storage-up:
+	node ./scripts/setup-local-storage.mjs
+
+local-storage-down:
+	docker compose -p sosedi-local-storage --env-file backend/.env.storage.local -f docker-compose.storage.yml down
+
+backend-local:
+	set -eu; set -a; . ./backend/.env.storage.local; set +a; $(MAKE) backend-dev
+
+.PHONY: operator-test
+operator-test:
+	node --test operator/test/*.test.mjs

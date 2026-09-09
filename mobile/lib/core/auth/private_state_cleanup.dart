@@ -29,8 +29,16 @@ import '../../features/support/domain/support_message_create_controller.dart';
 
 final privateStateCleanupProvider = Provider<void>((ref) {
   ref.listen<AuthState>(authControllerProvider, (previous, next) {
-    if (previous is AuthAuthenticated && next is! AuthAuthenticated) {
+    final leavingAccount =
+        previous is AuthAuthenticated &&
+        (next is! AuthAuthenticated || previous.user.id != next.user.id);
+    final enteringAccount =
+        next is AuthAuthenticated &&
+        (previous is! AuthAuthenticated || previous.user.id != next.user.id);
+    if (leavingAccount) {
       unawaited(ref.read(createItemDraftStorageProvider).clear());
+    }
+    if (leavingAccount || enteringAccount) {
       ref.invalidate(profileProvider);
       ref.invalidate(sessionsProvider);
       ref.invalidate(ownedItemsProvider);

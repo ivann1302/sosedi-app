@@ -271,6 +271,7 @@ export const api = {
   verifyOtp: (phone: string, code: string) =>
     call<{ accessToken: string }>('/auth/otp/verify', {
       method: 'POST',
+      headers: { 'X-Installation-Id': installationId() },
       body: JSON.stringify({ phone, code }),
     }),
   stepUp: (accessToken: string, code: string) =>

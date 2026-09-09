@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../domain/auth_controller.dart';
 import '../domain/auth_state.dart';
 import '../domain/auth_validators.dart';
+import 'phone_input_formatter.dart';
 
 class PhoneScreen extends ConsumerStatefulWidget {
   const PhoneScreen({this.returnTo, super.key});
@@ -62,16 +62,14 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                   autofocus: true,
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.done,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+()\-\s]')),
-                  ],
+                  inputFormatters: [RussianPhoneInputFormatter()],
                   validator: AuthValidators.validateRussianPhone,
                   decoration: const InputDecoration(
                     labelText: 'Телефон',
-                    hintText: '+7 999 123 45 67',
-                    prefixIcon: Icon(
-                      Icons.phone_outlined,
-                      color: AppColors.slate700,
+                    hintText: '(999) 123-45-67',
+                    prefixIcon: Padding(
+                      padding: EdgeInsets.only(left: 16, right: 8),
+                      child: Center(widthFactor: 1, child: Text('+7')),
                     ),
                   ),
                   onSubmitted: (_) => _submit(),

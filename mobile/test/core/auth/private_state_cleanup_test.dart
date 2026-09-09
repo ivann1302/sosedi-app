@@ -6,6 +6,7 @@ import 'package:mobile/features/auth/data/auth_models.dart';
 import 'package:mobile/features/auth/domain/auth_controller.dart';
 import 'package:mobile/features/auth/domain/auth_state.dart';
 import 'package:mobile/features/item/data/create_item_draft_storage.dart';
+import 'package:mobile/features/item/data/owned_items_service.dart';
 import 'package:mobile/features/notifications/data/inbox_event.dart';
 import 'package:mobile/features/notifications/data/inbox_service.dart';
 import 'package:mobile/features/profile/data/profile_models.dart';
@@ -16,6 +17,43 @@ import 'package:mobile/features/support/data/support_models.dart';
 import 'package:mobile/features/support/data/support_service.dart';
 
 void main() {
+  test(
+    'refreshes guest listing error after login without deleting draft',
+    () async {
+      final auth = _TestAuthController();
+      final draftStorage = _TestDraftStorage();
+      var builds = 0;
+      final container = ProviderContainer(
+        overrides: [
+          authControllerProvider.overrideWith(() => auth),
+          createItemDraftStorageProvider.overrideWithValue(draftStorage),
+          ownedItemsProvider.overrideWith((ref) async {
+            builds++;
+            if (ref.read(authControllerProvider) is! AuthAuthenticated) {
+              throw StateError('Authentication required');
+            }
+            return [];
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.read(authControllerProvider);
+      auth.setGuest();
+      container.read(privateStateCleanupProvider);
+      final sub = container.listen(ownedItemsProvider, (_, _) {});
+      addTearDown(sub.close);
+      await expectLater(
+        container.read(ownedItemsProvider.future),
+        throwsStateError,
+      );
+      auth.setAuthenticated();
+      await Future<void>.delayed(Duration.zero);
+      expect(await container.read(ownedItemsProvider.future), isEmpty);
+      expect(builds, 2);
+      expect(draftStorage.clearCalls, 0);
+    },
+  );
+
   test(
     'invalidates private provider state before leaving authentication',
     () async {
@@ -120,6 +158,9 @@ class _TestAuthController extends AuthController {
       isBlocked: false,
     ),
   );
+
+  void setGuest() => state = const AuthState.unauthenticated();
+  void setAuthenticated() => state = build();
 
   void setLoading() {
     state = const AuthState.loading();

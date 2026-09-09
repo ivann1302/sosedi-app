@@ -42,7 +42,7 @@ void main() {
     expect(find.text('Выбор дат'), findsOneWidget);
     expect(find.textContaining('Обе даты входят'), findsOneWidget);
     expect(find.text('Оплата при передаче вещи'), findsOneWidget);
-    expect(find.textContaining('комиссия Sosedi 0 ₽'), findsOneWidget);
+    expect(find.textContaining('Доплаты сервису нет'), findsOneWidget);
     expect(find.text('Запуск бронирования готовится'), findsOneWidget);
     final submit = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, 'Отправка пока недоступна'),
@@ -115,10 +115,10 @@ void main() {
     expect(find.text('Предварительный расчёт'), findsOneWidget);
     expect(find.text('Залог'), findsOneWidget);
     expect(find.text('Нет'), findsOneWidget);
-    expect(find.text('Комиссия Sosedi (офлайн-пилот)'), findsOneWidget);
-    expect(find.text('Выплата владельцу'), findsOneWidget);
-    expect(find.text('Валюта'), findsOneWidget);
-    expect(find.text('RUB'), findsOneWidget);
+    expect(find.text('Комиссия Sosedi (офлайн-пилот)'), findsNothing);
+    expect(find.text('Выплата владельцу'), findsNothing);
+    expect(find.text('Валюта'), findsNothing);
+    expect(find.text('RUB'), findsNothing);
     await tester.ensureVisible(
       find.text('Владелец ответит в течение 12 часов'),
     );
@@ -171,10 +171,10 @@ void main() {
     expect(find.text('Тестовый сценарий безопасной сделки'), findsOneWidget);
     expect(find.text('Залог'), findsOneWidget);
     expect(find.text('500 ₽'), findsOneWidget);
-    expect(find.text('Предварительная комиссия Sosedi'), findsOneWidget);
-    expect(find.text('4,50 ₽'), findsOneWidget);
-    expect(find.text('Выплата владельцу'), findsOneWidget);
-    expect(find.text('445,50 ₽'), findsOneWidget);
+    expect(find.text('Предварительная комиссия Sosedi'), findsNothing);
+    expect(find.text('4,50 ₽'), findsNothing);
+    expect(find.text('Выплата владельцу'), findsNothing);
+    expect(find.text('445,50 ₽'), findsNothing);
     expect(find.text('Итого'), findsOneWidget);
     expect(find.text('950 ₽'), findsOneWidget);
   });

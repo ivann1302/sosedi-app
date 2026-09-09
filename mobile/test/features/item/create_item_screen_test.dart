@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile/core/location/listing_point_picker.dart';
 import 'package:mobile/core/location/location_service.dart';
 import 'package:mobile/core/network/api_exception.dart';
+import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/permissions/app_permissions.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/catalog/data/catalog_service.dart';
@@ -23,6 +24,46 @@ import 'package:mobile/shared/widgets/inline_select_field.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
+  testWidgets('adds more photos without replacing the existing selection', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final photos = [_photo('first.png')];
+    await tester.pumpWidget(
+      _app(_FakeCreateItemService(), picker: _FakePhotoPicker(photos)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pumpAndSettle();
+    photos.clear();
+    photos.add(_photo('second.png'));
+    await tester.tap(find.text('Выбрано фото: 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Выбрано фото: 2'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('selected-photo-first.png')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('selected-photo-second.png')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows the actual submission error in red', (tester) async {
+    _useTallSurface(tester);
+    await tester.pumpWidget(
+      _app(_FailingCreateItemService(), picker: _FakePhotoPicker()),
+    );
+    await tester.pumpAndSettle();
+    await _fillValidFormAndGoToLocation(tester);
+    await tester.tap(find.text('На модерацию'));
+    await tester.pumpAndSettle();
+    final message = find.text('Нет подключения к серверу. Попробуйте ещё раз');
+    expect(message, findsOneWidget);
+    expect(tester.widget<Text>(message).style?.color, AppColors.error);
+  });
+
   testWidgets('uses friendly handover and location fields', (tester) async {
     _useTallSurface(tester);
     await tester.pumpWidget(
@@ -783,3 +824,16 @@ const fakePolicy = MarketplacePolicy(
     disputeWindowSeconds: 300,
   ),
 );
+
+class _FailingCreateItemService extends _FakeCreateItemService {
+  @override
+  Future<CreateItemResult> create(
+    CreateItemDraft draft, {
+    required String requestId,
+  }) async {
+    throw const ApiException(
+      code: 'OFFLINE',
+      message: 'Нет подключения к серверу. Попробуйте ещё раз',
+    );
+  }
+}

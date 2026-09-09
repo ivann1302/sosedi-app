@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/location/listing_point_picker.dart';
 import '../../../core/location/location_service.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/permissions/app_permissions.dart';
 import '../../../core/permissions/permission_prompt.dart';
 import '../../../core/theme/app_theme.dart';
@@ -142,10 +143,21 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
             ),
           ),
           if (error != null)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: Text(
-                'Не удалось отправить объявление. Проверьте данные и повторите.',
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  userFacingError(
+                    error,
+                    fallback:
+                        'Не удалось отправить объявление. Попробуйте ещё раз.',
+                  ),
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           Expanded(
@@ -209,7 +221,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
         ),
         const SizedBox(height: 20),
         OutlinedButton.icon(
-          onPressed: isSubmitting ? null : _pickPhotos,
+          onPressed: isSubmitting || _photos.length >= 5 ? null : _pickPhotos,
           icon: const Icon(Icons.add_photo_alternate_outlined),
           label: Text(
             _photos.isEmpty
@@ -665,7 +677,11 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
       return;
     }
     setState(() {
-      _photos = photos.take(5).toList(growable: false);
+      final paths = _photos.map((photo) => photo.path).toSet();
+      _photos = [
+        ..._photos,
+        ...photos.where((photo) => paths.add(photo.path)),
+      ].take(5).toList(growable: false);
       _hasUnsavedChanges = true;
       _photoError = false;
     });

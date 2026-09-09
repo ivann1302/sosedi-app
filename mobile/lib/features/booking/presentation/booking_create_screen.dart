@@ -319,14 +319,9 @@ class _MarketplaceTermsCard extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.gavel_outlined),
           title: Text('Условия бронирования'),
-          subtitle: Text(
-            'Перед отправкой проверьте обе опубликованные версии.',
-          ),
+          subtitle: Text('Ознакомьтесь с условиями перед бронированием.'),
         ),
-        TextButton(
-          onPressed: onOpenOffer,
-          child: Text('Открыть оферту · ${terms.offerVersion}'),
-        ),
+        TextButton(onPressed: onOpenOffer, child: const Text('Открыть оферту')),
         CheckboxListTile(
           value: offerAccepted,
           onChanged: (value) => onOfferAccepted(value ?? false),
@@ -335,10 +330,7 @@ class _MarketplaceTermsCard extends StatelessWidget {
         ),
         TextButton(
           onPressed: onOpenRentalRules,
-          child: Text(
-            'Открыть правила аренды и отмены · '
-            '${terms.cancellationPolicyVersion}',
-          ),
+          child: const Text('Открыть правила аренды и отмены'),
         ),
         CheckboxListTile(
           value: rentalRulesAccepted,
@@ -403,8 +395,6 @@ class _PriceBreakdown extends StatelessWidget {
     final rentalMinor = _rublesMinor(pricePerDay) * days;
     final isFake = policy?.paymentScenario == PaymentScenario.fakeSafeDeal;
     final depositMinor = isFake ? _rublesMinor(depositAmount ?? 0) : 0;
-    final feeMinor = isFake ? (rentalMinor + 50) ~/ 100 : 0;
-    final ownerPayoutMinor = rentalMinor - feeMinor;
     final totalMinor = rentalMinor + depositMinor;
     final rows = [
       _PriceLine(
@@ -416,20 +406,9 @@ class _PriceBreakdown extends StatelessWidget {
         value: depositMinor == 0 ? 'Нет' : '${_minorMoney(depositMinor)} ₽',
       ),
       _PriceLine(
-        label: isFake
-            ? 'Предварительная комиссия Sosedi'
-            : 'Комиссия Sosedi (офлайн-пилот)',
-        value: '${_minorMoney(feeMinor)} ₽',
-      ),
-      _PriceLine(
-        label: 'Выплата владельцу',
-        value: '${_minorMoney(ownerPayoutMinor)} ₽',
-      ),
-      _PriceLine(
         label: 'Оплата',
         value: isFake ? 'Тестовый сценарий' : 'При передаче вещи',
       ),
-      const _PriceLine(label: 'Валюта', value: 'RUB'),
       _PriceLine(
         label: 'Итого',
         value: '${_minorMoney(totalMinor)} ₽',
@@ -473,8 +452,7 @@ class _PaymentNotice extends StatelessWidget {
       icon: Icons.payments_outlined,
       title: 'Оплата при передаче вещи',
       description:
-          'Офлайн-пилот: комиссия Sosedi 0 ₽. '
-          'Приложение не принимает оплату и не переводит деньги.',
+          'Рассчитайтесь с владельцем при получении вещи. Доплаты сервису нет.',
     );
   }
 }
