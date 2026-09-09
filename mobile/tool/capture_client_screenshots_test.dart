@@ -128,17 +128,6 @@ void main() {
     ),
   );
   _screenshot(
-    '05-map-demo.png',
-    () => _scope(
-      _mainPath(0, const CatalogScreen()),
-      overrides: [catalogServiceProvider.overrideWithValue(catalogService)],
-    ),
-    prepare: (tester) async {
-      await tester.tap(find.text('Карта (демо)'));
-      await tester.pump(const Duration(milliseconds: 300));
-    },
-  );
-  _screenshot(
     '06-item-details.png',
     () => _scope(
       const ItemDetailsScreen(itemId: 'item-1'),
@@ -498,6 +487,13 @@ Future<void> _capture(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   await prepare?.call(tester);
+  for (final element in find.byType(Image).evaluate()) {
+    final image = element.widget as Image;
+    if (image.image is AssetImage) {
+      await tester.runAsync(() => precacheImage(image.image, element));
+    }
+  }
+  await tester.pumpAndSettle();
   await tester.pump(const Duration(milliseconds: 200));
 
   await expectLater(
@@ -738,6 +734,14 @@ final _catalogItems = [
     price: 390,
     latitude: 55.761,
     longitude: 37.565,
+  ),
+  _catalogItem(
+    id: 'item-4',
+    title: 'Шуруповёрт с кейсом',
+    area: 'Тверской',
+    price: 450,
+    latitude: 55.766,
+    longitude: 37.605,
   ),
 ];
 

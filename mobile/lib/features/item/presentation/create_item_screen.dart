@@ -8,9 +8,12 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/location/listing_point_picker.dart';
+import '../../../core/location/location_service.dart';
 import '../../../core/permissions/app_permissions.dart';
 import '../../../core/permissions/permission_prompt.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/inline_select_field.dart';
 import '../../../shared/widgets/unsaved_changes_guard.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../../catalog/domain/catalog_controller.dart';
@@ -55,7 +58,9 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   var _step = 0;
   var _draftLoading = true;
   var _photoError = false;
+  var _locationError = false;
   var _depositMode = 'none';
+  GeoPoint? _selectedPoint;
   Map<String, dynamic> _initialValue = const {};
   late final CreateItemDraftStorage _draftStorage;
   Future<void> _draftWrites = Future.value();
@@ -281,7 +286,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: FormBuilderDropdown<String>(
+          child: FormBuilderInlineSelect<String>(
             name: 'categoryId',
             decoration: const InputDecoration(labelText: 'Категория'),
             items: categories
@@ -299,7 +304,7 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: FormBuilderDropdown<String>(
+          child: FormBuilderInlineSelect<String>(
             name: 'condition',
             decoration: const InputDecoration(labelText: 'Состояние'),
             items: const [
@@ -328,7 +333,10 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
         ),
         _text(
           name: 'handoverTerms',
-          label: 'Передача и безопасность',
+          label: 'Условия передачи и использования',
+          helperText:
+              'Опишите, как передадите вещь, что проверить при получении и какие правила использования важны. Точный адрес укажете на следующем шаге.',
+          hintText: 'Например: встречаемся у метро, вместе проверяем комплект',
           maxLines: 3,
           validators: [
             FormBuilderValidators.required(errorText: 'Обязательное поле'),
@@ -369,7 +377,8 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
         const SizedBox(height: 12),
         _text(
           name: 'publicArea',
-          label: 'Район для публичной карточки',
+          label: 'Район',
+          hintText: 'Например: Пресненский',
           validators: [
             FormBuilderValidators.required(errorText: 'Обязательное поле'),
             FormBuilderValidators.minLength(2),
@@ -378,38 +387,39 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
         ),
         _text(
           name: 'address',
-          label: 'Точный адрес передачи (приватно)',
+          label: 'Адрес передачи',
+          hintText: 'Например: Москва, ул. Лесная, д. 10',
+          helperText:
+              'Точный адрес увидят только участники подтверждённой аренды.',
           validators: [
             FormBuilderValidators.required(errorText: 'Обязательное поле'),
             FormBuilderValidators.minLength(5),
             FormBuilderValidators.maxLength(300),
           ],
+          enabled: !isSubmitting,
         ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _number(
-                name: 'latitude',
-                label: 'Широта',
-                min: -90,
-                max: 90,
-              ),
+        OutlinedButton.icon(
+          onPressed: isSubmitting ? null : _pickLocation,
+          icon: const Icon(Icons.map_outlined),
+          label: Text(
+            _selectedPoint == null
+                ? 'Выбрать точку на карте'
+                : 'Изменить точку на карте',
+          ),
+        ),
+        if (_selectedPoint != null)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text('Точка выбрана'),
+          ),
+        if (_locationError)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text(
+              'Выберите точку передачи на карте',
+              style: TextStyle(color: AppColors.error),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _number(
-                name: 'longitude',
-                label: 'Долгота',
-                min: -180,
-                max: 180,
-              ),
-            ),
-          ],
-        ),
-        const Text(
-          'Координаты вводятся вручную — временно, до подключения карты.',
-        ),
+          ),
         const SizedBox(height: 12),
         Text('Подтверждение', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -494,13 +504,22 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
     required String label,
     required List<String? Function(String?)> validators,
     int maxLines = 1,
+    String? hintText,
+    String? helperText,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: FormBuilderTextField(
         name: name,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hintText,
+          helperText: helperText,
+          helperMaxLines: helperText == null ? null : 3,
+        ),
         maxLines: maxLines,
+        enabled: enabled,
         validator: FormBuilderValidators.compose(validators),
       ),
     );
@@ -549,7 +568,15 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
       });
       return;
     }
-    if (form == null || !form.saveAndValidate()) {
+    if (form == null) {
+      return;
+    }
+    final formIsValid = form.saveAndValidate();
+    final selectedPoint = _selectedPoint;
+    if (selectedPoint == null && !_locationError) {
+      setState(() => _locationError = true);
+    }
+    if (!formIsValid || selectedPoint == null) {
       return;
     }
     final values = form.value;
@@ -587,8 +614,8 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
             pricePerDay: _double(values['pricePerDay']),
             publicArea: (values['publicArea']! as String).trim(),
             address: (values['address']! as String).trim(),
-            latitude: _double(values['latitude']),
-            longitude: _double(values['longitude']),
+            latitude: selectedPoint.latitude,
+            longitude: selectedPoint.longitude,
             ownershipConfirmed: values['ownershipConfirmed']! as bool,
             conditionConfirmed: values['conditionConfirmed']! as bool,
             completenessConfirmed: values['completenessConfirmed']! as bool,
@@ -608,6 +635,21 @@ class _CreateItemScreenState extends ConsumerState<CreateItemScreen> {
   }
 
   double _double(Object? value) => double.parse(value! as String);
+
+  Future<void> _pickLocation() async {
+    final point = await ref.read(listingPointPickerProvider)(
+      context,
+      _selectedPoint,
+    );
+    if (!mounted || point == null) {
+      return;
+    }
+    setState(() {
+      _selectedPoint = point;
+      _locationError = false;
+      _hasUnsavedChanges = true;
+    });
+  }
 
   Future<void> _pickPhotos() async {
     final allowed = await requestPermissionFromUserAction(

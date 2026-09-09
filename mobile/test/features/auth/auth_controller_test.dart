@@ -137,6 +137,39 @@ void main() {
     expect(storage.clearCount, 0);
   });
 
+  test('retries a temporary session restore on the next resume', () async {
+    final storage = MemoryTokenStorage(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    );
+    var meRequests = 0;
+    final container = createContainer(storage, (options) {
+      if (options.path != '/auth/me') {
+        return notFoundResponse();
+      }
+
+      meRequests += 1;
+      if (meRequests == 1) {
+        throw DioException.connectionError(
+          requestOptions: options,
+          reason: 'offline',
+        );
+      }
+      return userResponse();
+    });
+    addTearDown(container.dispose);
+    final failed = await waitForState<AuthUnauthenticated>(container);
+    expect(failed.errorMessage, 'Не удалось связаться с сервером');
+
+    await container
+        .read(authControllerProvider.notifier)
+        .validateSessionOnResume();
+
+    final restored = await waitForState<AuthAuthenticated>(container);
+    expect(restored.user.phone, '+79991234567');
+    expect(meRequests, 2);
+  });
+
   test('reacts to session invalidation from the network layer', () async {
     final storage = MemoryTokenStorage(
       accessToken: 'access-token',

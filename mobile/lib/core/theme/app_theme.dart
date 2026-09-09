@@ -82,6 +82,11 @@ class AppTheme {
         labelStyle: textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
         hintStyle: textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
         helperStyle: textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+        errorStyle: textTheme.labelSmall?.copyWith(
+          color: AppColors.error,
+          fontWeight: FontWeight.w500,
+        ),
+        errorMaxLines: 6,
         border: _inputBorder(AppColors.line),
         enabledBorder: _inputBorder(AppColors.line),
         focusedBorder: _inputBorder(AppColors.brandForeground, width: 2),

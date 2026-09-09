@@ -105,12 +105,13 @@ provider decision → KYC ADR → production payment integration.
 останавливает разрешённую локальную работу, но не позволяет закрыть checkbox без
 полного Definition of Done.
 
-**Аудит 06.09.2026:** ближайший открытый продуктовый пункт — photo-first/device
-часть `8.2`. Автономно сначала нужно разрешить локальный HTTP только для Android
-debug-сборки, пересобрать APK и повторить доступные local/simulator проверки.
-После этого минимальное действие владельца — подключить имеющиеся Android и
-iPhone к Mac, разблокировать их и подтвердить USB trust/debug; store-аккаунты,
-MapKit, production providers и legal/payment решения для этого шага не нужны.
+**Аудит 09.09.2026:** mobile product shell/device часть `8.2` закрыта после
+ручного smoke на двух физических Samsung и iPhone 7 с iOS 15.8.8. Исходники промосайта получены 09.09.2026: `/Users/ivan/projects/sosedi`;
+владелец подтвердил актуальность версии. Для `7.3` готово локальное preview:
+ссылки/headers и Chrome smoke пройдены. По решению владельца сайт остаётся на
+SprintHost: перенос в Timeweb отменён, DNS не меняем. Следующий шаг — проверить
+размещение подготовленных страниц и headers на текущем хостинге.
+Детали: `docs/public-site-preview-2026-09-09.md`.
 
 ### Очередь задач с участием владельца — от простого к сложному
 
@@ -124,12 +125,12 @@ Definition of Done остаются у канонических задач по 
 |---:|---|---:|---|
 | 0 | DONE — сообщить статусы доступов, домена, устройств и внешних ресурсов без секретов | 10–15 мин | Инвентаризация для `0.1`, `7.1`, `7.3`, `18` |
 | 1 | DONE — утвердить публичный support-контакт | 10–20 мин | `7.2`, `7.3` |
-| 2 | Подключить имеющиеся Android и iPhone к Mac, разблокировать и подтвердить trust/debug | 5–10 мин | local часть `8.2`, затем `18` |
-| 3 | Передать repository/local path исходников промосайта либо подготовить SprintHost export | 10–30 мин | `7.3` |
+| 2 | DONE — пройти local smoke на физических Android и iPhone | 5 мин | local часть `8.2`, затем `18` |
+| 3 | DONE — передан `/Users/ivan/projects/sosedi`, актуальность подтверждена | 10–30 мин | `7.3` |
 | 4 | Создать независимый private Git backup repository и scoped credential | 30–60 мин | `0.1` |
 | 5 | Создать private OCI registry в РФ и две scoped identity | 45–90 мин | `0.1` |
 | 6 | После появления юрлица закрыть кабинеты Apple/Google/RuStore, signing backup и первые internal builds | 2–4 ч плюс проверка магазинов | `7.1` |
-| 7 | После `7.1` создать ограниченный MapKit key и пройти MapKit device smoke | 1–2 ч | `8.2`, `9`, `12`, `18` |
+| 7 | DONE — создать Tiles API key и пройти Android device smoke; production-настройку закрыть после `7.1` | 30–60 мин | `8.2`, `9`, `12`, `18` |
 | 8 | Создать production-аккаунты SMS.ru, push и выбранного российского S3 с минимальными правами | 2–4 ч | `17`, `17.3` |
 | 9 | Выбрать и оплатить production-инфраструктуру в РФ, backup destination и secret storage | 1–2 дня | `17.3` |
 | 10 | С российским профильным специалистом утвердить marketplace/legal/privacy пакет | несколько дней | `7.2`, `7.3`, `16`, `16.1`, `16.2` |
@@ -140,20 +141,20 @@ Definition of Done остаются у канонических задач по 
 шаблон результата; владелец выполняет только недоступное автоматизации; затем
 Codex проверяет evidence, завершает техническую часть и обновляет канонический
 пункт. Не переходить к более сложной ступени, пока доступна незакрытая более
-простая; ожидание внешней проверки не мешает начать следующую ступень. MapKit
-всегда остаётся после Store readiness, а production payments/KYC — после
+простая; ожидание внешней проверки не мешает начать следующую ступень. Production
+карта остаётся после Store readiness, а production payments/KYC — после
 marketplace/legal и provider gates.
 
 **Owner inventory 06.09.2026:** Apple Developer, Google Play и RuStore не
 созданы и ждут юрлица заказчика; временные личные store-аккаунты не открывать.
 Домен `sosedi-app.ru` используется отдельным промолендингом и принят как основной
 кандидат: landing остаётся на `/`, public documents/support/account deletion —
-на отдельных path того же HTTPS-домена. Текущий hosting — SprintHost; перенос в
-Timeweb разрешён только через technical preview с DNS rollback, но source
-repository/local path Next.js landing или SprintHost export пока не передан.
+на отдельных path того же HTTPS-домена. По решению владельца 09.09.2026 hosting
+остаётся SprintHost; перенос сайта в Timeweb отменён. Исходники Next.js landing
+получены 09.09.2026 в `/Users/ivan/projects/sosedi`.
 Аккаунт Timeweb Cloud есть; VPS, OCI registry и S3-ресурсы ещё не созданы.
-Физические iPhone и Android есть, но к текущему Mac-сеансу ещё не подключены;
-наличие отдельного Android без GMS не подтверждено. Production SMS-аккаунта и
+Физические iPhone и Android подключались к Mac и прошли local smoke; наличие
+отдельного Android без GMS не подтверждено. Production SMS-аккаунта и
 аккаунта ЮKassa нет, тестовый проектный номер только планируется. Public
 support-контакт — `sosedi.rs@yandex.ru`. В компании есть общий юрист, но его
 marketplace/IT/payment scope не подтверждён.
@@ -587,7 +588,7 @@ TDD не является отдельной фазой перед разраб�
 > **Раньше:** аккаунты магазинов, подпись приложений и тестовую публикацию можно
 > было проверить ближе к релизу.
 >
-> **Теперь:** до MapKit, push и платёжных SDK подтверждаем доступ к Apple
+> **Теперь:** до production-карты, push и платёжных SDK подтверждаем доступ к Apple
 > Developer, Google Play Console и RuStore и публикуем минимальные smoke-сборки.
 >
 > **Почему:** проблемы регистрации, оплаты членства и подписи нельзя исправить
@@ -706,9 +707,15 @@ TDD не является отдельной фазой перед разраб�
 - [ ] Настроить домен, HTTPS/security headers, accessibility, responsive layout и
   резервное обновление страниц при недоступности основного backend.
   **DOING 29.07.2026:** CSP/headers, semantic accessibility и responsive layout
-  готовы в static output. **MIGRATION 10.08.2026:** выбран Timeweb App Platform с
-  preview на technical domain и DNS rollback на SprintHost; закрытие ждёт source
-  текущего Next.js landing, preview, RF HTTPS/header smoke и controlled cutover.
+  готовы в static output. **HOSTING 09.09.2026:** владелец отменил план переноса
+  в Timeweb от 10.08.2026. Landing и public legal/support pages остаются на
+  SprintHost и текущем домене `sosedi-app.ru`; смена DNS не требуется.
+  **UPDATE 09.09.2026:** source получен (`/Users/ivan/projects/sosedi`),
+  владелец подтвердил актуальность. Локальное объединённое preview готово:
+  исправлены ссылки; 9-route HTTP/header smoke и Chrome 320/390/1440 px прошли.
+  Caddy используется только для local проверки. Размещение страниц и headers
+  на текущем SprintHost, HTTPS smoke и rollback обновления ещё не проверены. Детали:
+  `docs/public-site-preview-2026-09-09.md`.
 - [ ] Зафиксировать эти URL в App Store Connect, Google Play Console, RuStore и
   внутри mobile; проверить production links перед каждым release.
   **DOING 30.07.2026:** mobile compile-time config и pre-build verifier готовы;
@@ -788,7 +795,7 @@ TDD не является отдельной фазой перед разраб�
   гостевой Catalog/Item Details. Protected intent кодируется в
   allowlisted `returnTo`, отмена возвращает в public route, а OTP восстанавливает
   цель. External URL отбрасывается; public DTO/backend не менялись.
-- [ ] Провести единый photo-first UI refresh ключевых экранов по текущему
+- [x] Провести единый photo-first UI refresh ключевых экранов по текущему
   brandbook orange/graphite/Onest: `Найти` сначала показывает предложения и
   компактные chips поиска/дат/района/категории, вторичные фильтры открывает в
   bottom sheet, а список работает до подключения карты и затем делит с ней одно
@@ -803,7 +810,7 @@ TDD не является отдельной фазой перед разраб�
   выбранную карточку; карта и демо-оплата проверены на 320×720 при 200% текста.
   Первый шаг публикации показывает реальные thumbnails выбранных файлов, даёт
   сменить обложку и удалить фото до upload; route screenshot обновлён.
-  Все 254 mobile tests и analyzer проходят; закрытие ждёт MapKit и ручной visual
+  Все 254 mobile tests и analyzer проходят; закрытие ждёт production-карты и ручной visual
   smoke на iPhone/Android.
   **APPROVED DESIGN 30.08.2026:**
   [спецификация](docs/superpowers/specs/2026-08-30-avito-inspired-sosedi-mobile-design.md)
@@ -813,76 +820,194 @@ TDD не является отдельной фазой перед разраб�
   photo-first публикацию в три шага. Scope — только visual/interaction;
   REST/FSM/auth/legal не меняются. Автономная реализация идёт проверяемыми
   партиями; закрытие по-прежнему ждёт 38 обновлённых route screenshots,
-  проверки 320×720 при 200% текста, MapKit и ручного smoke на реальных
+  проверки 320×720 при 200% текста, production-карты и ручного smoke на реальных
   iPhone/Android.
   **AUTONOMOUS UI COMPLETE 30.08.2026:** bundled Onest Variable 2.001 и все
   девять визуальных партий реализованы; каталог работает в две колонки,
   details и operational/settings rows используют плоскую иерархию. Flutter
   harness перегенерировал 38 route/state screenshots; `make mobile-analyze`,
   `make mobile-test`, `make mobile-screenshots` и `make app-user-paths-check`
-  прошли. Пункт остаётся открытым: нужны production MapKit и ручной visual
+  прошли. Пункт остаётся открытым: нужны production-карта и ручной visual
   smoke на реальных iPhone/Android.
+
+  **DEBUG PREPARATION 06.09.2026:** локальный HTTP разрешён только в Android
+  debug manifest; в собранном APK подтверждены `debuggable=true` и
+  `usesCleartextTraffic=true`, main/profile manifest не получают разрешение.
+  `make mobile-analyze`, 298 `make mobile-test`, `make app-user-paths-check`
+  и три UI smoke-сценария с подменёнными сервисами на iPhone 17 Simulator прошли.
+  `make pilot-seed` применил миграции и подготовил локальные fixtures;
+  живые HTTP `health/ready` и `items` вернули 200/success. Этот этап подготовил
+  APK и локальное окружение для последующего физического smoke.
+
+  **ANDROID DEVICE SMOKE 06.09.2026:** debug APK с loopback API через
+  `adb reverse` установлен на SM-S916N и SM-G780G (Android 13). На физических
+  экранах пройдены onboarding, живой каталог, карточка вещи, console OTP,
+  приватные бронирования, owner empty state и первый шаг публикации. Найденный
+  при обрыве USB/backend дефект восстановления сессии исправлен через TDD:
+  сохранённая сессия повторно проверяется при следующем resume. На SM-G780G
+  отключение/возврат туннеля подтвердило восстановление бронирований без нового
+  OTP; retry загрузил штатный empty state. `make mobile-analyze` и 299 mobile
+  tests прошли. Пункт остаётся открытым до ручного smoke на физическом iPhone и
+  production-карты после `7.1`.
+
+  **INLINE FORM/CATALOG REFRESH 06.09.2026:** select-поля приведены к одному
+  виду и раскрываются вниз внутри формы, сдвигая следующий контент без overlay.
+  Каталог уплотнён так, чтобы на телефоне 360×800 полностью помещались первые
+  четыре карточки. Адрес передачи вводится вручную без технических координат.
+  Analyzer, 309 mobile tests и Android debug APK прошли.
+
+  **FORM ERROR REFRESH 06.09.2026:** приложение использует русскую локализацию
+  валидаторов. Ошибки оформлены общим theme-стилем, находятся под своим полем и
+  переносятся внутри его ширины до шести строк. Analyzer и 311 mobile tests
+  прошли; обновлённый Android debug APK собран.
+
+**CATALOG MAP REFRESH 06.09.2026:** кнопка «Карта (демо)» заменена на
+production Yandex Tiles карту с публичными приблизительными маркерами,
+карточкой выбранной вещи и официальным логотипом. Поиск, фильтры и состояние
+`Список ↔ Карта` сохранены; без Tiles key кнопка скрыта. Старые painter-заглушка
+и `ENABLE_DEMO_STUBS` удалены. Analyzer, 310 mobile tests и keyed Android debug
+APK прошли.
+
+**CATALOG MAP UX 07.09.2026:** на телефоне карта занимает всё доступное место
+между компактными фильтрами и нижней навигацией. Близкие coarse-точки собраны в
+кластеры; карточка с фото, названием, ценой и районом появляется только после
+касания маркера, целиком открывает объявление и закрывается крестиком или
+  касанием пустой карты. Семь local pilot объявлений получили сгенерированные
+фотореалистичные обложки. На этом шаге пункт `8.2` ещё ждал iPhone smoke и
+широкого map layout.
+
+**WIDE MAP 07.09.2026:** wide split реализован и покрыт widget-тестом на
+1000×800. Пункт `8.2` остаётся открытым только до ручного visual smoke на
+физическом iPhone.
+
+**KEYED ANDROID SMOKE 07.09.2026:** свежий debug APK установлен на SM-G780G.
+На чистом входе карта показала кластер из шести public объявлений без выбранной
+карточки; кластер раскрыл маркеры, выбор показал соответствующую обложку, оба
+действия закрытия сработали, а касание карточки открыло Item Details с тем же
+фото. `make mobile-analyze`, 314 mobile tests, backend lint/366 tests/build,
+`make app-user-paths-check` и `git diff --check` прошли.
+
+**WIDE MAP/TILES BASELINE 07.09.2026:** от 840 px общий `Найти` одновременно
+показывает каталог и Tiles-карту в пропорции 5:7; телефонное переключение не
+изменено, выбранная карточка остаётся общей. Widget-тест на 1000×800 покрывает
+split и выбор маркера. Официальные условия, оценка 50–90 tile requests на
+map-сессию, бесплатная граница 30 RPS и бюджет пилота 0 ₽ зафиксированы в
+`docs/yandex-tiles-capacity-and-budget.md`. Цели поиска/публикации, минимизация,
+fallback, внешний поток Яндекса и retention точной геолокации зафиксированы в
+`docs/exact-location-privacy.md`. Ограничение key/Referer, CI secret и
+опубликованный consent остаются production gates.
+
+**ONBOARDING ILLUSTRATIONS 07.09.2026:** три коротких слайда получили
+оригинальные полнофигурные 3D-иллюстрации в оранжево-графитовой палитре Sosedi.
+PNG имеют прозрачный фон и не используют персонажей или логотип исходного
+референса. Верстка не переполняется на 320×720 при 200% текста; все три route
+screenshots обновлены. `make mobile-analyze`, 317 mobile tests,
+`make mobile-screenshots` и alpha-проверка ассетов прошли. Пункт остаётся открыт
+до ручного visual smoke на физическом iPhone.
+
+**AUTONOMOUS AUDIT 08.09.2026:** проверены offline/resume, повторные команды,
+безопасный черновик, каталог/карта, support/inbox. Исправлено дублирование фото
+при повторе частично успешного upload: progress в памяти публикации и повтор
+того же confirmation intent; явное истечение допускает новый upload только
+незавершённого фото. Обновлены локализованные back-действия simulator smoke.
+Analyzer, 319 mobile tests и 3 iOS Simulator smoke прошли. Детали и ограничения:
+[отчёт](docs/autonomous-mobile-audit-2026-09-08.md).
+
+**IPHONE DEVICE SMOKE 09.09.2026:** обычная keyed debug-сборка открыла на
+физическом iPhone 7 с iOS 15.8.8 живой каталог и Yandex Tiles карту с кластером
+из семи public объявлений; пользователь подтвердил visual smoke. Полный набор
+из трёх integration-маршрутов прошёл на устройстве. Найденный на компактном
+экране дефект видимости только что отправленного сообщения исправлен через TDD:
+чат прокручивается к последнему сообщению после успешной отправки. Analyzer и
+320 mobile tests прошли. Пункт закрыт; production key restrictions, CI secret,
+consent и provider/store gates остаются отдельными checklist-задачами.
 
 ## 9. Mobile Map
 
-> **Решение от 25.07.2026**
+> **Решение от 06.09.2026**
 >
-> **Раньше:** Yandex MapKit планировалось подключить сразу с тестовым ключом.
+> **Раньше:** для выбора точки и общей карты планировался нативный Yandex
+> MapKit Lite с отдельными platform lifecycle и store prerequisites.
 >
-> **Теперь:** сначала подтверждаем ключ, ограничения приложения, тариф и правила
-> обработки геолокации. Ключ передаётся через CI/`--dart-define`, но не считается
-> секретом: его можно извлечь из APK/IPA.
+> **Теперь:** карта использует `flutter_map` и Yandex Tiles API. Район и точный
+> адрес вводятся понятными полями, а точка передачи выбирается на карте; широта
+> и долгота в форме не показываются.
 >
-> **Почему:** неверные ограничения ключа блокируют релиз, превышение DAU создаёт
-> расходы, а точная геолокация требует минимизации и понятного согласия.
+> **Почему:** Tiles API проще для одного разработчика, не требует нативного
+> SDK и имеет постоянный бесплатный коммерческий лимит 30 запросов/с. Второй
+> адресный провайдер и отдельная ежегодная оплата для текущего MVP избыточны.
 
-**Gate перед реализацией:**
+**Gate перед production-реализацией:**
 
-> Все пункты Store readiness `7.1` должны быть закрыты; до этого MapKit SDK не
-> подключается к release targets, а Mobile Map остаётся BLOCKED. Это dependency,
-> а не отдельная повторно считаемая задача.
+> До production-карты закрыть Store readiness `7.1`, проверить условия и лимиты
+> Tiles API и оформить privacy/consent. Keyed Android device smoke уже пройден.
+> Отсутствие Tiles key не ломает ручной ввод адреса и скрывает действие карты.
+> Это dependency, а не повторно считаемая задача.
 
-**LOCAL DEMO 21.08.2026:** для проверки текущего UX local/debug Catalog может
-переключиться на code-native демо-карту из уже загруженных публичных coarse-точек.
-Переключение сохраняет фильтры и выбранную вещь; после открытия карточки возврат
-восстанавливает карту без повторного запроса каталога. Заглушка не использует
-MapKit, геолокацию или точный адрес и всегда скрыта в production/release. Это не
-закрывает ни один пункт gate или Mobile Map.
+**CATALOG MAP 06.09.2026:** прежняя code-native демо-карта удалена. Общий
+`Найти` переключается на Yandex Tiles карту из уже загруженных публичных
+coarse-точек. Переключение сохраняет фильтры и выбранную вещь; после открытия
+карточки возврат восстанавливает карту без повторного запроса каталога. Без
+`YANDEX_TILES_API_KEY` действие карты скрыто.
 
-- [ ] Получить отдельный MapKit API key для Sosedi.
-- [ ] Настроить доступные ограничения по Android package/iOS bundle ID и подписи.
-- [ ] Передавать ключ через CI/`--dart-define` и не коммитить его в репозиторий.
-- [ ] Зафиксировать ожидаемый DAU, бесплатный лимит и бюджет следующего тарифа.
-- [ ] Описать цель, минимизацию, срок хранения и согласие на точную геолокацию.
+**LOCATION CONTROL 06.09.2026:** нативный MapKit удалён. Зафиксированы
+`flutter_map 8.3.2` и `latlong2 0.10.1`; picker загружает Web Mercator тайлы,
+показывает обязательный кликабельный логотип Яндекса и не использует дисковый
+кэш. `YANDEX_TILES_API_KEY` поступает через `--dart-define`. Формы
+создания/редактирования содержат ручные поля района и приватного адреса и
+независимый выбор точки на карте; технические latitude/longitude пользователю
+не показываются. Точный адрес/координаты не добавлены в public DTO или локальный
+draft. Код внешних адресных подсказок удалён как избыточная платная зависимость.
+`make backend-lint`, 365 backend tests/build, analyzer и 309 mobile tests
+прошли; Android debug APK собран с локальным Tiles-конфигом.
+**KEYED ANDROID SMOKE 06.09.2026:** production picker открылся на SM-G780G,
+Tiles API вернул HTTP 200 и реальные тайлы Москвы с официальным логотипом.
+Касание ставит маркер и активирует подтверждение точки; ошибок загрузки тайлов
+в device log нет. Ключ из локального файла совпадает с Android compile config.
+Backend startup DI исправлен отдельным module regression test; обычная keyed APK
+возвращена на телефон.
+
+- [x] Получить Tiles API key для Sosedi и проверить его на Android-устройстве.
+- [ ] Настроить доступные ограничения Tiles key.
+- [ ] Передавать ключи через CI/secrets и не коммитить их в репозиторий.
+  **PARTIAL 09.09.2026:** release AAB/IPA wrapper передаёт Tiles key из env через
+  private temporary JSON и удаляет его после успеха/ошибки; manifest не содержит
+  ключ. Добавлен manual/default-branch workflow `Mobile Tiles smoke` с environment
+  `mobile-map-smoke`, без artifact upload. 18 release checks, ESLint, YAML checks
+  и реальная fixture-key APK сборка прошли. Закрытие ждёт environment secret и
+  успешный GitHub run; production store/privacy/provider gates остаются открыты.
+  Инструкция: `docs/mobile-tiles-ci.md`.
+- [x] Зафиксировать ожидаемую частоту запросов, бесплатные лимиты и бюджет.
+- [x] Описать цель, минимизацию, срок хранения и согласие на точную геолокацию.
 
 **TDD-критерии этапа:**
 
-- unit: преобразование координат, радиус и mapping API-моделей;
+- unit: tile URL, преобразование координат, радиус и mapping API-моделей;
 - provider: `loading`, `data`, `empty`, `error`, повторная загрузка;
-- widget: разрешение/отказ геолокации, маркеры, фильтр и открытие карточки;
-- integration smoke: карта стартует на emulator/device с ключом, ограниченным
-  package/bundle ID.
+- widget: ручной адрес, разрешение/отказ геолокации, маркеры и карточка;
+- integration smoke: тайлы стартуют на emulator/device с ключом.
 
-- [ ] Создать `features/map`.
-- [ ] Подключить Yandex MapKit.
-- [ ] Добавить режим карты внутри общего `Найти`: одни query/даты/фильтры и
+- [x] Создать `features/map`.
+- [x] Подключить Yandex Tiles API к production-карте и пройти keyed device smoke.
+- [x] Добавить режим карты внутри общего `Найти`: одни query/даты/фильтры и
   выбранная карточка сохраняются при `Список ↔ Карта`; на телефоне использовать
   полноэкранную карту с bottom sheet/лентой, на широком экране — split view.
 - [ ] Получать текущую позицию пользователя.
 - [ ] Загружать объявления рядом.
-- [ ] Отображать маркеры вещей.
-- [ ] Добавить кластеризацию маркеров.
-- [ ] Добавить открытие карточки по маркеру.
+- [x] Отображать маркеры вещей.
+- [x] Добавить кластеризацию маркеров.
+- [x] Добавить открытие карточки по маркеру.
 - [ ] Добавить фильтр радиуса.
   **BLOCKED 29.07.2026:** backend требует реальную пару `latitude/longitude`;
   получение позиции относится к заблокированному Store readiness gate раздела 9.
   Фиктивный центр города или точные координаты без consent не используются.
-- [ ] Обработать отсутствие геолокации: ручной выбор района/области, понятный
-  empty state и кнопка «Искать в этой области» без фиктивной точной позиции.
-  **DOING 30.08.2026:** backend отдаёт динамический distinct-список только из
+- [x] Обработать отсутствие геолокации: ручной выбор района/области и понятный
+  empty state без фиктивной точной позиции.
+  **DONE 07.09.2026:** backend отдаёт динамический distinct-список только из
   видимых approved объявлений и фильтрует по точному публичному району; mobile
-  выбирает его без location permission и сбрасывает координаты/радиус. Empty state
-  и «Искать в этой области» остаются частью production MapKit-среза.
+  выбирает его без location permission и сбрасывает координаты/радиус. По
+  решению пользователя отдельное действие «Искать в этой области» исключено из
+  MVP: перемещение карты не меняет запрос каталога.
 
 ## 10. Mobile Catalog
 
@@ -986,14 +1111,17 @@ MapKit, геолокацию или точный адрес и всегда ск
   ownership, upload и safety contracts.
   **TDD/DoD:** widget-тесты покрывают resume черновика, back между шагами,
   upload/error/retry и единственный submit; финальный location picker зависит от
-  MapKit-раздела 9, остальные два шага не должны ждать SDK.
+  provider gate раздела 9, остальные два шага не должны ждать карту.
   **PARTIAL 10.08.2026:** готовы три шага, явный выбор главного фото,
   back/validation/submit и encrypted resume без фото, file path, точного
   адреса, координат и legal checkbox. Черновик очищается после submit/logout;
-  замена временных latitude/longitude на общий MapKit control осталась
+  замена временных latitude/longitude на общий location control осталась
   открытой. **DOING 30.08.2026:** выбранные фото теперь имеют видимые thumbnails,
   cover/delete actions и widget regression test; финальный location picker всё
-  ещё зависит от раздела 9.
+  ещё зависит от раздела 9. **PARTIAL 06.09.2026:** Tiles picker заменил ручные
+  latitude/longitude, добавлены понятные ручные поля района/приватного адреса,
+  а выбранная точка сохраняется в существующий API-контракт. Android keyed
+  smoke пройден; закрытие ждёт production gate `7.1`.
 
 ## 13. Booking
 

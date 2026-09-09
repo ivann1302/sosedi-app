@@ -21,18 +21,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   static const _slides = [
     _OnboardingSlide(
-      icon: Icons.inventory_2_outlined,
+      imageAsset: 'assets/images/onboarding/nearby-item.png',
+      imageSemanticLabel: 'Соседи передают друг другу дрель',
       title: 'Всё нужное уже рядом',
       text:
           'Берите вещи у соседей, когда покупать их ради одного раза не хочется.',
     ),
     _OnboardingSlide(
-      icon: Icons.shield_outlined,
+      imageAsset: 'assets/images/onboarding/safe-deal.png',
+      imageSemanticLabel: 'Соседи договариваются о безопасной аренде',
       title: 'Надежные сделки',
       text: 'Профили, модерация и понятные правила для обеих сторон аренды.',
     ),
     _OnboardingSlide(
-      icon: Icons.search_rounded,
+      imageAsset: 'assets/images/onboarding/quick-search.png',
+      imageSemanticLabel: 'Соседи находят вещи на карте',
       title: 'Быстрый поиск',
       text: 'Карта и каталог помогут найти подходящую вещь поблизости.',
     ),
@@ -47,6 +50,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final isLastPage = _page == _slides.length - 1;
+    final mediaQuery = MediaQuery.of(context);
+    final showWordmark = mediaQuery.textScaler.scale(16) <= 24;
 
     return Scaffold(
       body: SafeArea(
@@ -57,11 +62,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             children: [
               Row(
                 children: [
-                  const SosediLogo(markSize: 28),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _finish,
-                    child: const Text('Пропустить'),
+                  SosediLogo(markSize: 28, showWordmark: showWordmark),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        onPressed: _finish,
+                        child: const Text('Пропустить'),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -73,24 +87,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   itemBuilder: (context, index) {
                     final slide = _slides[index];
 
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(slide.icon, size: 72, color: AppColors.slate800),
-                        const SizedBox(height: 24),
-                        Text(
-                          slide.title,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          slide.text,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(color: AppColors.textMuted),
-                        ),
-                      ],
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final imageHeight = (constraints.maxHeight * 0.52)
+                            .clamp(150.0, 400.0);
+
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: imageHeight,
+                                child: Image.asset(
+                                  slide.imageAsset,
+                                  key: ValueKey('onboarding-image-$index'),
+                                  semanticLabel: slide.imageSemanticLabel,
+                                  fit: BoxFit.contain,
+                                  filterQuality: FilterQuality.high,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                slide.title,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                slide.text,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(color: AppColors.textMuted),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -147,12 +181,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
 class _OnboardingSlide {
   const _OnboardingSlide({
-    required this.icon,
+    required this.imageAsset,
+    required this.imageSemanticLabel,
     required this.title,
     required this.text,
   });
 
-  final IconData icon;
+  final String imageAsset;
+  final String imageSemanticLabel;
   final String title;
   final String text;
 }

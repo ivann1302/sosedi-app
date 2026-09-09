@@ -53,6 +53,7 @@ help:
 		'  make public-web-dev           Start the public Astro site' \
 		'  make public-web-check         Check and smoke the public Astro site' \
 		'  make mobile-release-config    Verify production mobile dart-defines' \
+		'  make mobile-tiles-smoke       Build a debug APK with the Tiles key from env' \
 		'  make mobile-release-artifact-verify  Verify AAB/IPA against its manifest' \
 		'  make mobile-android-release   Build a validated locked Android App Bundle' \
 		'  make mobile-ios-release       Build a validated locked iOS archive' \
@@ -227,11 +228,22 @@ public-web-dev:
 public-web-check:
 	cd public-web && npm run check
 
+.PHONY: public-site-assemble public-site-smoke
+public-site-assemble:
+	node scripts/assemble-public-site.mjs "$(LANDING_OUTPUT)" "$(PUBLIC_SITE_OUTPUT)"
+
+public-site-smoke:
+	python3 scripts/verify-public-site.py "$(PUBLIC_SITE_URL)"
+
 mobile-release-config:
 	node ./scripts/verify-mobile-release-config.mjs
 
 mobile-release-config-test:
 	node --test ./scripts/verify-mobile-release-config.test.mjs ./scripts/build-mobile-release.test.mjs ./scripts/verify-mobile-release-artifact.test.mjs
+
+.PHONY: mobile-tiles-smoke
+mobile-tiles-smoke:
+	node ./scripts/build-mobile-release.mjs tiles-smoke
 
 mobile-release-artifact-verify:
 	node ./scripts/verify-mobile-release-artifact.mjs

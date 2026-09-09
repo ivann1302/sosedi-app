@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/auth/private_state_cleanup.dart';
 import 'core/analytics/analytics.dart';
+import 'core/config/app_config.dart';
+import 'core/location/listing_point_picker.dart';
 import 'core/network/dio_provider.dart';
 import 'core/observability/glitchtip.dart';
 import 'core/router/app_router.dart';
@@ -13,6 +16,7 @@ import 'core/storage/onboarding_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/domain/auth_controller.dart';
 import 'features/booking/data/booking_service.dart';
+import 'features/map/presentation/map_point_picker_screen.dart';
 import 'features/notifications/domain/notification_navigation_controller.dart';
 import 'features/notifications/data/inbox_service.dart';
 import 'features/notifications/domain/inbox_controller.dart';
@@ -23,10 +27,21 @@ Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     final preferences = await SharedPreferences.getInstance();
+    final yandexTilesApiKey = AppConfig.yandexTilesApiKey;
 
     runApp(
       ProviderScope(
-        overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          if (yandexTilesApiKey != null)
+            listingPointPickerProvider.overrideWithValue(
+              (context, initialPoint) => openMapPointPicker(
+                context,
+                initialPoint,
+                apiKey: yandexTilesApiKey,
+              ),
+            ),
+        ],
         child: const SosediApp(),
       ),
     );
@@ -86,6 +101,9 @@ class _SosediAppState extends ConsumerState<SosediApp>
     return MaterialApp.router(
       title: 'Соседи',
       theme: AppTheme.light(),
+      locale: const Locale('ru'),
+      localizationsDelegates: FormBuilderLocalizations.localizationsDelegates,
+      supportedLocales: const [Locale('ru')],
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

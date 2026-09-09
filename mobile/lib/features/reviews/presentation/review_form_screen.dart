@@ -3,6 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/widgets/inline_select_field.dart';
 import '../../booking/data/booking_service.dart';
 import '../data/review_service.dart';
 import '../domain/review_submit_controller.dart';
@@ -120,7 +121,7 @@ class _ReviewFormScreenState extends ConsumerState<ReviewFormScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      FormBuilderDropdown<int>(
+                      FormBuilderInlineSelect<int>(
                         name: 'rating',
                         initialValue: 5,
                         decoration: const InputDecoration(labelText: 'Оценка'),

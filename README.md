@@ -205,13 +205,14 @@ self-hosted HTTPS DSN, hosted `sentry.io` блокируется. `beforeSend` �
 user/request/attachments и очищает всё событие. Полный контракт:
 [docs/observability-data-redaction.md](docs/observability-data-redaction.md).
 
-В local/debug по умолчанию доступны две явно помеченные UX-заглушки: демо-карта
-строится только из публичных приблизительных точек текущего каталога, а карточка
-подтверждённой брони арендатора позволяет показать успешную или отклонённую
-тестовую оплату без списания денег и без изменения server state. Они всегда
-выключены при `APP_ENVIRONMENT=production` и в release; локально их также можно
-скрыть через `--dart-define=ENABLE_DEMO_STUBS=false`. Заглушки не закрывают
-MapKit, payment/provider, legal и device-smoke gates checklist.
+Карта каталога использует Yandex Tiles API и только публичные приблизительные
+точки объявлений; близкие точки группируются в кластеры, а карточка с фото
+появляется только после выбора маркера. Семь local pilot объявлений используют
+сгенерированные фотореалистичные обложки из Flutter assets. Без
+`YANDEX_TILES_API_KEY` переключатель карты скрыт. Карточка
+подтверждённой брони арендатора позволяет локально проверить успешную или
+отклонённую тестовую оплату без списания денег и изменения server state. Этот
+сценарий не закрывает payment/provider и legal gates checklist.
 
 Mobile analytics использует consent-first allowlist из восьми funnel events без
 произвольных параметров. AppMetrica transport не подключён и не может собирать

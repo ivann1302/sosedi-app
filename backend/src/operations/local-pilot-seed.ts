@@ -20,6 +20,8 @@ const fixtures = [
     area: 'Хамовники',
     latitude: 55.733,
     longitude: 37.574,
+    photoId: '10000000-0000-4000-8000-000000000001',
+    photoAsset: 'projector.jpg',
     status: ItemStatus.APPROVED,
   },
   {
@@ -30,6 +32,8 @@ const fixtures = [
     area: 'Арбат',
     latitude: 55.752,
     longitude: 37.592,
+    photoId: '10000000-0000-4000-8000-000000000002',
+    photoAsset: 'camera.jpg',
     status: ItemStatus.APPROVED,
   },
   {
@@ -40,6 +44,8 @@ const fixtures = [
     area: 'Пресненский',
     latitude: 55.761,
     longitude: 37.565,
+    photoId: '10000000-0000-4000-8000-000000000003',
+    photoAsset: 'game-console.jpg',
     status: ItemStatus.APPROVED,
   },
   {
@@ -50,6 +56,8 @@ const fixtures = [
     area: 'Хамовники',
     latitude: 55.728,
     longitude: 37.566,
+    photoId: '10000000-0000-4000-8000-000000000004',
+    photoAsset: 'board-game.jpg',
     status: ItemStatus.APPROVED,
   },
   {
@@ -60,6 +68,8 @@ const fixtures = [
     area: 'Арбат',
     latitude: 55.749,
     longitude: 37.585,
+    photoId: '10000000-0000-4000-8000-000000000005',
+    photoAsset: 'acoustic-guitar.jpg',
     status: ItemStatus.APPROVED,
   },
   {
@@ -70,6 +80,8 @@ const fixtures = [
     area: 'Пресненский',
     latitude: 55.764,
     longitude: 37.579,
+    photoId: '10000000-0000-4000-8000-000000000006',
+    photoAsset: 'sewing-machine.jpg',
     status: ItemStatus.APPROVED,
   },
   {
@@ -80,6 +92,8 @@ const fixtures = [
     area: 'Хамовники',
     latitude: 55.731,
     longitude: 37.581,
+    photoId: '10000000-0000-4000-8000-000000000007',
+    photoAsset: 'projector-screen.jpg',
     status: ItemStatus.PENDING,
   },
 ] as const;
@@ -175,23 +189,37 @@ export async function seedLocalPilotData(prisma: PrismaClient): Promise<{
       listingRulesAcceptanceMethod: null,
       safetyNoticeSnapshot: null,
     };
-    items.push(
-      await prisma.item.upsert({
-        where: {
-          ownerId_clientRequestId: {
-            ownerId: owner.id,
-            clientRequestId: fixture.requestId,
-          },
-        },
-        update: data,
-        create: {
-          ...data,
+    const item = await prisma.item.upsert({
+      where: {
+        ownerId_clientRequestId: {
           ownerId: owner.id,
           clientRequestId: fixture.requestId,
-          clientRequestHash: 'local-pilot-fixture',
         },
-      }),
-    );
+      },
+      update: data,
+      create: {
+        ...data,
+        ownerId: owner.id,
+        clientRequestId: fixture.requestId,
+        clientRequestHash: 'local-pilot-fixture',
+      },
+    });
+    items.push(item);
+
+    const assetUrl = `asset:///assets/images/mock_items/${fixture.photoAsset}`;
+    const photoData = {
+      itemId: item.id,
+      originalUrl: assetUrl,
+      thumbnailUrl: assetUrl,
+      previewUrl: assetUrl,
+      sortOrder: 0,
+      isCover: true,
+    };
+    await prisma.itemPhoto.upsert({
+      where: { id: fixture.photoId },
+      update: photoData,
+      create: { id: fixture.photoId, ...photoData },
+    });
   }
 
   for (const item of items.slice(0, 2)) {

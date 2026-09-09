@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 
+import '../../../shared/widgets/inline_select_field.dart';
+
 class SafetyReportSubmission {
   const SafetyReportSubmission({
     required this.reason,
@@ -29,7 +31,7 @@ Future<SafetyReportSubmission?> showSafetyReportDialog({
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            FormBuilderDropdown<String>(
+            FormBuilderInlineSelect<String>(
               name: 'reason',
               initialValue: reasons.first.code,
               decoration: const InputDecoration(labelText: 'Причина'),

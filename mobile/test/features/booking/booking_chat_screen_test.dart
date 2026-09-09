@@ -46,6 +46,37 @@ void main() {
     },
   );
 
+  testWidgets('keeps a freshly sent message visible on an iPhone 7', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final service = _AppendingBookingService();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bookingServiceProvider.overrideWithValue(service),
+          bookingDetailsProvider(
+            booking.id,
+          ).overrideWith((ref) async => booking),
+        ],
+        child: MaterialApp(home: BookingChatScreen(bookingId: booking.id)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(FormBuilderTextField), 'Буду в 18:30');
+    await tester.tap(find.widgetWithText(FilledButton, 'Отправить'));
+    await tester.pumpAndSettle();
+
+    final sentMessage = find.text('Буду в 18:30');
+    expect(sentMessage, findsOneWidget);
+    expect(tester.getRect(sentMessage).bottom, lessThanOrEqualTo(667));
+  });
+
   testWidgets(
     'shows system text and retries one draft with the same client ID',
     (tester) async {
@@ -219,6 +250,50 @@ class _RetryBookingService extends BookingService {
       createdAt: DateTime.utc(2026, 8, 9, 12, 1),
     );
   }
+}
+
+class _AppendingBookingService extends BookingService {
+  _AppendingBookingService() : super(Dio());
+
+  final List<BookingMessage> _messages = List.generate(
+    8,
+    (index) => BookingMessage(
+      id: 'message-$index',
+      bookingId: booking.id,
+      author: index.isEven ? 'COUNTERPARTY' : 'SELF',
+      clientMessageId: null,
+      body: 'Предыдущее сообщение $index',
+      createdAt: DateTime.utc(2026, 8, 9, 12, index),
+    ),
+  );
+
+  @override
+  Future<BookingMessagePage> listMessages(
+    String bookingId, {
+    String? cursor,
+    int limit = 50,
+  }) async => BookingMessagePage(items: [..._messages], nextCursor: null);
+
+  @override
+  Future<BookingMessage> sendMessage({
+    required String bookingId,
+    required String body,
+    required String clientMessageId,
+  }) async {
+    final message = BookingMessage(
+      id: 'message-sent',
+      bookingId: bookingId,
+      author: 'SELF',
+      clientMessageId: clientMessageId,
+      body: body,
+      createdAt: DateTime.utc(2026, 8, 9, 13),
+    );
+    _messages.add(message);
+    return message;
+  }
+
+  @override
+  Future<void> markMessagesRead(String bookingId) async {}
 }
 
 class _ModerationBookingService extends BookingService {

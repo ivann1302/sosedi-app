@@ -70,30 +70,8 @@ void main() {
     }
   });
 
-  test('demo stubs are available only outside production release', () {
-    expect(
-      resolveDemoStubsEnabled(
-        appEnvironment: 'local',
-        releaseMode: false,
-        enabled: true,
-      ),
-      isTrue,
-    );
-    expect(
-      resolveDemoStubsEnabled(
-        appEnvironment: 'production',
-        releaseMode: false,
-        enabled: true,
-      ),
-      isFalse,
-    );
-    expect(
-      resolveDemoStubsEnabled(
-        appEnvironment: 'local',
-        releaseMode: true,
-        enabled: true,
-      ),
-      isFalse,
-    );
+  test('provider keys are trimmed and missing keys stay disabled', () {
+    expect(resolveProviderApiKey('  tiles-key  '), 'tiles-key');
+    expect(resolveProviderApiKey('   '), isNull);
   });
 }

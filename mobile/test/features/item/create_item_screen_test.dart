@@ -7,6 +7,8 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile/core/location/listing_point_picker.dart';
+import 'package:mobile/core/location/location_service.dart';
 import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/core/permissions/app_permissions.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
@@ -17,9 +19,107 @@ import 'package:mobile/features/item/data/create_item_service.dart';
 import 'package:mobile/features/item/presentation/create_item_screen.dart';
 import 'package:mobile/features/payments/data/marketplace_policy_models.dart';
 import 'package:mobile/features/payments/data/marketplace_policy_service.dart';
+import 'package:mobile/shared/widgets/inline_select_field.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
+  testWidgets('uses friendly handover and location fields', (tester) async {
+    _useTallSurface(tester);
+    await tester.pumpWidget(
+      _app(_FakeCreateItemService(), picker: _FakePhotoPicker()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Условия передачи и использования'), findsOneWidget);
+    expect(
+      find.text(
+        'Опишите, как передадите вещь, что проверить при получении и какие правила использования важны. Точный адрес укажете на следующем шаге.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Например: встречаемся у метро, вместе проверяем комплект'),
+      findsOneWidget,
+    );
+
+    final form = tester.state<FormBuilderState>(find.byType(FormBuilder));
+    form.patchValue({
+      'title': 'Перфоратор',
+      'description': 'Рабочий перфоратор для домашних работ',
+      'categoryId': category.id,
+      'condition': 'GOOD',
+      'completeness': 'Кейс и два бура',
+      'handoverTerms': 'Проверить при передаче',
+    });
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Район'), findsOneWidget);
+    expect(find.text('Например: Пресненский'), findsOneWidget);
+    expect(find.text('Адрес передачи'), findsOneWidget);
+    expect(find.text('Например: Москва, ул. Лесная, д. 10'), findsOneWidget);
+    expect(
+      find.text('Точный адрес увидят только участники подтверждённой аренды.'),
+      findsOneWidget,
+    );
+    expect(find.text('Выбрать точку на карте'), findsOneWidget);
+    expect(find.text('Широта'), findsNothing);
+    expect(find.text('Долгота'), findsNothing);
+    expect(
+      find.byWidgetPredicate((widget) => widget is Autocomplete),
+      findsNothing,
+    );
+  });
+
+  testWidgets('expands selectors below the field inside the form', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    await tester.pumpWidget(
+      _app(_FakeCreateItemService(), picker: _FakePhotoPicker()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Далее'));
+    await tester.pumpAndSettle();
+
+    final conditionLabel = find.text('Состояние');
+    final before = tester.getTopLeft(conditionLabel).dy;
+    await tester.tap(find.byType(InlineSelectField<String>).first);
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(conditionLabel).dy, greaterThan(before));
+  });
+
+  testWidgets('requires a selected map point before creating a listing', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final service = _FakeCreateItemService();
+    await tester.pumpWidget(
+      _app(
+        service,
+        picker: _FakePhotoPicker(),
+        pointPicker: _cancelledPointPicker,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _fillValidFormAndGoToLocation(tester);
+
+    await tester.tap(find.text('На модерацию'));
+    await tester.pump();
+
+    expect(find.text('Выберите точку передачи на карте'), findsOneWidget);
+    expect(service.lastDraft, isNull);
+  });
+
   testWidgets('hides deposit controls for the offline policy', (tester) async {
     _useTallSurface(tester);
     await tester.pumpWidget(
@@ -144,8 +244,6 @@ void main() {
       'pricePerDay': '450',
       'publicArea': 'Хамовники',
       'address': 'Москва, улица Примерная, 1',
-      'latitude': '55.75',
-      'longitude': '37.62',
       'ownershipConfirmed': true,
       'conditionConfirmed': true,
       'completenessConfirmed': true,
@@ -155,11 +253,15 @@ void main() {
     await tester.tap(find.text('Далее'));
     await tester.pumpAndSettle();
     expect(find.text('Шаг 3 из 3'), findsOneWidget);
+    await tester.tap(find.text('Выбрать точку на карте'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('На модерацию'));
     await tester.pumpAndSettle();
 
     expect(service.calls, 1);
     expect(service.lastDraft?.listingRulesVersion, '2026-07-28');
+    expect(service.lastDraft?.latitude, 55.752);
+    expect(service.lastDraft?.longitude, 37.6);
     expect(find.text('На модерации'), findsOneWidget);
   });
 
@@ -487,10 +589,7 @@ void main() {
     tester.view.viewInsets = const FakeViewPadding(bottom: 300);
     await tester.pumpAndSettle();
 
-    final address = find.widgetWithText(
-      FormBuilderTextField,
-      'Точный адрес передачи (приватно)',
-    );
+    final address = find.widgetWithText(TextField, 'Адрес передачи');
     expect(tester.getBottomRight(address).dy, lessThanOrEqualTo(600));
     expect(tester.takeException(), isNull);
   });
@@ -499,6 +598,7 @@ void main() {
 Widget _app(
   CreateItemService service, {
   ItemPhotoPicker? picker,
+  ListingPointPicker pointPicker = _selectedPointPicker,
   AppPermissionGateway? permissions,
   CreateItemDraftStorage? draftStorage,
   MarketplacePolicy policy = offlinePolicy,
@@ -514,6 +614,7 @@ Widget _app(
       appPermissionGatewayProvider.overrideWithValue(
         permissions ?? _FakePermissionGateway(PermissionStatus.granted),
       ),
+      listingPointPickerProvider.overrideWithValue(pointPicker),
       marketplacePolicyProvider.overrideWith((ref) async {
         if (policyError != null) throw policyError;
         return policy;
@@ -540,8 +641,6 @@ Future<void> _fillValidFormAndGoToLocation(WidgetTester tester) async {
     'pricePerDay': '450',
     'publicArea': 'Хамовники',
     'address': 'Москва, улица Примерная, 1',
-    'latitude': '55.75',
-    'longitude': '37.62',
     'ownershipConfirmed': true,
     'conditionConfirmed': true,
     'completenessConfirmed': true,
@@ -549,7 +648,19 @@ Future<void> _fillValidFormAndGoToLocation(WidgetTester tester) async {
   });
   await tester.tap(find.text('Далее'));
   await tester.pumpAndSettle();
+  await tester.tap(find.text('Выбрать точку на карте'));
+  await tester.pumpAndSettle();
 }
+
+Future<GeoPoint?> _selectedPointPicker(
+  BuildContext context,
+  GeoPoint? initialPoint,
+) async => (latitude: 55.752, longitude: 37.6);
+
+Future<GeoPoint?> _cancelledPointPicker(
+  BuildContext context,
+  GeoPoint? initialPoint,
+) async => null;
 
 void _useTallSurface(WidgetTester tester) {
   tester.view.devicePixelRatio = 1;

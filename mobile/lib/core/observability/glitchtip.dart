@@ -136,7 +136,7 @@ String redactDiagnosticText(String value) {
   return value
       .replaceAll(
         RegExp(
-          r'https?://[^\s,;]*(?:x-amz-|x-goog-|signature=)[^\s,;]*',
+          r'https?://(?:tiles\.api-maps\.yandex\.ru/[^\s,;]*|[^\s,;]*(?:x-amz-|x-goog-|signature=)[^\s,;]*)',
           caseSensitive: false,
         ),
         '[REDACTED_URL]',

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/permissions/app_permissions.dart';
 import '../../../core/permissions/permission_prompt.dart';
+import '../../../shared/widgets/inline_select_field.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../reviews/data/review_models.dart';
@@ -64,8 +65,8 @@ class BookingDetailsScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<String>(
-                  initialValue: selectedReason,
+                InlineSelectField<String>(
+                  value: selectedReason,
                   decoration: const InputDecoration(labelText: 'Ситуация'),
                   items: [
                     for (final issue in issues)
@@ -955,8 +956,8 @@ class _FinancialDisputeDialogState extends State<_FinancialDisputeDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DropdownButtonFormField<String>(
-              initialValue: _reason,
+            InlineSelectField<String>(
+              value: _reason,
               decoration: const InputDecoration(labelText: 'Причина'),
               items: const [
                 DropdownMenuItem(

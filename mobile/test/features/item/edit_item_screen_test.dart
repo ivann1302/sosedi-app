@@ -6,6 +6,8 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile/core/location/listing_point_picker.dart';
+import 'package:mobile/core/location/location_service.dart';
 import 'package:mobile/core/permissions/app_permissions.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/catalog/domain/catalog_controller.dart';
@@ -19,6 +21,63 @@ import 'package:mobile/features/payments/data/marketplace_policy_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
+  testWidgets('uses friendly handover and location fields', (tester) async {
+    _useTallSurface(tester);
+    await tester.pumpWidget(_editApp(_FakeOwnedItemsService(), item));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Условия передачи и использования'), findsOneWidget);
+    expect(
+      find.text(
+        'Опишите, как передадите вещь, что проверить при получении и какие правила использования важны. Точный адрес укажете на следующем шаге.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Район'), findsOneWidget);
+    expect(find.text('Например: Пресненский'), findsOneWidget);
+    expect(find.text('Адрес передачи'), findsOneWidget);
+    expect(find.text('Например: Москва, ул. Лесная, д. 10'), findsOneWidget);
+    expect(
+      find.text('Точный адрес увидят только участники подтверждённой аренды.'),
+      findsOneWidget,
+    );
+    expect(find.text('Точка выбрана'), findsOneWidget);
+    expect(find.text('Широта'), findsNothing);
+    expect(find.text('Долгота'), findsNothing);
+  });
+
+  testWidgets('keeps the saved point when editing other fields', (
+    tester,
+  ) async {
+    _useTallSurface(tester);
+    final service = _FakeOwnedItemsService();
+    await tester.pumpWidget(_editApp(service, item));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Сохранить и отправить на модерацию'));
+    await tester.pumpAndSettle();
+
+    expect(service.lastDraft?.latitude, item.latitude);
+    expect(service.lastDraft?.longitude, item.longitude);
+  });
+
+  testWidgets('replaces the saved point selected on the map', (tester) async {
+    _useTallSurface(tester);
+    final service = _FakeOwnedItemsService();
+    await tester.pumpWidget(
+      _editApp(service, item, pointPicker: _updatedPointPicker),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Изменить точку на карте'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Сохранить и отправить на модерацию'));
+    await tester.pumpAndSettle();
+
+    expect(service.lastDraft?.latitude, 55.76);
+    expect(service.lastDraft?.longitude, 37.61);
+  });
+
   testWidgets('clears an existing deposit with explicit zero in fake mode', (
     tester,
   ) async {
@@ -87,8 +146,6 @@ void main() {
       'pricePerDay': '500',
       'publicArea': 'Арбат',
       'address': 'Москва, улица Новый Арбат, 1',
-      'latitude': '55.752',
-      'longitude': '37.6',
     });
     await tester.pump();
     await tester.tap(find.text('Сохранить и отправить на модерацию'));
@@ -99,7 +156,7 @@ void main() {
     expect(service.lastDraft?.completeness, 'Кейс, два бура и ограничитель');
     expect(service.lastDraft?.publicArea, 'Арбат');
     expect(service.lastDraft?.address, 'Москва, улица Новый Арбат, 1');
-    expect(service.lastDraft?.latitude, 55.752);
+    expect(service.lastDraft?.latitude, item.latitude);
     expect(find.text('На модерации'), findsOneWidget);
   });
 
@@ -183,6 +240,7 @@ Widget _editApp(
   OwnedItemsService service,
   OwnedItem ownedItem, {
   MarketplacePolicy policy = offlinePolicy,
+  ListingPointPicker pointPicker = _updatedPointPicker,
 }) {
   return ProviderScope(
     overrides: [
@@ -190,10 +248,16 @@ Widget _editApp(
       catalogCategoriesProvider.overrideWith((ref) async => [category]),
       ownedItemsServiceProvider.overrideWithValue(service),
       marketplacePolicyProvider.overrideWith((ref) async => policy),
+      listingPointPickerProvider.overrideWithValue(pointPicker),
     ],
     child: MaterialApp(home: EditItemScreen(itemId: ownedItem.id)),
   );
 }
+
+Future<GeoPoint?> _updatedPointPicker(
+  BuildContext context,
+  GeoPoint? initialPoint,
+) async => (latitude: 55.76, longitude: 37.61);
 
 void _useTallSurface(WidgetTester tester) {
   tester.view.devicePixelRatio = 1;

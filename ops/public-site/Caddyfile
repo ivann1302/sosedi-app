@@ -1,0 +1,31 @@
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	root * /srv
+	encode gzip
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		Permissions-Policy "camera=(), geolocation=(), microphone=(), payment=()"
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+
+	@legal path /documents /documents/* /support /support/* /account-deletion /account-deletion/*
+	handle @legal {
+		header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'none'; connect-src 'none'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'"
+		file_server
+	}
+
+	handle {
+		# Static Next.js includes inline hydration scripts and styles.
+		header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'"
+		file_server {
+			hide .*
+		}
+	}
+}

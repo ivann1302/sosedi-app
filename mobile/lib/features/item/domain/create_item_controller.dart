@@ -18,6 +18,7 @@ class CreateItemController extends AsyncNotifier<CreateItemResult?> {
   List<XFile> _photos = const [];
   CreateItemDraft? _requestDraft;
   String? _requestId;
+  ItemPhotoUploadProgress? _photoProgress;
 
   @override
   Future<CreateItemResult?> build() async => null;
@@ -41,6 +42,7 @@ class CreateItemController extends AsyncNotifier<CreateItemResult?> {
         ref.read(analyticsServiceProvider).track(AnalyticsEvent.listingCreated),
       );
       _photos = photos;
+      _photoProgress = ItemPhotoUploadProgress();
       state = AsyncData(value.copyWith(isUploadingPhotos: photos.isNotEmpty));
       if (photos.isNotEmpty) {
         await _uploadPhotos(value);
@@ -65,7 +67,7 @@ class CreateItemController extends AsyncNotifier<CreateItemResult?> {
     try {
       await ref
           .read(createItemServiceProvider)
-          .uploadPhotos(result.id, _photos);
+          .uploadPhotos(result.id, _photos, progress: _photoProgress);
       state = AsyncData(
         result.copyWith(isUploadingPhotos: false, photoUploadFailed: false),
       );

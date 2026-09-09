@@ -82,11 +82,13 @@ void main() {
   test('redacts signed URLs and cookies in unstructured diagnostic text', () {
     final redacted = redactDiagnosticText(
       'Cookie: session=secret; '
-      'https://storage.example/file?X-Amz-Signature=signed-secret',
+      'ignored\nhttps://storage.example/file?X-Amz-Signature=signed-secret '
+      'https://tiles.api-maps.yandex.ru/v1/tiles/?x=1&apikey=tiles-secret',
     );
 
     expect(redacted, isNot(contains('session=secret')));
     expect(redacted, isNot(contains('storage.example')));
     expect(redacted, isNot(contains('signed-secret')));
+    expect(redacted, isNot(contains('tiles-secret')));
   });
 }

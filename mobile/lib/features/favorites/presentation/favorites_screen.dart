@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/item_photo_image.dart';
 import '../../catalog/data/catalog_models.dart';
 import '../domain/favorite_controller.dart';
 
@@ -120,17 +121,11 @@ class _FavoriteCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   coverUrl == null
-                      ? const ColoredBox(
-                          color: AppColors.warmSand,
-                          child: Icon(Icons.inventory_2_outlined),
-                        )
-                      : Image.network(
-                          coverUrl,
+                      ? const ItemPhotoPlaceholder()
+                      : ItemPhotoImage(
+                          source: coverUrl,
+                          semanticLabel: 'Фото ${item.title}',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const ColoredBox(
-                            color: AppColors.warmSand,
-                            child: Icon(Icons.broken_image_outlined),
-                          ),
                         ),
                   Positioned(
                     right: 4,

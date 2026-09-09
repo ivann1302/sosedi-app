@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/item_photo_image.dart';
 import '../data/owned_item_models.dart';
 import '../data/owned_items_service.dart';
 import '../domain/edit_item_controller.dart';
@@ -220,28 +221,13 @@ class _OwnedItemPhoto extends StatelessWidget {
     final url = coverPhoto?.thumbnailUrl ?? coverPhoto?.previewUrl;
 
     if (url == null) {
-      return const ColoredBox(
-        color: AppColors.warmSand,
-        child: Center(
-          child: Icon(
-            Icons.inventory_2_outlined,
-            size: 40,
-            color: AppColors.slate800,
-          ),
-        ),
-      );
+      return const ItemPhotoPlaceholder();
     }
 
-    return Image.network(
-      url,
+    return ItemPhotoImage(
+      source: url,
       semanticLabel: 'Фото ${item.title}',
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => const ColoredBox(
-        color: AppColors.warmSand,
-        child: Center(
-          child: Icon(Icons.broken_image_outlined, color: AppColors.slate800),
-        ),
-      ),
     );
   }
 }

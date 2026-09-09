@@ -62,14 +62,22 @@ class CreateItemService {
     }
   }
 
-  Future<void> uploadPhotos(String itemId, List<XFile> photos) async {
-    for (var index = 0; index < photos.length; index += 1) {
+  Future<void> uploadPhotos(
+    String itemId,
+    List<XFile> photos, {
+    ItemPhotoUploadProgress? progress,
+  }) async {
+    final batch = progress ?? ItemPhotoUploadProgress();
+    for (var index = batch._completed; index < photos.length; index += 1) {
       await _uploadPhoto(
         itemId: itemId,
         file: photos[index],
         sortOrder: index,
         isCover: index == 0,
+        progress: batch,
       );
+      batch._completed += 1;
+      batch._pendingConfirmation = null;
     }
   }
 
@@ -93,7 +101,13 @@ class CreateItemService {
     required XFile file,
     required int sortOrder,
     required bool isCover,
+    ItemPhotoUploadProgress? progress,
   }) async {
+    final pending = progress?._pendingConfirmation;
+    if (pending != null) {
+      await _confirmPhoto(pending, sortOrder, isCover, progress);
+      return;
+    }
     final bytes = await file.readAsBytes();
     if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
       throw const ApiException(
@@ -135,14 +149,9 @@ class CreateItemService {
         ),
       );
 
-      await _dio.post<Map<String, dynamic>>(
-        '/uploads/item-photos/confirm',
-        data: {
-          'intentId': upload.intentId,
-          'sortOrder': sortOrder,
-          'isCover': isCover,
-        },
-      );
+      // Keep the intent if the server commits but its response is lost.
+      progress?._pendingConfirmation = upload.intentId;
+      await _confirmPhoto(upload.intentId, sortOrder, isCover, progress);
     } on ApiException {
       rethrow;
     } on DioException {
@@ -150,6 +159,36 @@ class CreateItemService {
         code: 'PHOTO_UPLOAD_FAILED',
         message: 'Не удалось загрузить фото',
       );
+    }
+  }
+
+  Future<void> _confirmPhoto(
+    String intentId,
+    int sortOrder,
+    bool isCover,
+    ItemPhotoUploadProgress? progress,
+  ) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/uploads/item-photos/confirm',
+        data: {
+          'intentId': intentId,
+          'sortOrder': sortOrder,
+          'isCover': isCover,
+        },
+      );
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      // A definitive validation rejection (including expiry) did not commit.
+      // Transient/ambiguous failures must keep the same idempotent intent.
+      if (error.response?.statusCode == 400 &&
+          body is Map<String, dynamic> &&
+          body['error'] is Map<String, dynamic> &&
+          (body['error'] as Map<String, dynamic>)['code'] ==
+              'VALIDATION_ERROR') {
+        progress?._pendingConfirmation = null;
+      }
+      rethrow;
     }
   }
 
@@ -218,6 +257,12 @@ class CreateItemService {
       ),
     };
   }
+}
+
+/// In-memory progress owned by one publication; never persisted in a draft.
+class ItemPhotoUploadProgress {
+  int _completed = 0;
+  String? _pendingConfirmation;
 }
 
 class _PresignedItemUpload {

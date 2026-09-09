@@ -1,0 +1,46 @@
+name: Mobile Tiles smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tiles-smoke:
+    name: Android debug build with Tiles key
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    environment: mobile-map-smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.7'
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Verify release build helpers
+        run: make mobile-release-config-test
+
+      - name: Build debug APK with environment secret
+        env:
+          YANDEX_TILES_API_KEY: ${{ secrets.YANDEX_TILES_API_KEY }}
+        run: make mobile-tiles-smoke
+
+      - name: Remove compiled artifacts containing the client key
+        if: always()
+        run: rm -rf mobile/build

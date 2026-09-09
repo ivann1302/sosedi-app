@@ -89,10 +89,6 @@ PODS:
     - FlutterMacOS
   - url_launcher_ios (0.0.1):
     - Flutter
-  - yandex_maps_mapkit (1.0.0):
-    - Flutter
-    - YandexMapsMobile (= 4.41.0-full-flutter)
-  - YandexMapsMobile (4.41.0-full-flutter)
 
 DEPENDENCIES:
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
@@ -107,7 +103,6 @@ DEPENDENCIES:
   - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
-  - yandex_maps_mapkit (from `.symlinks/plugins/yandex_maps_mapkit/ios`)
 
 SPEC REPOS:
   trunk:
@@ -121,7 +116,6 @@ SPEC REPOS:
     - nanopb
     - PromisesObjC
     - Sentry
-    - YandexMapsMobile
 
 EXTERNAL SOURCES:
   firebase_core:
@@ -148,8 +142,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
-  yandex_maps_mapkit:
-    :path: ".symlinks/plugins/yandex_maps_mapkit/ios"
 
 SPEC CHECKSUMS:
   Firebase: 7cc10425300768ec86292688af5cb228f0604bde
@@ -174,8 +166,6 @@ SPEC CHECKSUMS:
   sentry_flutter: d6279f3b5156b6535e2159e03437b571a24cc648
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
-  yandex_maps_mapkit: d5090bdd048e676aa9150dedfe00eae31c2b38e7
-  YandexMapsMobile: 8ea431327aedc506278ac95e2d321b004af3b496
 
 PODFILE CHECKSUM: be3e7acfd28ce81af4938fe90d302d4975840dce
 

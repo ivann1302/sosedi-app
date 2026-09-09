@@ -4,9 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/location/listing_point_picker.dart';
+import '../../../core/location/location_service.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/permissions/app_permissions.dart';
 import '../../../core/permissions/permission_prompt.dart';
+import '../../../shared/widgets/inline_select_field.dart';
+import '../../../shared/widgets/item_photo_image.dart';
 import '../../../shared/widgets/unsaved_changes_guard.dart';
 import '../../booking/domain/booking_date_rules.dart';
 import '../../catalog/domain/catalog_controller.dart';
@@ -30,6 +34,7 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
   final _formKey = GlobalKey<FormBuilderState>();
   var _hasUnsavedChanges = false;
   String? _depositMode;
+  GeoPoint? _selectedPoint;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +91,9 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                 return const Center(child: Text('Объявление не найдено'));
               }
               final item = matches.single;
+              final selectedPoint =
+                  _selectedPoint ??
+                  (latitude: item.latitude, longitude: item.longitude);
               final initialDepositMode =
                   item.depositAmount != null && item.depositAmount! > 0
                   ? 'with'
@@ -108,8 +116,6 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                     'pricePerDay': _price(item.pricePerDay),
                     'publicArea': item.publicArea,
                     'address': item.address,
-                    'latitude': _coordinate(item.latitude),
-                    'longitude': _coordinate(item.longitude),
                     'depositMode': depositMode,
                     'depositAmount': item.depositAmount == null
                         ? null
@@ -159,7 +165,7 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 12),
-                            FormBuilderDropdown<String>(
+                            FormBuilderInlineSelect<String>(
                               name: 'categoryId',
                               decoration: const InputDecoration(
                                 labelText: 'Категория',
@@ -175,7 +181,7 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                               validator: FormBuilderValidators.required(),
                             ),
                             const SizedBox(height: 12),
-                            FormBuilderDropdown<String>(
+                            FormBuilderInlineSelect<String>(
                               name: 'condition',
                               decoration: const InputDecoration(
                                 labelText: 'Состояние',
@@ -213,7 +219,11 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                             ),
                             _text(
                               name: 'handoverTerms',
-                              label: 'Передача и безопасность',
+                              label: 'Условия передачи и использования',
+                              helperText:
+                                  'Опишите, как передадите вещь, что проверить при получении и какие правила использования важны. Точный адрес укажете на следующем шаге.',
+                              hintText:
+                                  'Например: встречаемся у метро, вместе проверяем комплект',
                               maxLines: 3,
                               validators: [
                                 FormBuilderValidators.required(),
@@ -240,7 +250,8 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                             ),
                             _text(
                               name: 'publicArea',
-                              label: 'Район для публичной карточки',
+                              label: 'Район',
+                              hintText: 'Например: Пресненский',
                               validators: [
                                 FormBuilderValidators.required(),
                                 FormBuilderValidators.minLength(2),
@@ -249,37 +260,27 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
                             ),
                             _text(
                               name: 'address',
-                              label: 'Точный адрес передачи (приватно)',
+                              label: 'Адрес передачи',
+                              hintText: 'Например: Москва, ул. Лесная, д. 10',
+                              helperText:
+                                  'Точный адрес увидят только участники подтверждённой аренды.',
                               validators: [
                                 FormBuilderValidators.required(),
                                 FormBuilderValidators.minLength(5),
                                 FormBuilderValidators.maxLength(300),
                               ],
+                              enabled: !update.isLoading,
                             ),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: _number(
-                                    name: 'latitude',
-                                    label: 'Широта',
-                                    min: -90,
-                                    max: 90,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _number(
-                                    name: 'longitude',
-                                    label: 'Долгота',
-                                    min: -180,
-                                    max: 180,
-                                  ),
-                                ),
-                              ],
+                            OutlinedButton.icon(
+                              onPressed: update.isLoading
+                                  ? null
+                                  : () => _pickLocation(selectedPoint),
+                              icon: const Icon(Icons.map_outlined),
+                              label: const Text('Изменить точку на карте'),
                             ),
-                            const Text(
-                              'Координаты вводятся вручную — временно, до подключения карты.',
+                            const Padding(
+                              padding: EdgeInsets.only(top: 8),
+                              child: Text('Точка выбрана'),
                             ),
                             const SizedBox(height: 24),
                             _AvailabilityEditor(itemId: item.id),
@@ -390,13 +391,22 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
     required String label,
     required List<String? Function(String?)> validators,
     int maxLines = 1,
+    String? hintText,
+    String? helperText,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: FormBuilderTextField(
         name: name,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hintText,
+          helperText: helperText,
+          helperMaxLines: helperText == null ? null : 3,
+        ),
         maxLines: maxLines,
+        enabled: enabled,
         validator: FormBuilderValidators.compose(validators),
       ),
     );
@@ -430,6 +440,8 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
       return;
     }
     final values = form.value;
+    final selectedPoint =
+        _selectedPoint ?? (latitude: item.latitude, longitude: item.longitude);
     int? depositAmountMinor;
     final policy = ref.read(marketplacePolicyProvider).value;
     if (policy?.deposit.enabled == true) {
@@ -465,14 +477,28 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
             pricePerDay: _double(values['pricePerDay']),
             publicArea: (values['publicArea']! as String).trim(),
             address: (values['address']! as String).trim(),
-            latitude: _double(values['latitude']),
-            longitude: _double(values['longitude']),
+            latitude: selectedPoint.latitude,
+            longitude: selectedPoint.longitude,
             depositAmountMinor: depositAmountMinor,
           ),
         );
   }
 
   double _double(Object? value) => double.parse(value! as String);
+
+  Future<void> _pickLocation(GeoPoint initialPoint) async {
+    final point = await ref.read(listingPointPickerProvider)(
+      context,
+      initialPoint,
+    );
+    if (!mounted || point == null) {
+      return;
+    }
+    setState(() {
+      _selectedPoint = point;
+      _hasUnsavedChanges = true;
+    });
+  }
 
   Future<void> _appendPhotos(OwnedItem item) async {
     final allowed = await requestPermissionFromUserAction(
@@ -513,8 +539,6 @@ class _EditItemScreenState extends ConsumerState<EditItemScreen> {
   String _price(double value) => value == value.roundToDouble()
       ? value.toInt().toString()
       : value.toStringAsFixed(2);
-
-  String _coordinate(double value) => value.toString();
 
   void _markDirty() {
     if (!_hasUnsavedChanges) {
@@ -567,11 +591,10 @@ class _PhotoEditor extends StatelessWidget {
                           )
                         : ClipRRect(
                             borderRadius: BorderRadius.circular(7),
-                            child: Image.network(
-                              photo.thumbnailUrl!,
+                            child: ItemPhotoImage(
+                              source: photo.thumbnailUrl!,
+                              semanticLabel: 'Фото объявления',
                               fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.broken_image_outlined),
                             ),
                           ),
                   ),

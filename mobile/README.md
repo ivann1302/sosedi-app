@@ -27,6 +27,25 @@ Android Emulator uses `http://10.0.2.2:3000/api/v1` by default when
 `API_BASE_URL` is omitted in local/debug. Release runtime requires
 `APP_ENVIRONMENT=production` and a public HTTPS API ending in `/api/v1`.
 
+The listing point picker uses Yandex Tiles API only when a key is supplied at
+build time. Release wrappers and the manual CI smoke read
+`YANDEX_TILES_API_KEY` from the environment and pass it through a private
+temporary `--dart-define-from-file` file. From the repository root, with the
+environment already configured:
+
+```bash
+make mobile-tiles-smoke
+```
+
+Do not write the key to Git. Without it the app keeps manual address entry
+available and hides the map action. The owner enters the public district and
+private handover address manually, then optionally marks the exact point on the
+map. Latitude and longitude are never shown in the form.
+
+The smoke builds a debug APK, does not publish it, and does not verify live
+Tiles requests. See [Tiles CI setup](../docs/mobile-tiles-ci.md) for the protected
+GitHub environment, local fixture smoke and remaining provider/store gates.
+
 ## Production release config
 
 Booking submit stays disabled unless the four offer/rental-rules compile-time

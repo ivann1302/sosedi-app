@@ -2,14 +2,16 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
   chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
 
 import {
@@ -101,6 +103,57 @@ test('uses the locked CocoaPods install before an ipa build', () => {
     '--release',
     '--no-pub',
   ]);
+});
+
+test('passes the Tiles key privately and removes its file after success or failure', () => {
+  const key = 'fixture-tiles-key-never-log';
+  for (const status of [0, 9]) {
+    let keyFile;
+    const build = () => buildMobileRelease(
+      'appbundle',
+      { ...valid, YANDEX_TILES_API_KEY: key },
+      (_, args) => {
+        if (args[0] !== 'build') return { status: 0 };
+        const define = args.find((arg) => arg.startsWith('--dart-define-from-file='));
+        assert.ok(define, 'release build must receive the configured Tiles key');
+        keyFile = define.slice('--dart-define-from-file='.length);
+        assert.deepEqual(JSON.parse(readFileSync(keyFile, 'utf8')), {
+          YANDEX_TILES_API_KEY: key,
+        });
+        assert.equal(statSync(keyFile).mode & 0o077, 0);
+        assert.equal(statSync(dirname(keyFile)).mode & 0o077, 0);
+        assert.equal(args.join(' ').includes(key), false);
+        return { status };
+      },
+      () => {},
+      () => {},
+      () => {},
+    );
+    if (status === 0) build();
+    else assert.throws(build, /failed with status 9/u);
+    assert.equal(existsSync(dirname(keyFile)), false);
+  }
+});
+
+test('Tiles CI smoke requires a key and builds only a debug APK from locked dependencies', async () => {
+  const { buildMobileTilesSmoke } = await import('./build-mobile-release.mjs');
+  const calls = [];
+  let keyFile;
+  const runner = (command, args) => {
+    calls.push({ command, args });
+    if (args[0] === 'build') {
+      keyFile = args.find((arg) => arg.startsWith('--dart-define-from-file='))
+        .slice('--dart-define-from-file='.length);
+      assert.equal(JSON.parse(readFileSync(keyFile, 'utf8')).YANDEX_TILES_API_KEY, 'fixture-key');
+    }
+    return { status: 0 };
+  };
+  assert.throws(() => buildMobileTilesSmoke({}, runner), /YANDEX_TILES_API_KEY is required/u);
+  assert.equal(calls.length, 0);
+  buildMobileTilesSmoke({ YANDEX_TILES_API_KEY: 'fixture-key' }, runner);
+  assert.deepEqual(calls[0].args, ['pub', 'get', '--enforce-lockfile']);
+  assert.deepEqual(calls[1].args.slice(0, 4), ['build', 'apk', '--debug', '--no-pub']);
+  assert.equal(existsSync(dirname(keyFile)), false);
 });
 
 test('rejects an unsafe config or target before invoking build tools', () => {
@@ -264,7 +317,7 @@ test('creates a secret-free checksum manifest bound to source and config', () =>
   const artifact = Buffer.from('signed-mobile-artifact');
   const manifest = createMobileReleaseManifest(
     'appbundle',
-    valid,
+    { ...valid, YANDEX_TILES_API_KEY: 'fixture-tiles-key-never-log' },
     '/private/build/app-release.aab',
     artifact,
     new Date('2026-07-30T01:02:03.000Z'),
@@ -281,4 +334,5 @@ test('creates a secret-free checksum manifest bound to source and config', () =>
     valid.MARKETPLACE_RENTAL_RULES_URL,
   );
   assert.equal(JSON.stringify(manifest).includes('/private/build'), false);
+  assert.equal(JSON.stringify(manifest).includes('fixture-tiles-key-never-log'), false);
 });

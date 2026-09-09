@@ -85,7 +85,12 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> validateSessionOnResume() {
-    if (state is! AuthAuthenticated) {
+    final currentState = state;
+    final shouldRestore =
+        currentState is AuthAuthenticated ||
+        currentState is AuthUnauthenticated &&
+            currentState.errorMessage != null;
+    if (!shouldRestore) {
       return Future<void>.value();
     }
 

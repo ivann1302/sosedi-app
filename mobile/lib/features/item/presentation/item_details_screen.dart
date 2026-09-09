@@ -8,6 +8,7 @@ import '../../../core/analytics/analytics.dart';
 import '../../../core/config/marketplace_documents_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/item_photo_image.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../catalog/data/catalog_models.dart';
@@ -370,14 +371,10 @@ class _PhotoGalleryState extends State<_PhotoGallery> {
             child: PageView.builder(
               itemCount: urls.length,
               onPageChanged: (value) => setState(() => _page = value),
-              itemBuilder: (context, index) => Image.network(
-                urls[index],
+              itemBuilder: (context, index) => ItemPhotoImage(
+                source: urls[index],
                 semanticLabel: 'Фото объявления ${index + 1} из ${urls.length}',
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: AppColors.warmSand,
-                  child: Center(child: Icon(Icons.broken_image_outlined)),
-                ),
               ),
             ),
           ),

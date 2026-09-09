@@ -3,12 +3,15 @@ import { createHash } from 'node:crypto';
 import {
   chmodSync,
   lstatSync,
+  mkdtempSync,
   readFileSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
@@ -46,22 +49,63 @@ export function buildMobileRelease(
       resolve(mobileDirectory, 'ios'),
     );
   }
-  run(
-    runner,
-    'flutter',
-    [
-      'build',
-      target,
-      '--release',
-      '--no-pub',
-      `--build-name=${releaseVersion.buildName}`,
-      `--build-number=${releaseVersion.buildNumber}`,
-      ...signingArgs,
-      ...dartDefineArgs,
-    ],
-    mobileDirectory,
-  );
+  withTilesKey(config.YANDEX_TILES_API_KEY, (tilesArgs) => {
+    run(
+      runner,
+      'flutter',
+      [
+        'build',
+        target,
+        '--release',
+        '--no-pub',
+        `--build-name=${releaseVersion.buildName}`,
+        `--build-number=${releaseVersion.buildNumber}`,
+        ...signingArgs,
+        ...dartDefineArgs,
+        ...tilesArgs,
+      ],
+      mobileDirectory,
+    );
+  });
   return recorder(target, config, mobileDirectory);
+}
+
+function withTilesKey(key, build) {
+  if (key === undefined || key === '') return build([]);
+  if (typeof key !== 'string' || /\s/u.test(key)) {
+    throw new Error('YANDEX_TILES_API_KEY must be a string without whitespace');
+  }
+  const directory = mkdtempSync(resolve(tmpdir(), 'sosedi-tiles-'));
+  try {
+    const path = resolve(directory, 'dart-defines.json');
+    writeFileSync(path, JSON.stringify({ YANDEX_TILES_API_KEY: key }), {
+      encoding: 'utf8',
+      mode: 0o600,
+      flag: 'wx',
+    });
+    return build([`--dart-define-from-file=${path}`]);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+export function buildMobileTilesSmoke(config, runner = spawnSync) {
+  if (
+    typeof config.YANDEX_TILES_API_KEY !== 'string' ||
+    !config.YANDEX_TILES_API_KEY.trim()
+  ) {
+    throw new Error('YANDEX_TILES_API_KEY is required for the Tiles smoke build');
+  }
+  const mobileDirectory = resolve(repositoryRoot, 'mobile');
+  withTilesKey(config.YANDEX_TILES_API_KEY, (tilesArgs) => {
+    run(runner, 'flutter', ['pub', 'get', '--enforce-lockfile'], mobileDirectory);
+    run(
+      runner,
+      'flutter',
+      ['build', 'apk', '--debug', '--no-pub', ...tilesArgs],
+      mobileDirectory,
+    );
+  });
 }
 
 export function verifyReleaseSigning(target, mobileDirectory, config = {}) {
@@ -280,6 +324,11 @@ function runCapture(runner, args, cwd) {
 
 function main() {
   const target = process.argv[2];
+  if (target === 'tiles-smoke') {
+    buildMobileTilesSmoke(process.env);
+    process.stdout.write('Mobile Tiles debug smoke build completed\n');
+    return;
+  }
   const manifestPath = buildMobileRelease(target, process.env);
   process.stdout.write(
     `Mobile ${target} release build completed: ${manifestPath}\n`,

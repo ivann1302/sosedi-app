@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 
@@ -69,5 +70,47 @@ void main() {
     expect(theme.chipTheme.checkmarkColor, const Color(0xFF17202B));
     expect(theme.chipTheme.iconTheme?.color, const Color(0xFF17202B));
     expect(theme.progressIndicatorTheme.color, const Color(0xFFFEA319));
+  });
+
+  testWidgets('long validation error stays below and inside a narrow field', (
+    tester,
+  ) async {
+    const message =
+        'Введите не менее 10 символов — так описание будет понятнее';
+    final formKey = GlobalKey<FormState>();
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.binding.setSurfaceSize(const Size(240, 400));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: formKey,
+              child: TextFormField(
+                decoration: const InputDecoration(labelText: 'Описание'),
+                validator: (_) => message,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    formKey.currentState!.validate();
+    await tester.pumpAndSettle();
+
+    final error = find.text(message);
+    final errorParagraph = tester.renderObject<RenderParagraph>(error);
+    final fieldRect = tester.getRect(find.byType(TextFormField));
+    final inputRect = tester.getRect(find.byType(EditableText));
+    final errorRect = tester.getRect(error);
+
+    expect(errorParagraph.didExceedMaxLines, isFalse);
+    expect(errorRect.top, greaterThan(inputRect.bottom));
+    expect(errorRect.left, greaterThanOrEqualTo(fieldRect.left));
+    expect(errorRect.right, lessThanOrEqualTo(fieldRect.right));
+    expect(tester.takeException(), isNull);
   });
 }

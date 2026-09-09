@@ -2,16 +2,16 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/core/location/location_service.dart';
-import 'package:mobile/core/permissions/app_permissions.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/catalog/data/catalog_models.dart';
 import 'package:mobile/features/catalog/data/catalog_service.dart';
 import 'package:mobile/features/catalog/presentation/catalog_screen.dart';
+import 'package:mobile/shared/widgets/inline_select_field.dart';
 import 'package:go_router/go_router.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:latlong2/latlong.dart';
 
 void main() {
   testWidgets('shows loading while the catalog request is pending', (
@@ -94,14 +94,55 @@ void main() {
     );
   });
 
+  testWidgets('shows four complete products above phone navigation', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+    addTearDown(tester.view.reset);
+    final items = [
+      for (var index = 1; index <= 4; index += 1)
+        item.copyWith(id: 'item-$index', title: 'Вещь $index'),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          catalogServiceProvider.overrideWithValue(
+            _FakeCatalogService([_page(items)]),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const Scaffold(
+            body: CatalogScreen(),
+            bottomNavigationBar: SizedBox(height: 72),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final grid = find.byKey(const ValueKey('catalog-grid'));
+    final fourth = find.bySemanticsLabel(RegExp('Открыть объявление Вещь 4'));
+    expect(fourth, findsOneWidget);
+    expect(
+      tester.getBottomLeft(fourth).dy,
+      lessThanOrEqualTo(tester.getBottomLeft(grid).dy),
+    );
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testWidgets('updates categories while the filter sheet stays open', (
     tester,
   ) async {
     final categories = Completer<List<CatalogCategory>>();
-    final service = _FakeCatalogService(
-      [_page([item])],
-      categories: categories.future,
-    );
+    final service = _FakeCatalogService([
+      _page([item]),
+    ], categories: categories.future);
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
 
@@ -118,10 +159,87 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(
-      find.widgetWithText(ChoiceChip, 'Инструменты'),
+      find.widgetWithText(InlineSelectField<String>, 'Все категории'),
       findsOneWidget,
     );
     expect(find.text('Фильтры'), findsWidgets);
+  });
+
+  testWidgets('keeps the full-height filter sheet below the iOS status bar', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 500);
+    tester.view.padding = const FakeViewPadding(top: 59, bottom: 34);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _app(
+        _FakeCatalogService([
+          _page([item]),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Фильтры'));
+    await tester.pumpAndSettle();
+
+    final title = find.text('Фильтры').last;
+    expect(tester.getTopLeft(title).dy, greaterThanOrEqualTo(59));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shows only the essential catalog filters', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        _FakeCatalogService([
+          _page([item]),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Фильтры'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Даты'), findsWidgets);
+    expect(
+      find.byKey(const ValueKey('catalog-category-filter')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('catalog-area-filter')), findsOneWidget);
+    expect(find.text('Цена за день'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
+    expect(find.text('Сортировка'), findsNothing);
+    expect(find.text('Радиус поиска'), findsNothing);
+    expect(find.textContaining('геолокац'), findsNothing);
+  });
+
+  testWidgets('lays out the themed price filter on a phone width', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.reset);
+    final service = _FakeCatalogService([
+      _page([item]),
+    ]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [catalogServiceProvider.overrideWithValue(service)],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const CatalogScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Фильтры'));
+    await tester.pump();
+
+    expect(find.text('Цена за день'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('keeps two catalog results reachable in a grid at 200% text', (
@@ -179,9 +297,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('switches the loaded catalog to the local demo map', (
-    tester,
-  ) async {
+  testWidgets('switches the loaded catalog to the Yandex map', (tester) async {
     await tester.pumpWidget(
       _app(
         _FakeCatalogService([
@@ -191,16 +307,57 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Карта (демо)'));
+    expect(find.text('Карта'), findsOneWidget);
+    expect(find.textContaining('демо', findRichText: true), findsNothing);
+    await tester.tap(find.text('Карта'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Приблизительное расположение'), findsOneWidget);
+    expect(find.byType(FlutterMap), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('demo-map-marker-item-1')),
+      tester.widget<TileLayer>(find.byType(TileLayer)).urlTemplate,
+      'https://tiles.api-maps.yandex.ru/v1/tiles/'
+      '?x={x}&y={y}&z={z}&lang=ru_RU&l=map'
+      '&projection=web_mercator&apikey=tiles-key',
+    );
+    expect(find.text('Адреса указаны приблизительно'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('catalog-map-marker-item-1')),
       findsOneWidget,
     );
     expect(
-      find.textContaining('Точные адреса не показываются'),
+      find.byKey(const ValueKey('catalog-map-selected-item-1')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('shows catalog list and map together on a wide screen', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1000, 800);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _app(
+        _FakeCatalogService([
+          _page([item]),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('catalog-wide-list')), findsOneWidget);
+    expect(find.byKey(const ValueKey('catalog-wide-map')), findsOneWidget);
+    expect(find.byKey(const ValueKey('catalog-grid')), findsOneWidget);
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.text('Карта'), findsNothing);
+    expect(find.text('Список'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('catalog-map-marker-item-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('catalog-grid')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('catalog-map-selected-item-1')),
       findsOneWidget,
     );
   });
@@ -222,22 +379,23 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Фильтры'));
     await tester.pumpAndSettle();
-    final allCategories = tester.widget<ChoiceChip>(
-      find.widgetWithText(ChoiceChip, 'Все категории'),
-    );
-    expect(allCategories.selected, isFalse);
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Инструменты'));
+    await tester.tap(find.byKey(const ValueKey('catalog-category-filter')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Инструменты').last);
     await tester.pumpAndSettle();
 
     expect(service.searches, ['', 'дрель', 'дрель']);
     expect(service.categoryIds, [null, null, 'category-1']);
     expect(find.text('Дрель'), findsOneWidget);
 
-    await tester.tap(find.text('Карта (демо)'));
+    await tester.tap(find.text('Карта'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Приблизительное расположение'), findsOneWidget);
-    expect(find.text('Дрель'), findsOneWidget);
+    expect(find.text('Адреса указаны приблизительно'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('catalog-map-marker-item-2')),
+      findsOneWidget,
+    );
     expect(service.searches, hasLength(3));
 
     await tester.tap(find.text('Список'));
@@ -247,25 +405,6 @@ void main() {
     expect(find.widgetWithText(InputChip, 'Инструменты'), findsOneWidget);
     expect(find.text('Дрель'), findsOneWidget);
     expect(service.searches, hasLength(3));
-  });
-
-  testWidgets('selects server-backed catalog sort order', (tester) async {
-    final service = _FakeCatalogService([
-      _page([item]),
-      _page([item]),
-    ]);
-    await tester.pumpWidget(_app(service));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Фильтры'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Сначала новые'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Сначала дешевле').last);
-    await tester.pumpAndSettle();
-
-    expect(service.sorts, ['newest', 'price_asc']);
-    expect(find.text('Сначала дешевле'), findsOneWidget);
   });
 
   testWidgets('keeps the selected map item after returning from the list', (
@@ -286,23 +425,23 @@ void main() {
     await tester.pumpWidget(_app(service));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Карта (демо)'));
+    await tester.tap(find.text('Карта'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('demo-map-marker-item-2')));
+    await tester.tap(find.byKey(const ValueKey('catalog-map-marker-item-2')));
     await tester.pumpAndSettle();
 
     expect(
-      find.byKey(const ValueKey('demo-map-selected-item-2')),
+      find.byKey(const ValueKey('catalog-map-selected-item-2')),
       findsOneWidget,
     );
 
     await tester.tap(find.text('Список'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Карта (демо)'));
+    await tester.tap(find.text('Карта'));
     await tester.pumpAndSettle();
 
     expect(
-      find.byKey(const ValueKey('demo-map-selected-item-2')),
+      find.byKey(const ValueKey('catalog-map-selected-item-2')),
       findsOneWidget,
     );
     expect(service.searches, hasLength(1));
@@ -326,7 +465,13 @@ void main() {
     final router = GoRouter(
       initialLocation: '/catalog',
       routes: [
-        GoRoute(path: '/catalog', builder: (_, _) => const CatalogScreen()),
+        GoRoute(
+          path: '/catalog',
+          builder: (_, _) => CatalogScreen(
+            yandexTilesApiKey: 'tiles-key',
+            mapTileProvider: _TransparentTileProvider(),
+          ),
+        ),
         GoRoute(
           path: '/items/:id',
           builder: (_, state) => Scaffold(
@@ -345,11 +490,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Карта (демо)'));
+    await tester.tap(find.text('Карта'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('demo-map-marker-item-2')));
+    await tester.tap(find.byKey(const ValueKey('catalog-map-marker-item-2')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Открыть'));
+    expect(find.text('Открыть'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('catalog-map-selected-item-2')));
     await tester.pumpAndSettle();
 
     expect(find.text('Карточка item-2'), findsOneWidget);
@@ -357,15 +503,15 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Приблизительное расположение'), findsOneWidget);
+    expect(find.text('Адреса указаны приблизительно'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('demo-map-selected-item-2')),
+      find.byKey(const ValueKey('catalog-map-selected-item-2')),
       findsOneWidget,
     );
     expect(service.searches, hasLength(1));
   });
 
-  testWidgets('keeps the demo map usable on a small screen at 200% text', (
+  testWidgets('keeps the Yandex map usable on a small screen at 200% text', (
     tester,
   ) async {
     tester.view.devicePixelRatio = 1;
@@ -385,22 +531,117 @@ void main() {
             ).copyWith(textScaler: const TextScaler.linear(2)),
             child: child!,
           ),
-          home: const CatalogScreen(),
+          home: CatalogScreen(
+            yandexTilesApiKey: 'tiles-key',
+            mapTileProvider: _TransparentTileProvider(),
+          ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Показать демо-карту'));
+    await tester.tap(find.byTooltip('Показать карту'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Приблизительное расположение'), findsOneWidget);
+    expect(find.text('Адреса указаны приблизительно'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('demo-map-marker-item-1')),
+      find.byKey(const ValueKey('catalog-map-marker-item-1')),
       findsOneWidget,
     );
-    expect(find.text('Открыть'), findsOneWidget);
+    expect(
+      tester.getSize(find.byType(FlutterMap)).width,
+      tester.view.physicalSize.width,
+    );
+    expect(
+      find.byKey(const ValueKey('catalog-map-selected-item-1')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('catalog-map-marker-item-1')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('catalog-map-selected-item-1')),
+      findsOneWidget,
+    );
+    expect(find.text('Открыть'), findsNothing);
+  });
+
+  testWidgets('closes the selected map item from the card and empty map', (
+    tester,
+  ) async {
+    final service = _FakeCatalogService([
+      _page([item]),
+    ]);
+    await tester.pumpWidget(_app(service));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Карта'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('catalog-map-marker-item-1')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('catalog-map-selected-item-1')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byTooltip('Закрыть карточку'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('catalog-map-selected-item-1')),
+      findsNothing,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('catalog-map-marker-item-1')));
+    await tester.pumpAndSettle();
+    final map = tester.widget<FlutterMap>(find.byType(FlutterMap));
+    map.options.onTap!(
+      const TapPosition(Offset.zero, Offset.zero),
+      const LatLng(55.8, 37.7),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('catalog-map-selected-item-1')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('clusters nearby map items and expands them on tap', (
+    tester,
+  ) async {
+    final nearby = item.copyWith(
+      id: 'item-2',
+      title: 'Дрель',
+      approximateLocation: const ApproximateLocation(
+        latitude: 55.751,
+        longitude: 37.621,
+        precision: 'SPARSE',
+      ),
+    );
+    await tester.pumpWidget(
+      _app(
+        _FakeCatalogService([
+          _page([item, nearby]),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Карта'));
+    await tester.pumpAndSettle();
+
+    final cluster = find.byKey(const ValueKey('catalog-map-cluster-2'));
+    expect(cluster, findsOneWidget);
+    await tester.tap(cluster);
+    await tester.pumpAndSettle();
+
+    expect(cluster, findsNothing);
+    expect(
+      find.byKey(const ValueKey('catalog-map-marker-item-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('catalog-map-marker-item-2')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows an empty catalog', (tester) async {
@@ -486,7 +727,9 @@ void main() {
 
     await tester.tap(find.text('Фильтры'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Инструменты'));
+    await tester.tap(find.byKey(const ValueKey('catalog-category-filter')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Инструменты').last);
     await tester.pumpAndSettle();
 
     expect(service.categoryIds, [null, 'category-1']);
@@ -514,37 +757,6 @@ void main() {
     expect(service.offsets, [0, 0]);
   });
 
-  testWidgets('filters the catalog by radius after explicit permission', (
-    tester,
-  ) async {
-    final service = _FakeCatalogService([
-      _page([item]),
-      _page([item]),
-    ]);
-    await tester.pumpWidget(
-      _app(
-        service,
-        permissionGateway: const _GrantedPermissionGateway(),
-        locationService: const _FakeLocationService(),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Фильтры'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Без ограничения'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Без ограничения'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('До 5 км').last);
-    await tester.pumpAndSettle();
-
-    expect(service.latitudes, [null, 55.75]);
-    expect(service.longitudes, [null, 37.62]);
-    expect(service.radii, [null, 5]);
-    expect(service.offsets, [0, 0]);
-  });
-
   testWidgets('filters by a server-provided area without coordinates', (
     tester,
   ) async {
@@ -557,7 +769,7 @@ void main() {
 
     await tester.tap(find.text('Фильтры'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Любой район'));
+    await tester.tap(find.byKey(const ValueKey('catalog-area-filter')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Хамовники').last);
     await tester.pumpAndSettle();
@@ -623,40 +835,23 @@ void main() {
   });
 }
 
-Widget _app(
-  CatalogService service, {
-  AppPermissionGateway? permissionGateway,
-  LocationService? locationService,
-}) {
+Widget _app(CatalogService service, {String yandexTilesApiKey = 'tiles-key'}) {
   return ProviderScope(
-    overrides: [
-      catalogServiceProvider.overrideWithValue(service),
-      if (permissionGateway != null)
-        appPermissionGatewayProvider.overrideWithValue(permissionGateway),
-      if (locationService != null)
-        locationServiceProvider.overrideWithValue(locationService),
-    ],
-    child: const MaterialApp(home: CatalogScreen()),
+    overrides: [catalogServiceProvider.overrideWithValue(service)],
+    child: MaterialApp(
+      home: CatalogScreen(
+        yandexTilesApiKey: yandexTilesApiKey,
+        mapTileProvider: _TransparentTileProvider(),
+      ),
+    ),
   );
 }
 
-class _FakeLocationService extends LocationService {
-  const _FakeLocationService();
-
+class _TransparentTileProvider extends TileProvider {
   @override
-  Future<GeoPoint> currentPosition() async =>
-      (latitude: 55.75, longitude: 37.62);
-}
-
-class _GrantedPermissionGateway implements AppPermissionGateway {
-  const _GrantedPermissionGateway();
-
-  @override
-  Future<bool> openSettings() async => true;
-
-  @override
-  Future<PermissionStatus> request(AppPermission permission) async =>
-      PermissionStatus.granted;
+  ImageProvider getImage(TileCoordinates coordinates, TileLayer options) {
+    return MemoryImage(TileProvider.transparentImage);
+  }
 }
 
 Future<CatalogState> Function() _page(

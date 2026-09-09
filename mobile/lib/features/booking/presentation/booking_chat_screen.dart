@@ -27,6 +27,7 @@ class BookingChatScreen extends ConsumerStatefulWidget {
 class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
     with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormBuilderState>();
+  final _messagesScrollController = ScrollController();
   final List<BookingMessage> _olderMessages = [];
   Timer? _pollTimer;
   String? _olderCursor;
@@ -61,6 +62,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
   void dispose() {
     _pollTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
+    _messagesScrollController.dispose();
     super.dispose();
   }
 
@@ -111,6 +113,7 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
                   child: RefreshIndicator(
                     onRefresh: _refresh,
                     child: ListView(
+                      controller: _messagesScrollController,
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
@@ -251,7 +254,18 @@ class _BookingChatScreenState extends ConsumerState<BookingChatScreen>
     if (sent && mounted) {
       form.reset();
       await _refresh();
+      _scrollToLatest();
     }
+  }
+
+  void _scrollToLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _messagesScrollController.hasClients) {
+        _messagesScrollController.jumpTo(
+          _messagesScrollController.position.maxScrollExtent,
+        );
+      }
+    });
   }
 
   Future<void> _reportMessage(BookingMessage message) async {
