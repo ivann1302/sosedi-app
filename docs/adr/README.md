@@ -12,7 +12,7 @@ ADR хранит только принятое business, legal, provider или 
 | [0002](0002-account-data-lifecycle.md) | ACCEPTED | Категорийные сроки export/delete, scoped legal hold и сохранение минимального financial/audit trail. |
 | [0003](0003-launch-category-safety-policy.md) | ACCEPTED | Deny-by-default launch whitelist, запрещённые/ограниченные категории и обязательные safety-предупреждения. |
 | [0004](0004-delivery-out-of-mvp-1.md) | ACCEPTED | Delivery entry point и передача адреса внешнему приложению исключены из MVP 1.0; личный handover независим. |
-| [0005](0005-monetized-safe-deal-provider.md) | PROPOSED | Safe Deal-пилот с целевым fee 1%; fee payer/provider-cost coverage и будущая экономика 5% маржи заблокированы до договора и расчёта. |
+| [0005](0005-monetized-safe-deal-provider.md) | PROPOSED | CloudPayments Safe Deal — основной кандидат; fee 1%, fee payer/provider-cost coverage и будущая экономика 5% маржи заблокированы до договора и расчёта. |
 | [0006](0006-mixed-p2p-and-first-party-supply.md) | PROPOSED | Смешанное P2P/first-party предложение; first-party объявления выключены до отдельного legal/accounting/payment gate. |
 
 ## Статусы

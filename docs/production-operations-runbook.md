@@ -41,7 +41,7 @@ release. В Git остаются только роль owner, назначени
 | GlitchTip self-hosted в РФ | Redacted error events and alerts | Product owner / observability admin + client DSN | DB/object backup and test-event record | Не развёрнут — release blocker |
 | SMS.ru | OTP send-only integration and spend limit | Product owner / backend send-only key | Provider recovery, quota alert, Exolve contact plan | Production key/live smoke не подтверждены |
 | Push providers | FCM/APNs/RuStore eventId-only delivery | Product owner / per-app send identities | Provider credential rotation and device smoke | Store/provider setup не завершён |
-| ЮKassa | Только выбранный payment ADR; offline pilot не имеет live credential | Product owner / dedicated backend identity | Provider reconciliation/export record | Live mode запрещён до payment gate |
+| CloudPayments Safe Deal | Два связанных test/live терминала оплаты и выплат только после выбранного payment ADR; offline pilot не имеет live credential | Product owner / dedicated backend identity | `AccumulationId` status и provider reconciliation/export record | Live mode запрещён до payment gate |
 | App stores и signing | App Store Connect, Google Play, RuStore; package `ru.sosedi.app` | Product owner / release signing identity | Encrypted signing backup per [`store-readiness.md`](store-readiness.md) | Accounts/internal builds требуют внешнего подтверждения |
 | First admin/operator access | MFA admin, least-privilege operator UI | Product owner / named human admin | Recovery codes offline; bootstrap audit | Выполнить по [`first-admin-bootstrap.md`](first-admin-bootstrap.md) |
 

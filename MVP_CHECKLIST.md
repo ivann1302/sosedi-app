@@ -137,7 +137,7 @@ Definition of Done остаются у канонических задач по 
 | 8 | Создать production-аккаунты SMS.ru, push и выбранного российского S3 с минимальными правами | 2–4 ч | `17`, `17.3` |
 | 9 | Выбрать и оплатить production-инфраструктуру в РФ, backup destination и secret storage | 1–2 дня | `17.3` |
 | 10 | С российским профильным специалистом утвердить marketplace/legal/privacy пакет | несколько дней | `7.2`, `7.3`, `16`, `16.1`, `16.2` |
-| 11 | Получить условия Safe Deal, согласовать экономику 1%, налоги/чеки и выбрать одну KYC-ветку | дни/недели | `13.1`, `14`, `15` |
+| 11 | Получить условия CloudPayments Safe Deal, согласовать экономику 1%, налоги/чеки и выбрать одну KYC-ветку | дни/недели | `13.1`, `14`, `15` |
 | 12 | Собрать supply и провести smoke с пятью новыми пользователями; районы и организация поддержки — после технического запуска | недели | `18`, `19`, приложение A |
 
 Правило исполнения: перед каждой ступенью Codex готовит минимальную инструкцию и
@@ -157,8 +157,9 @@ marketplace/legal и provider gates.
 получены 09.09.2026 в `/Users/ivan/projects/sosedi`.
 Аккаунт Timeweb Cloud есть; VPS, OCI registry и S3-ресурсы ещё не созданы.
 Физические iPhone и Android подключались к Mac и прошли local smoke; наличие
-отдельного Android без GMS не подтверждено. Production SMS-аккаунта и
-аккаунта ЮKassa нет, тестовый проектный номер только планируется. Public
+отдельного Android без GMS не подтверждено. Production SMS-аккаунта и аккаунта
+CloudPayments нет; test/live терминалы оплаты и выплат не выдавались, тестовый
+проектный номер только планируется. Public
 support-контакт — `sosedi.rs@yandex.ru`. В компании есть общий юрист, но его
 marketplace/IT/payment scope не подтверждён.
 
@@ -1458,11 +1459,17 @@ Fake provider и доменные TDD-тесты не блокируются.
 
 **Business/legal/provider gate:**
 
-- [ ] Получить от ЮKassa подтверждение доступности «Безопасной сделки», условий
-  договора, срока сделки, лимитов, hold/refund и выплат физическим лицам.
+- [ ] Получить от CloudPayments письменное подтверждение применимости «Безопасной
+  сделки» к платной P2P-аренде личных вещей, условий договора, поддерживающего
+  банка-эквайера, двух связанных терминалов оплаты/выплат, срока до двух месяцев,
+  лимитов, hold/refund, выплат физическим лицам и финансовой ответственности
+  Sosedi как площадки/арбитра. Decision owner и руководитель заключающего договор
+  юрлица — Кукуй Олег Игоревич; наименование и реквизиты юрлица не подставлять без
+  отдельного подтверждения.
 - [ ] Зафиксировать provider onboarding/идентификацию получателя выплаты,
-  допустимые статусы физлица/НПД/ИП и поведение при истёкшей/отклонённой проверке,
-  не копируя документы владельца в Sosedi без необходимости.
+  допустимые статусы физлица/НПД/ИП, разрешённые карты/токены и поведение при
+  истёкшей/отклонённой проверке, не копируя документы владельца в Sosedi без
+  необходимости.
 - [ ] Согласовать платёжную и налоговую модель с профильным специалистом.
 - [ ] Зафиксировать договорную роль Sosedi, стороны аренды, правила оферты,
   налоговые обязанности владельца и допустимые статусы физлицо/НПД/ИП.
@@ -1473,7 +1480,8 @@ Fake provider и доменные TDD-тесты не блокируются.
 - [ ] Подключить допустимую для `SAFE_DEAL` онлайн-кассу и зафиксировать, кто,
   когда и на какую сумму формирует чеки прихода/возврата.
 - [ ] Зафиксировать ограничения срока Safe Deal относительно advance booking,
-  длительности аренды, возврата и dispute window.
+  длительности аренды, возврата и dispute window; публичный лимит CloudPayments
+  до двух месяцев не считать договорным SLA без письменного подтверждения.
 - [ ] Не подключать production payment flow до прохождения gate.
 
 **TDD-критерии этапа:**
@@ -1499,8 +1507,8 @@ Fake provider и доменные TDD-тесты не блокируются.
   idempotent checkout под lock, Payment/deposit hold, lease-based exactly-once
   deposit settlement, dispute race/auth/MFA resolution, безопасная operator
   queue и server-backed mobile UX покрыты unit/e2e. `FAKE_SAFE_DEAL` запрещён в
-  production; live provider adapter, checkout URL/webhook, rental payout, чеки и
-  reconciliation отсутствуют. Ни один checkbox/provider gate не закрыт,
+  production; live provider adapter, Widget/SDK/API/webhook flow, rental payout,
+  чеки и reconciliation отсутствуют. Ни один checkbox/provider gate не закрыт,
   готовность остаётся 339/488 (69,5%).
 - [ ] Зафиксировать формулу цены: кто платит platform fee, процент/фиксированная
   часть, база, min/max, округление до копеек, НДС/комиссия provider, owner payout
@@ -1531,29 +1539,40 @@ Fake provider и доменные TDD-тесты не блокируются.
   Legacy Item с ненулевым залогом fail-closed отклоняется до Booking. Выбор
   `SAFE_DEAL` потребует отдельного обновления формулы после ADR.
 - [ ] После provider gate обновить provisional schema отдельной migration:
-  несколько payment attempts, deal, refund, payout, receipt и обработанные
-  provider events без превращения модели в универсальный ledger.
+  заменить legacy `yookassaPaymentId` на нейтральные `providerTransactionId` и
+  `providerDealId` (`EscrowAccumulationId` для CloudPayments), добавить несколько
+  payment attempts, deal, refund, payout, receipt и обработанные provider events
+  без превращения модели в универсальный ledger и без потери test history.
 - [ ] Хранить неизменяемый финансовый журнал операций и проверять утверждённый
   инвариант captured/refunded/owner payout/platform fee/provider cost/outstanding
   с учётом округления; исправления делать компенсирующей записью, а не UPDATE
   истории.
 - [ ] Для каждой внешней операции хранить уникальный idempotency key и provider ID;
-  retry не должен перезаписывать историю предыдущей попытки.
+  передавать CloudPayments `X-Request-ID`, но не полагаться на его часовое окно:
+  локальный retry никогда не перезаписывает историю и не повторяет денежную операцию.
 - [ ] После gate подключить через env только выбранный production-сценарий.
-- [ ] Для `SAFE_DEAL` создавать сделку/платёж по подтверждённому API ЮKassa.
-- [ ] Для `SAFE_DEAL` возвращать confirmation/checkout URL.
+- [ ] Для `SAFE_DEAL` создавать платёж CloudPayments с подтверждённой менеджером
+  схемой `NToOne` либо `OneToN`, сохранять `TransactionId` и
+  `EscrowAccumulationId`; не угадывать схему platform fee по публичному примеру.
+- [ ] Для `SAFE_DEAL` использовать согласованный CloudPayments Widget/mobile SDK
+  либо иной provider-hosted/cryptogram flow с 3-D Secure и возвращать клиенту
+  только необходимые session/public parameters; PAN/CVC не проходят через backend.
 - [ ] Для `SAFE_DEAL` хранить server-derived `payBy = confirmedAt + 30 минут`,
   показывать countdown обеим сторонам и при timeout идемпотентно закрывать
   локальную/provider-сделку, отменять Booking с `PAYMENT_TIMEOUT` и освобождать
   календарь. Поздний redirect/webhook не должен оживлять бронь или повторно
   резервировать период; `PAY_ON_HANDOVER` не получает ложный payment timer.
-- [ ] Получать payout-реквизиты только через утверждённый provider widget/token;
-  никогда не принимать и не хранить PAN/CVC на backend Sosedi.
-- [ ] Для `SAFE_DEAL` создать webhook endpoint и проверять событие актуальным
-  официальным способом: допустимый источник и свежий объект из API provider, а
-  также provider ID, shop/deal, amount, RUB, metadata и test/live mode.
-- [ ] Не считать HMAC-подписью то, чего нет в актуальном протоколе provider; при
-  изменении документации обновлять contract test и ADR.
+- [ ] Получать payout-реквизиты только через утверждённый CloudPayments
+  widget/token и отдельный payout terminal; никогда не принимать и не хранить
+  PAN/CVC на backend Sosedi.
+- [ ] Для `SAFE_DEAL` создать CloudPayments webhook endpoints и проверять
+  `X-Content-HMAC`/`Content-HMAC` по исходным bytes и API secret нужного
+  test/live terminal; дополнительно сверять `TransactionId`,
+  `EscrowAccumulationId`, terminal, amount, RUB, metadata и environment, а
+  неоднозначный результат подтверждать запросом состояния сделки.
+- [ ] Не пересобирать тело до HMAC-проверки и не путать URL-decoded
+  `X-Content-HMAC` с URL-encoded `Content-HMAC`; при изменении официального
+  протокола обновлять contract test и ADR.
 - [ ] Принимать webhook идемпотентно и монотонно; duplicate, replay и out-of-order
   событие не должны повторять refund/payout или откатывать финальное состояние.
 - [ ] Сохранять изменение финансового состояния и transactional outbox атомарно;
@@ -1572,7 +1591,8 @@ Fake provider и доменные TDD-тесты не блокируются.
 - [ ] Формировать и проверять требуемые чеки прихода/возврата на вознаграждение
   платформы; ошибка чека должна создавать операционное событие и повторную задачу.
 - [ ] Реализовать повторяемую ежедневную reconciliation платежей, refunds, payouts,
-  fee и receipts с реестром provider и алертом на расхождение.
+  fee и receipts по `EscrowAccumulationId`, локальным операциям и реестру
+  CloudPayments с алертом на расхождение.
 - [ ] Показать участникам историю payment/refund/payout/receipt в допустимом объёме,
   а в operator UI — очередь failed/stuck/reconciliation mismatch без raw payload и
   PAN, с capability и step-up для corrective action.

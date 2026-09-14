@@ -714,7 +714,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             MVP 0.4 · 3-5 нед
           </div>
-          <div class="tl-item"><div>Monetized pilot — только согласованная ЮKassa Safe Deal: целевой fee 1%, а payer/provider-cost coverage ещё TBD; offline fallback — оплата при передаче и 0%</div></div>
+          <div class="tl-item"><div>Monetized pilot — только согласованная CloudPayments Safe Deal: целевой fee 1%, а payer/provider-cost coverage ещё TBD; offline fallback — оплата при передаче и 0%</div></div>
           <div class="tl-item"><div>Критерий: fee/refund/payout/receipt/reconciliation проверены end-to-end; после пилота экономика подтверждает целевую 5% маржу либо тариф пересматривается</div></div>
         </div>
         <div class="tl-card">
@@ -793,7 +793,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-card">
             <div class="tl-card-title" style="color:var(--color-blue)">Платежи</div>
             <div class="tl-kv"><strong>Раньше:</strong><span>Checkout + webhook без hold, split и выплаты владельцу.</span></div>
-            <div class="tl-kv"><strong>Теперь:</strong><span>Монетизация разрешена только через согласованную ЮKassa Safe Deal; offline pilot принимает оплату при передаче и берёт 0% комиссии.</span></div>
+            <div class="tl-kv"><strong>Теперь:</strong><span>Монетизация разрешена только через согласованную CloudPayments Safe Deal; offline pilot принимает оплату при передаче и берёт 0% комиссии.</span></div>
             <div class="tl-kv"><strong>Почему:</strong><span>Checkout-only не завершает P2P-денежный поток, а комиссия без полного расчёта создаёт финансовый и юридический риск.</span></div>
           </div>
           <div class="tl-card">
@@ -1057,10 +1057,10 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-body">
             <div class="tl-card">
               <div class="tl-card-title">Добавить</div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Provider/legal gate: письменные условия ЮKassa Safe Deal, выплаты физлицам, hold/release/refund, комиссия и чеки</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Provider/legal gate: CloudPayments подтверждает P2P-аренду, банк-эквайер, два терминала, срок до 2 месяцев, выплаты физлицам, hold/refund, ответственность площадки, комиссию и чеки</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Monetized pilot запускается только с Safe Deal: целевой platform fee 1%; fee payer, gross display и owner/renter/subsidy способ покрытия provider cost утверждаются gate. Без одобрения доступен offline pilot с 0%</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>До первого production payout: минимальный dispute window, атомарный payout freeze, audited resolution и integration race-test open-dispute против create-payout; полный support thread остаётся в 0.5</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Safe Deal: создать сделку/платёж, вернуть confirmation URL и хранить server-derived payBy +30 минут; app resume/late webhook сверяют каноническое серверное состояние</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>CloudPayments Safe Deal: согласовать NToOne/OneToN, провести Widget/mobile SDK + 3-D Secure flow, сохранить TransactionId/AccumulationId и server-derived payBy +30 минут; app resume/late webhook сверяют каноническое состояние</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Webhook: authenticity, idempotency key, replay/out-of-order/concurrency и запрос актуального состояния у провайдера при сомнении</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PAY_ON_HANDOVER breakdown до подтверждения: ставка×дни, залог отсутствует, fee 0, owner payout, способ оплаты, total и RUB; сервер хранит immutable snapshot, SAFE_DEAL обновит формулу только после ADR. Local/test FAKE_SAFE_DEAL использует server-backed borrower checkout и канонические Payment/deposit/dispute состояния; mobile после результата перечитывает server state, а production режим запрещён.</div></div>
               <div class="tl-item"><div><strong>DOING 04.09.2026:</strong> local-only demo заменён gated <code>FAKE_SAFE_DEAL</code> test slice: schema/migrations, exact-minor Booking snapshot, borrower-only idempotent checkout под lock, Payment/deposit hold, lease-based exactly-once deposit settlement, dispute race/auth/MFA resolution, безопасная operator queue и server-backed mobile UX покрыты unit/e2e. <code>FAKE_SAFE_DEAL</code> запрещён в production; live provider adapter, checkout URL/webhook, rental payout, чеки и reconciliation отсутствуют. Ни один checkbox/provider gate не закрыт, готовность остаётся 339/488 (69,5%).</div></div>
@@ -1068,7 +1068,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PostgreSQL Decimal(10,2) и DB min/max constraints для Item/Booking/provisional Payment покрыты e2e; REST/mobile переход с JSON number на minor units и финансовый ledger ждут payment ADR</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Отдельные переходы hold/release/refund/payout/failed с retry без двойного финансового эффекта</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Receipt/fiscalization: определить ответственного, события выдачи чека и отображение документа пользователю</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Повторяемая reconciliation job: локальные суммы/статусы против ЮKassa, отчёт расхождений и alert</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Повторяемая reconciliation job: локальные суммы/статусы против CloudPayments по AccumulationId, отчёт расхождений и alert</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>История платежей/refund/payout/receipts в профиле и operator queue failed/stuck/mismatch с capability + step-up, без provider raw payload/PII</div></div>
               <div class="tl-item" style="color:var(--color-error)"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg><div>НЕ сейчас: самописные выплаты, несогласованные split payments и ручной перевод владельцу из денег платформы</div></div>
               <div class="tl-kv"><strong>Критерий:</strong><span>Safe Deal проходит утверждённые 1% fee payer/provider-cost rules → hold → timeout/release/refund → payout → receipt → reconciliation; иначе монетизация выключена и комиссия равна 0%</span></div>
@@ -1180,7 +1180,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-body">
             <div class="tl-card">
               <div class="tl-card-title">Разблокировать</div>
-              <div class="tl-item"><div>Сложные сценарии залога и split payments по согласованному договору ЮKassa</div></div>
+              <div class="tl-item"><div>Сложные сценарии залога и split payments по согласованному договору CloudPayments</div></div>
               <div class="tl-item"><div>Расширенные payout schedules/retries сверх базового согласованного Safe Deal</div></div>
               <div class="tl-item"><div>Расширенная reputation-система, ответы/медиа в отзывах и антифрод сверх базовых verified-rental ratings</div></div>
               <div class="tl-item"><div>Антифрод и автоматическое KYC</div></div>
@@ -1285,8 +1285,8 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div><h3>Платежи</h3><p>Приём оплаты</p></div>
           </div>
           <div class="stack-items">
-            <div class="stack-item-row"><span class="stack-item-label">Провайдер</span><span class="tag tag-green">ЮKassa</span></div>
-            <div class="stack-item-row"><span class="stack-item-label">Методы</span><span class="tag tag-gray">Карта, СБП, ЮMoney</span></div>
+            <div class="stack-item-row"><span class="stack-item-label">Провайдер</span><span class="tag tag-yellow">CloudPayments candidate</span></div>
+            <div class="stack-item-row"><span class="stack-item-label">Safe Deal</span><span class="tag tag-gray">Карта / token карты</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Монетизация</span><span class="tag tag-yellow">Safe Deal required</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Pilot target</span><span class="tag tag-yellow">Safe Deal · 1% TBD payer</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Fallback</span><span class="tag tag-gray">Offline · 0% fee</span></div>
@@ -1443,7 +1443,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             <div class="issue-icon">🔥</div>
             <div class="issue-body">
               <h4>Monetized payment требует Safe Deal</h4>
-              <p>Checkout-only не решает выплату владельцу. До MVP 0.4 получить договорное подтверждение Safe Deal и закрыть 1% pilot fee payer/gross display/provider-cost coverage, 30-minute payment timeout, refund/payout/receipt/reconciliation; иначе разрешён только offline pilot без приёма денег и с 0% комиссии. Цель 5% маржи после пилота не равна автоматически комиссии 5%.</p>
+              <p>Checkout-only не решает выплату владельцу. До MVP 0.4 получить от CloudPayments договорное подтверждение P2P-аренды и закрыть банк-эквайер/два терминала, лимит сделки, 1% pilot fee payer/gross display/provider-cost coverage, 30-minute payment timeout, refund/payout/receipt/reconciliation; иначе разрешён только offline pilot без приёма денег и с 0% комиссии. Цель 5% маржи после пилота не равна автоматически комиссии 5%.</p>
             </div>
             <span class="priority-badge p-critical">Критично</span>
           </div>

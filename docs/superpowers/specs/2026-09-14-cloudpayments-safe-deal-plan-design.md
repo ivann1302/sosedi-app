@@ -105,6 +105,8 @@ Decision owner / владелец продукта: Кукуй Олег Игор
 - `docs/payment-provider-comparison.md`;
 - `sosedi-roadmap.html` — только визуальное отражение checklist;
 - `AGENTS.md` — operational-инструкции, не меняющие roadmap;
+- `README.md`, `OWNER_ACTIONS.md` и `DEVELOPMENT_BEST_PRACTICES.md` — активные
+  правила проекта и owner-lane;
 - `docs/database-schema.md`, `docs/production-operations-runbook.md` и
   `docs/production-secrets-runbook.md` — удалить активные YooKassa-specific
   допущения и отразить будущую нейтральную migration.

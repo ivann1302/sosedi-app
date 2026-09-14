@@ -226,10 +226,10 @@ price breakdown и его арифметические инварианты хр
 > **Раньше:** для MVP планировался простой checkout + webhook без hold, split и
 > автоматических выплат.
 >
-> **Теперь:** до production-интеграции нужно выбрать согласованную с ЮKassa
-> «Безопасную сделку» либо оплату при передаче вещи без приема денег
-> платформой. До выбора разрешены fake provider и тестирование доменных
-> переходов.
+> **Теперь:** основной кандидат — согласованная с CloudPayments «Безопасная
+> сделка» либо оплата при передаче вещи без приема денег платформой. Production
+> integration запрещена до договора и принятого ADR; до gate разрешены fake
+> provider и тестирование доменных переходов.
 >
 > **Почему:** прежняя схема не описывала расчет с частным владельцем, возврат,
 > комиссию и спор. Provider-specific поля добавляются только после business,
@@ -242,8 +242,8 @@ price breakdown и его арифметические инварианты хр
 | `userId` | `String` | FK на плательщика `users.id` |
 | `amount` | `Decimal(10,2)` | Сумма |
 | `status` | `PaymentStatus` | По умолчанию `PENDING` |
-| `yookassaPaymentId` | `String? unique` | ID платежа ЮKassa |
-| `checkoutUrl` | `String?` | URL оплаты |
+| `yookassaPaymentId` | `String? unique` | Legacy provisional provider ID; не использовать для CloudPayments production flow |
+| `checkoutUrl` | `String?` | Legacy provisional URL оплаты |
 | `rawPayload` | `Json?` | Raw webhook payload |
 | `createdAt` | `DateTime` | Дата создания |
 | `updatedAt` | `DateTime` | Дата обновления |
@@ -251,7 +251,12 @@ price breakdown и его арифметические инварианты хр
 Индексы: `userId`, `status`.
 Provisional `amount` ограничен DB диапазоном `1..30_000_000 RUB`. Таблица не
 имеет HTTP-поверхности до provider/legal ADR и будет заменена отдельной
-provider-specific migration, а не расширена неутверждённым production flow.
+provider-approved migration, а не расширена неутверждённым production flow.
+После CloudPayments gate migration заменяет `yookassaPaymentId` нейтральными
+`providerTransactionId` и `providerDealId`; для CloudPayments они хранят
+`TransactionId` и `EscrowAccumulationId`. Несколько attempts, refunds, payouts,
+receipts и provider events моделируются отдельными записями, не универсальным
+ledger.
 
 Money `CHECK` constraints добавлены как PostgreSQL `NOT VALID`: они сразу
 защищают новые и изменяемые строки, но не переписывают и не блокируют migration

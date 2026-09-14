@@ -96,8 +96,9 @@ Android debug APK уже проверен на двух физических Sam
 - Timeweb Cloud account есть, но VPS, OCI registry и S3-ресурсы не созданы.
 - Два физических Samsung с GMS подключены и прошли local smoke; iPhone есть, но
   ещё не подключён к текущему Mac-сеансу. Наличие Android без GMS не подтверждено.
-- Production SMS-аккаунта и ЮKassa нет. Тестовый проектный номер планируется, но
-  пока не подтверждён.
+- Production SMS-аккаунта и аккаунта CloudPayments нет; test/live терминалы
+  оплаты и выплат не выдавались. Тестовый проектный номер планируется, но пока
+  не подтверждён.
 - Общий юрист компании доступен; до legal gate нужно подтвердить его опыт в
   IT-маркетплейсах, P2P-аренде, персональных данных и платежах в РФ.
 
@@ -347,12 +348,18 @@ fake-формула технически вычитает её из выплат
 
 ### Выбранное направление — монетизированный Safe Deal
 
+Decision owner, владелец продукта и руководитель заключающего договор юрлица —
+Кукуй Олег Игоревич. Название и реквизиты юрлица фиксируются отдельно.
+
 До разработки потребуются:
 
-- [ ] письменное подтверждение ЮKassa о доступности подходящей «Безопасной
-  сделки» для выбранной P2P-модели;
+- [ ] письменное подтверждение CloudPayments о доступности «Безопасной сделки»
+  для платной P2P-аренды личных вещей и финансовой ответственности площадки;
+- [ ] поддерживающий банк-эквайер и два связанных терминала — оплаты и выплат —
+  в каждом из test/live окружений;
 - [ ] условия onboarding и идентификации частного получателя;
-- [ ] схема hold/capture/refund/payout и ограничения сроков сделки;
+- [ ] согласованная схема `NToOne` либо `OneToN`, hold/refund/payout,
+  `FinalPayout` и ограничения срока до двух месяцев;
 - [ ] согласованная комиссия и момент получения дохода Sosedi;
 - [ ] полный расчёт 1% пилота: fee payer, gross/displayed price, provider fee/НДС/
   касса/refund losses и выбранный способ покрытия разницы; если выбрана subsidy —
@@ -361,7 +368,8 @@ fake-формула технически вычитает её из выплат
 - [ ] поддержка 30-минутного `payBy` после confirm, provider expiry/cancel и
   безопасная обработка позднего webhook;
 - [ ] налоговая модель и онлайн-касса;
-- [ ] официальный webhook/API contract и test environment;
+- [ ] официальный webhook/API contract, HMAC, status/reconciliation API и test
+  environment;
 - [ ] решение о KYC: предпочтительно `PROVIDER_MANAGED`, если provider закрывает
   необходимую идентификацию без передачи паспорта/селфи в Sosedi.
 
@@ -371,13 +379,16 @@ fake-формула технически вычитает её из выплат
 Payment scenario: SAFE_DEAL
 Owner approval reference: ADR-0005 (PROPOSED)
 Legal approval reference: <ссылка/номер>
-YooKassa commercial offer/approval reference: <ссылка/номер>
+CloudPayments commercial offer/approval reference: <ссылка/номер>
+CloudPayments payment/payout test terminals reference: <ссылка/номер без secrets>
+YooKassa fallback commercial offer reference: <ссылка/номер>
 T-Bank commercial offer reference: <ссылка/номер>
 KYC decision: PROVIDER_MANAGED / LOCAL_KYC
 ```
 
-Не создавать и не передавать production YooKassa credentials до закрытия этого
-gate.
+Не создавать и не передавать production CloudPayments credentials до закрытия
+этого gate. Public ID/API Secret test/live payment/payout terminal не хранить в
+этом документе или Git.
 
 ## 6. Подготовить public domain и legal-сайт
 

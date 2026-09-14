@@ -51,7 +51,7 @@ service identities всё равно разделяются. Break-glass credent
 | `ADMIN_MFA_ENCRYPTION_KEY` | Только backend; отдельные 32 random bytes в base64 для AES-256-GCM TOTP secrets | Ротация требует controlled re-enrollment TOTP; при компрометации отозвать admin sessions и перевыпустить MFA/recovery codes |
 | `SMS_API_KEY` | Backend; send-only API, без account/billing admin | Новый provider key → тестовая SMS → revoke |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Backend; только утверждённые bucket/prefix и нужные get/put/delete | Новый key pair → upload/processing/download smoke → revoke |
-| YooKassa credentials/webhook secret | Только после ACCEPTED payment ADR; test/live строго раздельно | По provider-процедуре: новый key/webhook → signed smoke → revoke |
+| CloudPayments payment/payout terminal Public ID + API Secret | Только после ACCEPTED payment ADR; terminal roles и test/live строго раздельно; API Secret также проверяет HMAC уведомлений | По provider-процедуре: новый terminal credential → API/HMAC smoke → revoke |
 | Private OCI registry credential | CI push или production pull — отдельные accounts/repositories | Новый scoped token → push/pull smoke → revoke |
 | Deploy SSH/API credential | Только конкретные hosts/project и deploy commands | Предпочитать short-lived; статический ключ заменить → проверить → удалить old authorized key |
 | FCM/APNs/RuStore Push credentials | Только нужное приложение и send capability | Новый credential → test eventId push → revoke |

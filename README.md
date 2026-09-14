@@ -43,7 +43,7 @@ payment/KYC legal gates и обязательный production-readiness эта�
 - Database: PostgreSQL 15+, PostGIS.
 - Cache and queues: Redis, BullMQ.
 - Storage: один основной S3-compatible провайдер в РФ через presigned URL.
-- Payments: комиссия только через согласованную ЮKassa «Безопасную сделку»;
+- Payments: комиссия только через согласованную CloudPayments «Безопасную сделку»;
   оплата при передаче — временный pilot с комиссией Sosedi 0%.
 - Notifications: FCM, RuStore Push и in-app inbox через единый `PushProvider`.
 - Observability: `sentry_flutter` SDK с GlitchTip self-hosted в РФ и AppMetrica.
@@ -306,8 +306,8 @@ production-домен/HTTPS и выполнить release smoke.
 
 ## Обязательные проверки до интеграций
 
-- До Payments согласовать с ЮKassa «Безопасную сделку». Если она недоступна,
-  MVP бронирует вещь, оплата происходит при передаче, а комиссия Sosedi
+- До Payments согласовать с CloudPayments «Безопасную сделку». Пока gate не
+  закрыт, MVP бронирует вещь, оплата происходит при передаче, а комиссия Sosedi
   равна 0%.
 - До публичной аренды согласовать роль площадки, оферту/rental rules, комиссию,
   отмены/ущерб, eligibility и launch whitelist запрещённых/опасных категорий
@@ -326,9 +326,9 @@ production-домен/HTTPS и выполнить release smoke.
 
 ### Платежи
 
-- **Раньше:** только ЮKassa checkout и webhook, без hold, split и автоматических
+- **Раньше:** только checkout и webhook, без hold, split и автоматических
   выплат.
-- **Теперь:** monetized MVP разрешён только через согласованную с ЮKassa
+- **Теперь:** monetized MVP разрешён только через согласованную с CloudPayments
   «Безопасную сделку»; оплата при передаче — pilot с комиссией Sosedi 0%.
 - **Почему:** checkout-only принимает деньги, но не завершает расчеты P2P-сделки
   с владельцем вещи.

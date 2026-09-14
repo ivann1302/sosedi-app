@@ -2,7 +2,10 @@
 
 - Status: PROPOSED
 - Date: 2026-08-09
-- Decision owner: Product owner
+- Updated: 2026-09-14
+- Decision owner: Кукуй Олег Игоревич, владелец продукта
+- Contracting entity head: Кукуй Олег Игоревич; наименование и реквизиты юрлица
+  ещё не зафиксированы
 - Reviewers: payment provider, legal, accounting/tax
 - Related checklist gate: раздел 14 Payments
 - Evidence: [`docs/payment-provider-comparison.md`](../payment-provider-comparison.md)
@@ -23,24 +26,31 @@ Sosedi должен получать вознаграждение с завер�
 
 ## Рассмотренные варианты
 
-1. ЮKassa «Безопасная сделка» — публично документированный hold до 180 дней,
+1. CloudPayments «Безопасная сделка» — публично описаны расчёты между физлицами,
+   заморозка до двух месяцев, комиссия площадки, два терминала оплаты/выплат,
+   схемы `NToOne`/`OneToN`, API, HMAC-уведомления и status lookup. Тариф,
+   поддерживающий банк-эквайер, применимость к аренде, onboarding и финансовая
+   ответственность требуют индивидуального договора.
+2. ЮKassa «Безопасная сделка» — публично документированный hold до 180 дней,
    выплаты физлицам и отдельное вознаграждение площадки; тариф и подключение
    требуют индивидуального договора.
-2. Т‑Банк «Мультирасчёты» — hold, split и выплаты физлицам/юрлицам; тариф
+3. Т‑Банк «Мультирасчёты» — hold, split и выплаты физлицам/юрлицам; тариф
    индивидуальный, срок сделки короче, подключение может занять до 60 дней.
-3. CloudPayments «Безопасная сделка» — заявлены hold и комиссия площадки, но
-   публично недостаточно данных о тарифе, onboarding и полном API-contract.
 4. `PAY_ON_HANDOVER` — технически доступный zero-commission fallback, но не
    реализует выбранную владельцем монетизацию.
 
 ## Предлагаемое решение
 
 - Целевой release-сценарий — `SAFE_DEAL`.
-- Основной кандидат — ЮKassa, только после письменного подтверждения P2P-аренды,
-  допустимого стартового оборота, тарифа и договора.
-- Первый fallback — Т‑Банк «Мультирасчёты».
-- Провайдер хранит деньги до завершения аренды и dispute window, затем
-  перечисляет владельцу его часть и Sosedi — вознаграждение.
+- Основной кандидат по решению владельца продукта — CloudPayments, только после
+  письменного подтверждения платной P2P-аренды личных вещей, допустимого
+  стартового оборота, банка-эквайера, двух связанных терминалов, тарифа и
+  договора.
+- Первый fallback — ЮKassa «Безопасная сделка», второй — Т‑Банк
+  «Мультирасчёты»; production adapter реализуется только для одного провайдера.
+- CloudPayments управляет расчётами до решения площадки, после чего выплачивает
+  владельцу утверждённую сумму и позволяет площадке получить согласованное
+  вознаграждение. Точное движение денег и ответственность фиксирует договор.
 - Sosedi не принимает и не хранит PAN/CVC и не получает на свой счёт всю сумму
   аренды.
 - Вознаграждение Sosedi признаётся после успешной выплаты владельцу, чтобы
@@ -62,10 +72,13 @@ Sosedi должен получать вознаграждение с завер�
 - Тариф хранится как `commissionBps + pricingPolicyVersion + effectiveAt` и
   snapshot конкретной Booking; новая политика не пересчитывает старые сделки.
 - После подтверждения владельцем арендатору предлагается 30 минут на Safe Deal
-  оплату. `payBy`, provider expiry/cancel и обработка позднего webhook требуют
-  подтверждения API и не применяются к `PAY_ON_HANDOVER`.
+  оплату через согласованный Widget/mobile SDK/3-D Secure flow. `payBy`, provider
+  expiry/cancel и обработка позднего webhook требуют проверки на выданных
+  CloudPayments test terminals и не применяются к `PAY_ON_HANDOVER`.
 - Fixed/min/max, касса, provider cost, refund rules и KYC остаются `TBD` до
   коммерческого предложения и legal/accounting review.
+- Выбор `NToOne` либо `OneToN`, правила `FinalPayout` и место platform fee в
+  денежных потоках не выводятся из публичного примера и остаются частью gate.
 
 Это `PROPOSED`, а не разрешение включать production payments.
 
@@ -78,8 +91,11 @@ Sosedi должен получать вознаграждение с завер�
   tests, безопасную operator queue и server-backed mobile UX. Режим требует
   явной non-production конфигурации и запрещён release-gate в production.
 - Fake provider исполняет только тестовые hold/refund/release outcomes; live
-  provider adapter, checkout URL/webhook, payout, чеки и reconciliation не
-  реализованы.
+  provider adapter, Widget/SDK/API/webhook flow, payout, чеки и reconciliation
+  не реализованы.
+- Будущая CloudPayments migration заменяет legacy `yookassaPaymentId` на
+  provider-neutral transaction/deal IDs и сохраняет `TransactionId` плюс
+  `EscrowAccumulationId`; текущая provisional schema сейчас не меняется.
 - Этот test slice не выбирает release-provider, fee payer, production dispute
   window или KYC-ветку, не закрывает ни один provider/legal/accounting gate и не
   меняет статус ADR `PROPOSED`.
@@ -90,13 +106,14 @@ Sosedi должен получать вознаграждение с завер�
 ## Rollout и rollback
 
 До `ACCEPTED` ADR и provider contract payment mode остаётся disabled. Тесты
-используют fake provider. Если ЮKassa откажет или условия не подходят, ADR
-пересматривается для Т‑Банка без параллельной реализации двух production
-adapter.
+используют fake provider. Если CloudPayments откажет, не подтвердит P2P-аренду
+или предложит неподходящие условия, ADR пересматривается сначала для ЮKassa,
+затем для Т‑Банка без параллельной реализации production adapter.
 
 ## Checklist
 
 - Разблокированные пункты: нет до статуса `ACCEPTED`.
 - Пункты `[~]` N/A: нет.
 - Обязательные tests/gates: разделы 13.1, 14 и 15 `MVP_CHECKLIST.md`.
-- Дата следующего пересмотра: после двух письменных коммерческих предложений.
+- Дата следующего пересмотра: после письменного предложения CloudPayments,
+  выдачи test terminals и legal/accounting review.
