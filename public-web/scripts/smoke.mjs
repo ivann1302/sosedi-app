@@ -23,6 +23,12 @@ for (const route of routes) {
   if (!html.includes('<html lang="ru">')) {
     throw new Error(`${route} has no Russian language declaration`);
   }
+  if (route === '/' && !html.includes('Всё рядом')) {
+    throw new Error(`${route} has no current product name`);
+  }
+  if (/Соседи|Sosedi/.test(html)) {
+    throw new Error(`${route} contains the retired user-facing brand`);
+  }
   if (
     /<(form|script)\b/i.test(html) ||
     /google-analytics|appmetrica|metrika/i.test(html)
