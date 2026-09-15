@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../catalog/data/catalog_models.dart';
@@ -87,10 +88,7 @@ class _OwnerReviews extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const CircleAvatar(
-          radius: 36,
-          child: Icon(Icons.person_outline, size: 36),
-        ),
+        UserAvatar(radius: 36, avatarUrl: owner.avatarUrl, name: owner.name),
         const SizedBox(height: 12),
         Text(
           name?.isNotEmpty == true ? name! : 'Сосед',

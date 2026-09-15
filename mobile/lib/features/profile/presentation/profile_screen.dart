@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import '../data/profile_models.dart';
 import '../data/profile_service.dart';
 
@@ -55,20 +56,7 @@ class _ProfileContent extends StatelessWidget {
               image: true,
               label: 'Аватар пользователя',
               excludeSemantics: true,
-              child: CircleAvatar(
-                radius: 36,
-                backgroundColor: AppColors.cloud,
-                foregroundColor: AppColors.ink900,
-                backgroundImage: profile.avatarUrl == null
-                    ? null
-                    : NetworkImage(profile.avatarUrl!),
-                child: profile.avatarUrl == null
-                    ? Text(
-                        _initial(name),
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      )
-                    : null,
-              ),
+              child: UserAvatar(avatarUrl: profile.avatarUrl, name: name),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -170,13 +158,6 @@ class _ProfileContent extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _initial(String? name) {
-    if (name == null || name.isEmpty) {
-      return 'С';
-    }
-    return name.characters.first.toUpperCase();
   }
 
   String _kycLabel(String? status) {

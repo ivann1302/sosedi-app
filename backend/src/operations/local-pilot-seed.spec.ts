@@ -48,9 +48,14 @@ describe('local pilot fixture photos', () => {
   it('upserts one deterministic bundled cover for every fixture', async () => {
     type ItemUpsertArgs = { create: { clientRequestId: string } };
     type PhotoUpsertArgs = { create: { thumbnailUrl: string } };
+    type UserUpsertArgs = { update: { avatarUrl: string } };
 
     const photoUpsert = jest.fn<Promise<unknown>, [PhotoUpsertArgs]>();
     photoUpsert.mockResolvedValue({});
+    const userUpsert = jest
+      .fn<Promise<{ id: string }>, [UserUpsertArgs]>()
+      .mockResolvedValueOnce({ id: 'owner-1' })
+      .mockResolvedValueOnce({ id: 'borrower-1' });
     const prisma = {
       category: {
         findMany: jest.fn().mockResolvedValue([
@@ -63,10 +68,7 @@ describe('local pilot fixture photos', () => {
         ]),
       },
       user: {
-        upsert: jest
-          .fn()
-          .mockResolvedValueOnce({ id: 'owner-1' })
-          .mockResolvedValueOnce({ id: 'borrower-1' }),
+        upsert: userUpsert,
       },
       item: {
         upsert: jest
@@ -81,6 +83,13 @@ describe('local pilot fixture photos', () => {
 
     await seedLocalPilotData(prisma);
 
+    expect(userUpsert).toHaveBeenCalledTimes(2);
+    expect(userUpsert.mock.calls[0][0].update.avatarUrl).toBe(
+      'asset:///assets/images/mock_users/ivan.png',
+    );
+    expect(userUpsert.mock.calls[1][0].update.avatarUrl).toBe(
+      'asset:///assets/images/mock_users/anna.png',
+    );
     expect(photoUpsert).toHaveBeenCalledTimes(7);
     const assetUrls = photoUpsert.mock.calls.map(
       ([args]) => args.create.thumbnailUrl,

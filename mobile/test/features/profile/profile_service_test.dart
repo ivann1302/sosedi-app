@@ -112,6 +112,47 @@ void main() {
     expect(adapter.requests, hasLength(3));
   });
 
+  test('uses image bytes when picker MIME disagrees with the file', () async {
+    final adapter = CallbackAdapter((options) {
+      if (options.path == '/uploads/presigned-url') {
+        expect(options.data, {
+          'purpose': 'AVATAR',
+          'fileName': 'avatar.jpg',
+          'contentType': 'image/jpeg',
+          'sizeBytes': 4,
+        });
+        return jsonResponse({
+          'success': true,
+          'data': {
+            'intentId': 'intent-picker-jpeg',
+            'uploadUrl': 'https://upload.test/avatar',
+            'fields': {'key': 'quarantine/avatar.jpg'},
+          },
+          'error': null,
+        });
+      }
+      if (options.uri.host == 'upload.test') {
+        return ResponseBody.fromString('', 204);
+      }
+      if (options.path == '/uploads/avatars/confirm') {
+        return jsonResponse({
+          'success': true,
+          'data': {'avatarUrl': 'https://cdn.test/avatar.webp'},
+          'error': null,
+        });
+      }
+      throw StateError('Unexpected request: ${options.path}');
+    });
+    final service = ProfileService(Dio()..httpClientAdapter = adapter);
+    final file = XFile.fromData(
+      Uint8List.fromList([0xff, 0xd8, 0xff, 0xe0]),
+      name: 'avatar.png',
+      mimeType: 'image/png',
+    );
+
+    await service.replaceAvatar(file);
+  });
+
   test('requests account closure and reads its status', () async {
     final adapter = CallbackAdapter((options) {
       expect(options.method, 'DELETE');

@@ -10,6 +10,8 @@ import {
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const OWNER_PHONE = '+79990001001';
 const BORROWER_PHONE = '+79990001002';
+const OWNER_AVATAR_URL = 'asset:///assets/images/mock_users/ivan.png';
+const BORROWER_AVATAR_URL = 'asset:///assets/images/mock_users/anna.png';
 
 const fixtures = [
   {
@@ -158,8 +160,18 @@ export async function seedLocalPilotData(prisma: PrismaClient): Promise<{
   }
 
   const [owner, borrower] = await Promise.all([
-    upsertPilotUser(prisma, OWNER_PHONE, 'Иван · локальный пилот'),
-    upsertPilotUser(prisma, BORROWER_PHONE, 'Анна · локальный пилот'),
+    upsertPilotUser(
+      prisma,
+      OWNER_PHONE,
+      'Иван · локальный пилот',
+      OWNER_AVATAR_URL,
+    ),
+    upsertPilotUser(
+      prisma,
+      BORROWER_PHONE,
+      'Анна · локальный пилот',
+      BORROWER_AVATAR_URL,
+    ),
   ]);
 
   const items: Item[] = [];
@@ -235,17 +247,23 @@ export async function seedLocalPilotData(prisma: PrismaClient): Promise<{
   return { users: 2, items: items.length, favorites: 2 };
 }
 
-function upsertPilotUser(prisma: PrismaClient, phone: string, name: string) {
+function upsertPilotUser(
+  prisma: PrismaClient,
+  phone: string,
+  name: string,
+  avatarUrl: string,
+) {
   return prisma.user.upsert({
     where: { phone },
     update: {
       name,
+      avatarUrl,
       city: 'Москва',
       role: UserRole.USER,
       isBlocked: false,
       deletedAt: null,
       anonymizedAt: null,
     },
-    create: { phone, name, city: 'Москва', role: UserRole.USER },
+    create: { phone, name, avatarUrl, city: 'Москва', role: UserRole.USER },
   });
 }

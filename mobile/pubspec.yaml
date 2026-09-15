@@ -87,6 +87,7 @@ flutter:
     - assets/fonts/ONEST-OFL.txt
     - assets/images/yandex_maps_logo_ru.png
     - assets/images/mock_items/
+    - assets/images/mock_users/
     - assets/images/onboarding/
 
   fonts:

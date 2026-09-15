@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/widgets/unsaved_changes_guard.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import '../data/profile_models.dart';
 import '../data/profile_service.dart';
 import '../domain/profile_editor_controller.dart';
@@ -157,14 +158,10 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      child: CircleAvatar(
+      child: UserAvatar(
         radius: 48,
-        backgroundImage: profile.avatarUrl == null
-            ? null
-            : NetworkImage(profile.avatarUrl!),
-        child: profile.avatarUrl == null
-            ? const Icon(Icons.person_outline, size: 40)
-            : null,
+        avatarUrl: profile.avatarUrl,
+        name: profile.name,
       ),
     );
   }

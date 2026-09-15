@@ -240,6 +240,23 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+  for (final step in [1, 2]) {
+    _screenshot(
+      step == 1 ? '11b-create-description.png' : '11c-create-place.png',
+      () => _scope(
+        const CreateItemScreen(),
+        overrides: [
+          catalogServiceProvider.overrideWithValue(catalogService),
+          createItemDraftStorageProvider.overrideWithValue(
+            _ScreenshotDraftStorage(LocalCreateItemDraft(step: step)),
+          ),
+          appPermissionGatewayProvider.overrideWithValue(
+            _ScreenshotPermissionGateway(),
+          ),
+        ],
+      ),
+    );
+  }
   _screenshot(
     '12-owned-items.png',
     () => _scope(
@@ -603,8 +620,12 @@ class _ScreenshotFavoriteService extends FavoriteService {
 }
 
 class _ScreenshotDraftStorage extends CreateItemDraftStorage {
+  _ScreenshotDraftStorage([this.draft]);
+
+  final LocalCreateItemDraft? draft;
+
   @override
-  Future<LocalCreateItemDraft?> load() async => null;
+  Future<LocalCreateItemDraft?> load() async => draft;
 
   @override
   Future<void> save(LocalCreateItemDraft draft) async {}
@@ -779,7 +800,12 @@ CatalogItem _catalogItem({
     pricePerDay: price,
     depositAmount: null,
     category: _category,
-    owner: const CatalogOwner(id: 'owner-1', name: 'Иван', city: 'Москва'),
+    owner: const CatalogOwner(
+      id: 'owner-1',
+      name: 'Иван',
+      city: 'Москва',
+      avatarUrl: 'asset:///assets/images/mock_users/ivan.png',
+    ),
     area: area,
     approximateLocation: ApproximateLocation(
       latitude: latitude,
@@ -891,9 +917,8 @@ final _returnedBooking = _booking(
   status: 'RETURNED',
   nextAction: const BookingNextAction(
     code: 'REVIEW_RETURN',
-    title: 'Завершите возврат',
-    description:
-        'Проверьте акт возврата и зафиксируйте проблему, если она есть.',
+    title: 'Возврат подтверждён',
+    description: 'Если есть вопрос по аренде, напишите в поддержку.',
   ),
 );
 
@@ -1024,7 +1049,7 @@ final _profile = UserProfile(
   phone: '+79991234567',
   name: 'Анна',
   city: 'Москва',
-  avatarUrl: null,
+  avatarUrl: 'asset:///assets/images/mock_users/anna.png',
   role: 'USER',
   kycStatus: null,
   isBlocked: false,

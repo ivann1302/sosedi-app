@@ -9,6 +9,7 @@ import '../../../core/config/marketplace_documents_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/item_photo_image.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import '../../auth/domain/auth_controller.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../catalog/data/catalog_models.dart';
@@ -155,7 +156,11 @@ class _ItemContent extends ConsumerWidget {
         ListTile(
           contentPadding: EdgeInsets.zero,
           minVerticalPadding: 0,
-          leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+          leading: UserAvatar(
+            avatarUrl: item.owner.avatarUrl,
+            name: item.owner.name,
+            radius: 20,
+          ),
           title: Text(
             item.owner.name?.trim().isNotEmpty == true
                 ? item.owner.name!
