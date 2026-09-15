@@ -1,7 +1,10 @@
 # Store readiness
 
-Статус на 30.07.2026. Документ не хранит Apple Account, team ID, платежные
+Статус на 15.09.2026. Документ не хранит Apple Account, team ID, платежные
 реквизиты, сертификаты или другие секреты.
+
+Пользовательское имя приложений во всех трёх магазинах — `Всё рядом`.
+Технический идентификатор сохраняется без миграции.
 
 ## Идентификаторы приложений
 
@@ -14,6 +17,36 @@
 Идентификатор должен использоваться при создании приложений в App Store
 Connect, Google Play Console, RuStore и при ограничении provider API keys. После
 первой публикации менять его нельзя.
+
+## Текущий порядок регистрации
+
+1. Бесплатно проверить или запросить D-U-N-S для юридического лица. Он нужен
+   для organization enrollment Apple и Google Play; использовать точное
+   юридическое наименование и адрес из документов.
+2. После появления нового домена «Всё рядом» создать рабочую почту на нём и
+   опубликовать функциональный публичный сайт с support/privacy/account-deletion
+   URL. Старый лендинг «Соседи» на SprintHost для новой регистрации не менять.
+3. RuStore organization account можно начать раньше, если у юридического лица
+   есть действующая КЭП и у руководителя есть VK ID/VK Business. Регистрация
+   бесплатна; приложение создавать как `Всё рядом`, package — `ru.sosedi.app`.
+4. Google Play organization account создавать после D-U-N-S, нового сайта и
+   готовности оплатить разовый регистрационный сбор. До отдельного разрешения
+   владельца платёж не выполнять.
+5. Apple Developer Organization оформлять после D-U-N-S, нового сайта, рабочей
+   доменной почты и готовности оплатить ежегодное членство. До отдельного
+   разрешения владельца платёж не выполнять.
+
+Не создавать временные personal accounts: продавцом/разработчиком должно быть
+то юридическое лицо, которое публикует сервис и заключает договоры.
+
+Официальные инструкции:
+
+- [Apple enrollment](https://developer.apple.com/help/account/membership/program-enrollment)
+- [Apple D-U-N-S](https://developer.apple.com/help/account/membership/D-U-N-S)
+- [Google Play verification](https://support.google.com/googleplay/android-developer/answer/13628312?hl=en)
+- [Google Play requirements](https://support.google.com/googleplay/android-developer/answer/13634885?hl=en)
+- [RuStore developer account](https://www.rustore.ru/help/developers/developer-account)
+- [RuStore registration](https://www.rustore.ru/help/developers/developer-account/registration-developer)
 
 ## Apple Developer
 
