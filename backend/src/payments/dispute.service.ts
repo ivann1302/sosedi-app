@@ -17,6 +17,7 @@ import type { AdminAuditContext } from '../admin/admin-audit-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { UploadPurpose } from '../upload/upload.types';
+import { completeBookingAfterReturnInTransaction } from './deposit.service';
 import {
   decimalToMinor,
   minorToDecimal,
@@ -294,18 +295,19 @@ export class DisputeService {
       const updated = await tx.financialDispute.update({
         where: { id: dispute.id },
         data: {
-          status: DisputeStatus.UNDER_REVIEW,
+          status: DisputeStatus.RESOLVED,
           resolvedById: adminId,
           decisionReason: dto.reason,
           refundToBorrowerAmount: minorToDecimal(refundMinor),
           releaseToLenderAmount: minorToDecimal(releaseMinor),
+          resolvedAt: now,
         },
         include: disputeInclude,
       });
       await tx.adminAuditLog.create({
         data: {
           adminId,
-          action: 'FINANCIAL_DISPUTE_RESOLUTION_STARTED',
+          action: 'FINANCIAL_DISPUTE_RESOLVED',
           entityType: 'FinancialDispute',
           entityId: dispute.id,
           capability: AdminCapability.FINANCE,
@@ -318,7 +320,7 @@ export class DisputeService {
             depositStatus: DepositStatus.DISPUTED,
           },
           after: {
-            status: DisputeStatus.UNDER_REVIEW,
+            status: DisputeStatus.RESOLVED,
             depositStatus: DepositStatus.RESOLVING,
           },
           metadata: {
@@ -332,6 +334,12 @@ export class DisputeService {
           },
         },
       });
+      await completeBookingAfterReturnInTransaction(
+        tx,
+        target.bookingId,
+        now,
+        'DISPUTE_DECIDED',
+      );
       return this.toDisputeResponse(updated);
     });
   }

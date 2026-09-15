@@ -607,9 +607,9 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       <div class="progress-wrap">
         <div class="progress-header">
           <span>Прогресс всего MVP</span>
-          <span>353 / 486 — 72,6%</span>
+          <span>354 / 486 — 72,8%</span>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:72.6%"></div></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:72.8%"></div></div>
         <div class="kpi-sub" style="margin-top:var(--space-2)">Рассчитано только из выполненных пунктов <code>MVP_CHECKLIST.md</code>; HTML не ведёт второй независимый процент. Tiles CI: run 34342751765 прошёл 09.09.2026, ключ передан из environment secret.</div>
       </div>
 
@@ -1069,6 +1069,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Versioned pricing: commissionBps + pricingPolicyVersion + effectiveAt и immutable snapshot; старые сделки не пересчитываются. После пилота проверить целевые 5% маржи по утверждённой формуле и только затем выбрать новый displayed fee</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>PostgreSQL Decimal(10,2) и DB min/max constraints для Item/Booking/provisional Payment покрыты e2e; REST/mobile переход с JSON number на minor units и финансовый ledger ждут payment ADR</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Отдельные переходы hold/release/refund/payout/failed с retry без двойного финансового эффекта</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Booking completion отделён от provider settlement: без спора бронь закрывается после dispute window, со спором — по audited admin decision; ошибка refund/payout остаётся отдельной финансовой задачей с alert и audited retry.</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Receipt/fiscalization: определить ответственного, события выдачи чека и отображение документа пользователю</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Повторяемая reconciliation job: локальные суммы/статусы против CloudPayments по AccumulationId, отчёт расхождений и alert</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>История платежей/refund/payout/receipts в профиле и operator queue failed/stuck/mismatch с capability + step-up, без provider raw payload/PII</div></div>

@@ -64,6 +64,8 @@ export function assertDepositSettledForCompletionOrPayout(
 
 export type BookingCompletionTrigger =
   | 'DEPOSIT_SETTLED'
+  | 'DISPUTE_DECIDED'
+  | 'DISPUTE_WINDOW_CLOSED'
   | 'ZERO_DEPOSIT_RETURN';
 
 export async function completeBookingAfterReturnInTransaction(
@@ -82,20 +84,38 @@ export async function completeBookingAfterReturnInTransaction(
   if (!booking || booking.status === BookingStatus.COMPLETED) {
     return 0;
   }
-  if (
-    booking.status !== BookingStatus.RETURNED ||
-    (booking.financialDispute &&
-      booking.financialDispute.status !== DisputeStatus.RESOLVED)
-  ) {
+  if (booking.status !== BookingStatus.RETURNED) {
     return 0;
   }
 
   if (trigger === 'ZERO_DEPOSIT_RETURN') {
-    if (booking.deposit) {
+    if (booking.deposit || booking.financialDispute) {
       throw new ConflictException('Unexpected deposit for zero-deposit return');
     }
     assertDepositSettledForCompletionOrPayout(null);
+  } else if (trigger === 'DISPUTE_WINDOW_CLOSED') {
+    if (
+      !booking.deposit?.disputeWindowEndsAt ||
+      booking.deposit.disputeWindowEndsAt > now ||
+      booking.financialDispute
+    ) {
+      return 0;
+    }
+  } else if (trigger === 'DISPUTE_DECIDED') {
+    if (
+      !booking.deposit ||
+      !booking.financialDispute ||
+      booking.financialDispute.status !== DisputeStatus.RESOLVED
+    ) {
+      return 0;
+    }
   } else {
+    if (
+      booking.financialDispute &&
+      booking.financialDispute.status !== DisputeStatus.RESOLVED
+    ) {
+      return 0;
+    }
     if (!booking.deposit?.disputeWindowEndsAt) {
       return 0;
     }
@@ -118,11 +138,19 @@ export async function completeBookingAfterReturnInTransaction(
   const command =
     trigger === 'ZERO_DEPOSIT_RETURN'
       ? 'COMPLETE_AFTER_RETURN'
-      : 'COMPLETE_AFTER_DEPOSIT_SETTLED';
+      : trigger === 'DISPUTE_WINDOW_CLOSED'
+        ? 'COMPLETE_AFTER_DISPUTE_WINDOW'
+        : trigger === 'DISPUTE_DECIDED'
+          ? 'COMPLETE_AFTER_DISPUTE_DECISION'
+          : 'COMPLETE_AFTER_DEPOSIT_SETTLED';
   const requestId =
     trigger === 'ZERO_DEPOSIT_RETURN'
       ? `booking:${bookingId}:complete-after-return`
-      : `deposit:${booking.deposit!.id}:complete`;
+      : trigger === 'DISPUTE_WINDOW_CLOSED'
+        ? `booking:${bookingId}:complete-after-dispute-window`
+        : trigger === 'DISPUTE_DECIDED'
+          ? `booking:${bookingId}:complete-after-dispute-decision`
+          : `deposit:${booking.deposit!.id}:complete`;
   await tx.bookingTransitionHistory.create({
     data: {
       bookingId,
@@ -385,7 +413,8 @@ export class DepositService {
       if (
         operation.status !== DepositOperationStatus.FAILED ||
         operation.deposit.status !== DepositStatus.RESOLVING ||
-        dispute?.status !== DisputeStatus.UNDER_REVIEW ||
+        (dispute?.status !== DisputeStatus.UNDER_REVIEW &&
+          dispute?.status !== DisputeStatus.RESOLVED) ||
         !requiredAmount ||
         decimalToMinor(requiredAmount) <= 0n ||
         decimalToMinor(requiredAmount) !== decimalToMinor(operation.amount)

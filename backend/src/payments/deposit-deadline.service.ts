@@ -11,6 +11,7 @@ import {
   DepositStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { completeBookingAfterReturnInTransaction } from './deposit.service';
 
 const DEADLINE_POLL_INTERVAL_MS = 60 * 1000;
 
@@ -95,6 +96,12 @@ export class DepositDeadlineService
           where: { id: deposit.id },
           data: { status: DepositStatus.RESOLVING },
         });
+        await completeBookingAfterReturnInTransaction(
+          tx,
+          deposit.bookingId,
+          now,
+          'DISPUTE_WINDOW_CLOSED',
+        );
         return 1;
       });
     }

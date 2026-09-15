@@ -57,6 +57,21 @@ function fakeSnapshot(depositMinor: number, disputeWindowSeconds = 86_400) {
   };
 }
 
+function payOnHandoverSnapshot() {
+  const snapshot = fakeSnapshot(0);
+  return {
+    ...snapshot,
+    platformFee: 0,
+    ownerPayout: 100,
+    paymentScenario: 'PAY_ON_HANDOVER',
+    moneyMinor: {
+      ...snapshot.moneyMinor,
+      platformFee: 0,
+      ownerPayout: 10_000,
+    },
+  };
+}
+
 function act(stage: BookingActStage, depositMinor = 5_000) {
   const isHandover = stage === BookingActStage.HANDOVER;
   return {
@@ -228,6 +243,25 @@ describe('BookingActService fake settlement gates', () => {
 
   it('completes a paid fake zero-deposit booking in the return transaction', async () => {
     const returned = act(BookingActStage.RETURN, 0);
+    const { service, history, outbox, record } = createService(returned);
+
+    await service.confirm('lender-1', 'booking-1', returned.id);
+
+    expect(record.booking.status).toBe(BookingStatus.COMPLETED);
+    expect(history.map((entry) => entry.command)).toEqual([
+      'CONFIRM_RETURN',
+      'COMPLETE_AFTER_RETURN',
+    ]);
+    expect(outbox.map((entry) => entry.eventType)).toEqual([
+      'BOOKING_RETURN_CONFIRMED',
+      'BOOKING_COMPLETED',
+    ]);
+  });
+
+  it('completes a pay-on-handover booking in the return transaction', async () => {
+    const returned = act(BookingActStage.RETURN, 0);
+    returned.booking.termsSnapshot = payOnHandoverSnapshot();
+    returned.booking.payment = null as never;
     const { service, history, outbox, record } = createService(returned);
 
     await service.confirm('lender-1', 'booking-1', returned.id);

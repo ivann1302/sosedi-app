@@ -5,6 +5,7 @@ import {
   DepositOperationKind,
   DepositOperationStatus,
   DepositStatus,
+  DisputeStatus,
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
@@ -373,7 +374,7 @@ describe('DepositService failed operation retry', () => {
         status: DepositStatus.RESOLVING,
         booking: {
           financialDispute: {
-            status: 'UNDER_REVIEW',
+            status: DisputeStatus.RESOLVED,
             refundToBorrowerAmount: new Prisma.Decimal(40),
             releaseToLenderAmount: new Prisma.Decimal(60),
           },

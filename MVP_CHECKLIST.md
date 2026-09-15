@@ -1603,8 +1603,13 @@ Fake provider и доменные TDD-тесты не блокируются.
   попытку payout без потери финансовой истории.
 - [ ] Не запускать payout до подтверждённого возврата и закрытия dispute window;
   финансовый flow считать settled только после подтверждённого `payout.succeeded`.
-- [ ] Определять `Booking.COMPLETED` правилами возврата/спора, а не webhook выплаты:
+- [x] Определять `Booking.COMPLETED` правилами возврата/спора, а не webhook выплаты:
   неуспешный payout оставляет отдельную финансовую задолженность и операционный alert.
+  **DONE 15.09.2026:** бронь без залога завершается после возврата, с залогом без
+  спора — после dispute window, а со спором — в одной атомарной транзакции с
+  audited admin decision. Refund/payout исполняются отдельно; definitive failure не
+  откатывает `Booking.COMPLETED`, даёт `refund|payout/failure` alert и допускает audited retry.
+  Покрыто 56 focused unit, 370 full unit и 78 e2e тестами; CloudPayments/schema не затронуты.
 - [ ] Обработать canceled/failed payout, недостаток баланса для refund, provider
   timeout, provider reversal/chargeback (если поддерживается) и приближение deal
   expiry без ручного изменения статуса в БД.

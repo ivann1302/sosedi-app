@@ -1257,7 +1257,7 @@ describe('Admin session (e2e)', () => {
       .expect(201);
     expect(asRecord(asRecord(resolved.body as unknown).data)).toMatchObject({
       id: dispute.id,
-      status: 'UNDER_REVIEW',
+      status: 'RESOLVED',
     });
     await request(httpServer())
       .post(`/api/v1/admin/disputes/${dispute.id}/resolve`)
@@ -1277,7 +1277,7 @@ describe('Admin session (e2e)', () => {
     ).resolves.toBe(2);
     const audit = await prisma.adminAuditLog.findFirstOrThrow({
       where: {
-        action: 'FINANCIAL_DISPUTE_RESOLUTION_STARTED',
+        action: 'FINANCIAL_DISPUTE_RESOLVED',
         entityId: dispute.id,
       },
     });

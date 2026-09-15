@@ -449,13 +449,17 @@ describe('DisputeService financial resolution', () => {
   function resolutionService() {
     const operations: Array<Record<string, unknown>> = [];
     const audit: Array<Record<string, unknown>> = [];
+    const history: Array<Record<string, unknown>> = [];
+    const outbox: Array<Record<string, unknown>> = [];
     const state = {
       status: DisputeStatus.OPEN,
       resolvedById: null as string | null,
       decisionReason: null as string | null,
       refundToBorrowerAmount: new Prisma.Decimal(0),
       releaseToLenderAmount: new Prisma.Decimal(0),
+      resolvedAt: null as Date | null,
       depositStatus: DepositStatus.DISPUTED,
+      bookingStatus: BookingStatus.RETURNED,
     };
     const disputeRecord = () => ({
       id: 'dispute-1',
@@ -469,14 +473,15 @@ describe('DisputeService financial resolution', () => {
       refundToBorrowerAmount: state.refundToBorrowerAmount,
       releaseToLenderAmount: state.releaseToLenderAmount,
       openedAt: beforeDeadline,
-      resolvedAt: null,
+      resolvedAt: state.resolvedAt,
       evidence: [],
       booking: {
-        status: BookingStatus.RETURNED,
+        status: state.bookingStatus,
         deposit: {
           id: 'deposit-1',
           amount: new Prisma.Decimal(100),
           status: state.depositStatus,
+          disputeWindowEndsAt: deadline,
         },
       },
     });
@@ -494,6 +499,7 @@ describe('DisputeService financial resolution', () => {
               data.refundToBorrowerAmount as Prisma.Decimal;
             state.releaseToLenderAmount =
               data.releaseToLenderAmount as Prisma.Decimal;
+            state.resolvedAt = data.resolvedAt as Date;
             return Promise.resolve(disputeRecord());
           }),
       },
@@ -528,6 +534,39 @@ describe('DisputeService financial resolution', () => {
           return Promise.resolve(data);
         }),
       },
+      booking: {
+        findUnique: jest.fn().mockImplementation(() =>
+          Promise.resolve({
+            id: 'booking-1',
+            status: state.bookingStatus,
+            deposit: {
+              id: 'deposit-1',
+              amount: new Prisma.Decimal(100),
+              refundedAmount: new Prisma.Decimal(0),
+              releasedToLenderAmount: new Prisma.Decimal(0),
+              status: state.depositStatus,
+              disputeWindowEndsAt: deadline,
+            },
+            financialDispute: { status: state.status },
+          }),
+        ),
+        updateMany: jest.fn().mockImplementation(() => {
+          state.bookingStatus = BookingStatus.COMPLETED;
+          return Promise.resolve({ count: 1 });
+        }),
+      },
+      bookingTransitionHistory: {
+        create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
+          history.push(data);
+          return Promise.resolve(data);
+        }),
+      },
+      notificationOutboxEvent: {
+        create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
+          outbox.push(data);
+          return Promise.resolve(data);
+        }),
+      },
     };
     const prisma = {
       financialDispute: {
@@ -547,6 +586,8 @@ describe('DisputeService financial resolution', () => {
       ),
       operations,
       audit,
+      history,
+      outbox,
       state,
       tx,
     };
@@ -563,7 +604,8 @@ describe('DisputeService financial resolution', () => {
   ] as const)(
     'persists an exact %i/%i resolution with only positive legs',
     async (refundToBorrowerMinor, releaseToLenderMinor, expectedKinds) => {
-      const { service, operations, audit, state } = resolutionService();
+      const { service, operations, audit, history, outbox, state } =
+        resolutionService();
 
       await service.resolveDispute(
         'admin-1',
@@ -579,10 +621,12 @@ describe('DisputeService financial resolution', () => {
       );
 
       expect(state).toMatchObject({
-        status: DisputeStatus.UNDER_REVIEW,
+        status: DisputeStatus.RESOLVED,
         resolvedById: 'admin-1',
         decisionReason: 'Проверенное решение по спору',
+        resolvedAt: now,
         depositStatus: DepositStatus.RESOLVING,
+        bookingStatus: BookingStatus.COMPLETED,
       });
       expect(operations.map((operation) => operation.kind)).toEqual(
         expectedKinds,
@@ -599,7 +643,7 @@ describe('DisputeService financial resolution', () => {
       expect(audit).toEqual([
         expect.objectContaining({
           adminId: 'admin-1',
-          action: 'FINANCIAL_DISPUTE_RESOLUTION_STARTED',
+          action: 'FINANCIAL_DISPUTE_RESOLVED',
           entityType: 'FinancialDispute',
           entityId: 'dispute-1',
           capability: AdminCapability.FINANCE,
@@ -621,6 +665,20 @@ describe('DisputeService financial resolution', () => {
       expect(JSON.stringify(audit)).not.toContain('phone');
       expect(JSON.stringify(audit)).not.toContain('address');
       expect(JSON.stringify(audit)).not.toContain('provider');
+      expect(history).toEqual([
+        expect.objectContaining({
+          bookingId: 'booking-1',
+          command: 'COMPLETE_AFTER_DISPUTE_DECISION',
+          oldStatus: BookingStatus.RETURNED,
+          newStatus: BookingStatus.COMPLETED,
+        }),
+      ]);
+      expect(outbox).toEqual([
+        expect.objectContaining({
+          bookingId: 'booking-1',
+          eventType: 'BOOKING_COMPLETED',
+        }),
+      ]);
     },
   );
 
@@ -675,7 +733,7 @@ describe('DisputeService financial resolution', () => {
         context,
         now,
       ),
-    ).resolves.toMatchObject({ status: DisputeStatus.UNDER_REVIEW });
+    ).resolves.toMatchObject({ status: DisputeStatus.RESOLVED });
     await expect(
       service.resolveDispute(
         'admin-1',

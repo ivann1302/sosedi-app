@@ -8,6 +8,7 @@ import {
   DepositOperationKind,
   DepositOperationStatus,
   DepositStatus,
+  DisputeStatus,
   FinancialDisputeReason,
   ItemCondition,
   ItemStatus,
@@ -36,6 +37,14 @@ function asRecord(value: unknown): Record<string, unknown> {
     throw new Error('Expected an object');
   }
   return value as Record<string, unknown>;
+}
+
+const testDateBase = new Date();
+
+function dateOnlyDaysFromNow(days: number): string {
+  const value = new Date(testDateBase);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
 }
 
 describe('Fake Safe Deal deposit snapshot (e2e)', () => {
@@ -185,8 +194,8 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       .set('Authorization', borrowerAuthorization)
       .send({
         itemId: maximumItemId,
-        startDate: '2026-09-10',
-        endDate: '2026-10-09',
+        startDate: dateOnlyDaysFromNow(1),
+        endDate: dateOnlyDaysFromNow(30),
         offerVersion: 'e2e-approved-offer-1',
         cancellationPolicyVersion: 'e2e-approved-cancellation-1',
         offerAccepted: true,
@@ -257,8 +266,8 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       .set('Authorization', borrowerAuthorization)
       .send({
         itemId,
-        startDate: '2026-09-10',
-        endDate: '2026-09-10',
+        startDate: dateOnlyDaysFromNow(35),
+        endDate: dateOnlyDaysFromNow(35),
         offerVersion: 'e2e-approved-offer-1',
         cancellationPolicyVersion: 'e2e-approved-cancellation-1',
         offerAccepted: true,
@@ -439,8 +448,8 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       .set('Authorization', borrowerAuthorization)
       .send({
         itemId,
-        startDate: '2026-11-01',
-        endDate: '2026-11-01',
+        startDate: dateOnlyDaysFromNow(36),
+        endDate: dateOnlyDaysFromNow(36),
         offerVersion: 'e2e-approved-offer-1',
         cancellationPolicyVersion: 'e2e-approved-cancellation-1',
         offerAccepted: true,
@@ -490,8 +499,8 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       .set('Authorization', borrowerAuthorization)
       .send({
         itemId: noDepositItemId,
-        startDate: '2026-11-02',
-        endDate: '2026-11-02',
+        startDate: dateOnlyDaysFromNow(37),
+        endDate: dateOnlyDaysFromNow(37),
         offerVersion: 'e2e-approved-offer-1',
         cancellationPolicyVersion: 'e2e-approved-cancellation-1',
         offerAccepted: true,
@@ -578,8 +587,8 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       .set('Authorization', borrowerAuthorization)
       .send({
         itemId,
-        startDate: '2026-11-03',
-        endDate: '2026-11-03',
+        startDate: dateOnlyDaysFromNow(38),
+        endDate: dateOnlyDaysFromNow(38),
         offerVersion: 'e2e-approved-offer-1',
         cancellationPolicyVersion: 'e2e-approved-cancellation-1',
         offerAccepted: true,
@@ -657,6 +666,15 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
     await expect(deadlines.processDue(expectedDeadline)).resolves.toBe(1);
     await expect(deadlines.processDue(expectedDeadline)).resolves.toBe(0);
     await expect(
+      prisma.booking.findUniqueOrThrow({
+        where: { id: settlementBookingId },
+        include: { deposit: true },
+      }),
+    ).resolves.toMatchObject({
+      status: BookingStatus.COMPLETED,
+      deposit: { status: DepositStatus.RESOLVING },
+    });
+    await expect(
       operations.processPending(expectedDeadline),
     ).resolves.toBeGreaterThanOrEqual(1);
     await expect(operations.processPending(expectedDeadline)).resolves.toBe(0);
@@ -699,7 +717,7 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       prisma.bookingTransitionHistory.count({
         where: {
           bookingId: settlementBookingId,
-          command: 'COMPLETE_AFTER_DEPOSIT_SETTLED',
+          command: 'COMPLETE_AFTER_DISPUTE_WINDOW',
         },
       }),
     ).resolves.toBe(1);
@@ -811,6 +829,19 @@ describe('Fake Safe Deal deposit snapshot (e2e)', () => {
       },
       resolutionNow,
     );
+    await expect(
+      prisma.booking.findUniqueOrThrow({
+        where: { id: disputeBooking.id },
+        include: { deposit: true, financialDispute: true },
+      }),
+    ).resolves.toMatchObject({
+      status: BookingStatus.COMPLETED,
+      deposit: { status: DepositStatus.RESOLVING },
+      financialDispute: {
+        status: DisputeStatus.RESOLVED,
+        resolvedById: resolver.id,
+      },
+    });
     await expect(operations.processPending(resolutionNow)).resolves.toBe(2);
     await expect(
       prisma.booking.findUniqueOrThrow({

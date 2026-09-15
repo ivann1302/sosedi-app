@@ -7,6 +7,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MetricsService } from '../observability/metrics.service';
 import { DepositOperationProcessor } from './deposit-operation.processor';
 import {
   FakeSafeDealProvider,
@@ -15,6 +16,7 @@ import {
 import { PaymentPolicyService } from './payment-policy.service';
 
 const now = new Date('2026-09-04T12:00:00.000Z');
+const disputeDecisionAt = new Date('2026-09-04T11:30:00.000Z');
 
 type OperationUpdateData = {
   status?: DepositOperationStatus;
@@ -89,10 +91,10 @@ function createProcessor(
   const dispute = withDispute
     ? {
         id: 'dispute-1',
-        status: 'UNDER_REVIEW' as const,
+        status: 'RESOLVED' as const,
         refundToBorrowerAmount: new Prisma.Decimal(50),
         releaseToLenderAmount: new Prisma.Decimal(0),
-        resolvedAt: null as Date | null,
+        resolvedAt: disputeDecisionAt as Date | null,
       }
     : null;
   const audit: Array<Record<string, unknown>> = [];
@@ -100,6 +102,7 @@ function createProcessor(
   const outbox: Array<Record<string, unknown>> = [];
   let inTransaction = false;
   let failCompletion = false;
+  const recordOperation = jest.fn();
 
   const provider = {
     executeDepositOperation: jest.fn().mockImplementation(() => {
@@ -298,6 +301,7 @@ function createProcessor(
       prisma as unknown as PrismaService,
       fakePolicy(),
       provider as unknown as FakeSafeDealProvider,
+      { recordOperation } as unknown as MetricsService,
     ),
     operation,
     deposit,
@@ -307,6 +311,7 @@ function createProcessor(
     outbox,
     dispute,
     provider: provider.executeDepositOperation,
+    recordOperation,
     failCompletion: () => {
       failCompletion = true;
     },
@@ -359,6 +364,21 @@ describe('DepositOperationProcessor', () => {
         metadata: { kind: DepositOperationKind.REFUND, attempts: 1 },
       },
     ]);
+  });
+
+  it('alerts on a failed lender payout without reopening the completed booking', async () => {
+    const { processor, operation, booking, recordOperation } = createProcessor({
+      outcome: 'DECLINED',
+      errorCode: 'FAKE_DECLINED',
+    });
+    operation.kind = DepositOperationKind.RELEASE_TO_LENDER;
+    booking.status = BookingStatus.COMPLETED;
+
+    await expect(processor.processPending(now)).resolves.toBe(1);
+
+    expect(operation.status).toBe(DepositOperationStatus.FAILED);
+    expect(booking.status).toBe(BookingStatus.COMPLETED);
+    expect(recordOperation).toHaveBeenCalledWith('payout', 'failure');
   });
 
   it('applies success once, resolves the exact sum, and invokes local completion', async () => {
@@ -453,7 +473,7 @@ describe('DepositOperationProcessor', () => {
     expect(history).toHaveLength(0);
   });
 
-  it('resolves a financial dispute only after its required leg succeeds', async () => {
+  it('settles money without changing the audited dispute decision', async () => {
     const { processor, dispute, deposit, booking } = createProcessor(
       {
         outcome: 'SUCCEEDED',
@@ -463,8 +483,25 @@ describe('DepositOperationProcessor', () => {
     );
 
     await expect(processor.processPending(now)).resolves.toBe(1);
-    expect(dispute).toMatchObject({ status: 'RESOLVED', resolvedAt: now });
+    expect(dispute).toMatchObject({
+      status: 'RESOLVED',
+      resolvedAt: disputeDecisionAt,
+    });
     expect(deposit.status).toBe(DepositStatus.RESOLVED);
     expect(booking.status).toBe(BookingStatus.COMPLETED);
+  });
+
+  it('does not settle a resolved dispute with the wrong operation leg', async () => {
+    const { processor, operation, deposit } = createProcessor(
+      {
+        outcome: 'SUCCEEDED',
+        providerOperationId: 'fake_wrong_leg-1',
+      },
+      true,
+    );
+    operation.kind = DepositOperationKind.RELEASE_TO_LENDER;
+
+    await expect(processor.processPending(now)).resolves.toBe(1);
+    expect(deposit.status).toBe(DepositStatus.RESOLVING);
   });
 });

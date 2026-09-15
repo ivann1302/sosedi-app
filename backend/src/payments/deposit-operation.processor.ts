@@ -11,6 +11,7 @@ import {
   DisputeStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MetricsService } from '../observability/metrics.service';
 import { completeBookingAfterReturnInTransaction } from './deposit.service';
 import {
   FakeSafeDealProvider,
@@ -28,6 +29,11 @@ const OPERATION_LEASE_MS = 60 * 1000;
 const INITIAL_RETRY_MS = 30 * 1000;
 const MAX_RETRY_MS = 60 * 60 * 1000;
 
+type OperationMetric = {
+  operation: 'payout' | 'refund';
+  result: 'failure';
+};
+
 @Injectable()
 export class DepositOperationProcessor
   implements OnApplicationBootstrap, OnModuleDestroy
@@ -39,6 +45,7 @@ export class DepositOperationProcessor
     private readonly prisma: PrismaService,
     private readonly paymentPolicy: PaymentPolicyService,
     private readonly provider: FakeSafeDealProvider,
+    private readonly metrics: MetricsService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -124,7 +131,7 @@ export class DepositOperationProcessor
       outcome = { outcome: 'TIMEOUT' };
     }
 
-    await this.applyOutcome(
+    const metric = await this.applyOutcome(
       claimed.id,
       claimed.deposit.bookingId,
       claimed.attempts,
@@ -132,6 +139,9 @@ export class DepositOperationProcessor
       outcome,
       now,
     );
+    if (metric) {
+      this.metrics.recordOperation(metric.operation, metric.result);
+    }
     return 1;
   }
 
@@ -142,7 +152,7 @@ export class DepositOperationProcessor
     processingUntil: Date,
     outcome: ProviderOperationResult,
     now: Date,
-  ): Promise<void> {
+  ): Promise<OperationMetric | null> {
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${bookingId}))`;
       const operation = await tx.depositOperation.findUnique({
@@ -154,7 +164,7 @@ export class DepositOperationProcessor
         operation.status !== DepositOperationStatus.PENDING ||
         operation.processingUntil?.getTime() !== processingUntil.getTime()
       ) {
-        return;
+        return null;
       }
 
       if (outcome.outcome === 'TIMEOUT') {
@@ -174,9 +184,9 @@ export class DepositOperationProcessor
           },
         });
         if (retryScheduled.count === 0) {
-          return;
+          return null;
         }
-        return;
+        return null;
       }
 
       if (outcome.outcome === 'DECLINED') {
@@ -194,7 +204,7 @@ export class DepositOperationProcessor
           },
         });
         if (failed.count === 0) {
-          return;
+          return null;
         }
         await tx.adminAuditLog.create({
           data: {
@@ -206,11 +216,15 @@ export class DepositOperationProcessor
             metadata: { kind: operation.kind, attempts },
           },
         });
-        return;
+        return operation.kind === DepositOperationKind.REFUND
+          ? { operation: 'refund', result: 'failure' }
+          : operation.kind === DepositOperationKind.RELEASE_TO_LENDER
+            ? { operation: 'payout', result: 'failure' }
+            : null;
       }
 
       if (operation.deposit.status !== DepositStatus.RESOLVING) {
-        return;
+        return null;
       }
       const amountMinor = decimalToMinor(operation.amount);
       const refundedMinor = decimalToMinor(operation.deposit.refundedAmount);
@@ -249,7 +263,7 @@ export class DepositOperationProcessor
         },
       });
       if (succeeded.count === 0) {
-        return;
+        return null;
       }
       const dispute = resolved
         ? await tx.financialDispute.findUnique({
@@ -262,7 +276,10 @@ export class DepositOperationProcessor
             },
           })
         : null;
-      if (dispute?.status === DisputeStatus.UNDER_REVIEW) {
+      if (
+        dispute?.status === DisputeStatus.UNDER_REVIEW ||
+        dispute?.status === DisputeStatus.RESOLVED
+      ) {
         const requiredLegs = [
           {
             kind: DepositOperationKind.REFUND,
@@ -291,12 +308,6 @@ export class DepositOperationProcessor
             break;
           }
         }
-        if (resolved) {
-          await tx.financialDispute.updateMany({
-            where: { id: dispute.id, status: DisputeStatus.UNDER_REVIEW },
-            data: { status: DisputeStatus.RESOLVED, resolvedAt: now },
-          });
-        }
       }
       await tx.bookingDeposit.update({
         where: { id: operation.depositId },
@@ -320,6 +331,7 @@ export class DepositOperationProcessor
           'DEPOSIT_SETTLED',
         );
       }
+      return null;
     });
   }
 

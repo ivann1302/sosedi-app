@@ -313,8 +313,7 @@ export class BookingActService {
         });
         if (
           act.stage === BookingActStage.RETURN &&
-          snapshot?.paymentScenario === 'FAKE_SAFE_DEAL' &&
-          snapshot.moneyMinor.deposit === 0
+          snapshot?.moneyMinor.deposit === 0
         ) {
           await completeBookingAfterReturnInTransaction(
             tx,
