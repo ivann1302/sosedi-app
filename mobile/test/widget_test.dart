@@ -23,7 +23,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Соседи'), findsWidgets);
+    expect(find.text('Всё рядом'), findsWidgets);
+    expect(find.text('Соседи'), findsNothing);
     expect(find.text('Войти по SMS'), findsNothing);
   });
 }

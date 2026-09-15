@@ -19,7 +19,7 @@ class SosediLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Соседи',
+      label: 'Всё рядом',
       image: true,
       excludeSemantics: true,
       child: Row(
@@ -32,7 +32,7 @@ class SosediLogo extends StatelessWidget {
           if (showWordmark) ...[
             SizedBox(width: markSize * 0.32),
             Text(
-              'Соседи',
+              'Всё рядом',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: textColor,
                 fontWeight: FontWeight.w800,

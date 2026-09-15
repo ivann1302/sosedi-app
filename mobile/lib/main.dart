@@ -99,7 +99,7 @@ class _SosediAppState extends ConsumerState<SosediApp>
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'Соседи',
+      title: 'Всё рядом',
       theme: AppTheme.light(),
       locale: const Locale('ru'),
       localizationsDelegates: FormBuilderLocalizations.localizationsDelegates,

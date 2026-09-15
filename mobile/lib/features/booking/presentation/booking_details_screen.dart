@@ -1206,7 +1206,7 @@ class _Acts extends StatelessWidget {
                             Text('Отмечено: ${_time(readiness.declaredAt)}'),
                             const SizedBox(height: 4),
                             const Text(
-                              'Заявление владельца, не проверка Sosedi.',
+                              'Заявление владельца, не проверка «Всё рядом».',
                             ),
                           ],
                         ),

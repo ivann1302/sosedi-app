@@ -22,20 +22,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const _slides = [
     _OnboardingSlide(
       imageAsset: 'assets/images/onboarding/nearby-item.png',
-      imageSemanticLabel: 'Соседи передают друг другу дрель',
+      imageSemanticLabel: 'Пользователи передают друг другу дрель',
       title: 'Всё нужное уже рядом',
       text:
           'Берите вещи у соседей, когда покупать их ради одного раза не хочется.',
     ),
     _OnboardingSlide(
       imageAsset: 'assets/images/onboarding/safe-deal.png',
-      imageSemanticLabel: 'Соседи договариваются о безопасной аренде',
+      imageSemanticLabel: 'Пользователи договариваются о безопасной аренде',
       title: 'Надежные сделки',
       text: 'Профили, модерация и понятные правила для обеих сторон аренды.',
     ),
     _OnboardingSlide(
       imageAsset: 'assets/images/onboarding/quick-search.png',
-      imageSemanticLabel: 'Соседи находят вещи на карте',
+      imageSemanticLabel: 'Пользователи находят вещи на карте',
       title: 'Быстрый поиск',
       text: 'Карта и каталог помогут найти подходящую вещь поблизости.',
     ),

@@ -116,7 +116,7 @@ void main() {
     expect(find.text('Предварительный расчёт'), findsOneWidget);
     expect(find.text('Залог'), findsOneWidget);
     expect(find.text('Нет'), findsOneWidget);
-    expect(find.text('Комиссия Sosedi (офлайн-пилот)'), findsNothing);
+    expect(find.text('Комиссия «Всё рядом» (офлайн-пилот)'), findsNothing);
     expect(find.text('Выплата владельцу'), findsNothing);
     expect(find.text('Валюта'), findsNothing);
     expect(find.text('RUB'), findsNothing);
@@ -205,7 +205,7 @@ void main() {
     expect(find.text('Тестовый сценарий безопасной сделки'), findsOneWidget);
     expect(find.text('Залог'), findsOneWidget);
     expect(find.text('500 ₽'), findsOneWidget);
-    expect(find.text('Предварительная комиссия Sosedi'), findsNothing);
+    expect(find.text('Предварительная комиссия «Всё рядом»'), findsNothing);
     expect(find.text('4,50 ₽'), findsNothing);
     expect(find.text('Выплата владельцу'), findsNothing);
     expect(find.text('445,50 ₽'), findsNothing);
@@ -318,7 +318,7 @@ void main() {
     expect(find.text('Иван'), findsOneWidget);
     expect(find.text('900 ₽'), findsAtLeastNWidgets(2));
     expect(find.text('Выплата владельцу'), findsNothing);
-    expect(find.text('Комиссия Sosedi (офлайн-пилот)'), findsNothing);
+    expect(find.text('Комиссия «Всё рядом» (офлайн-пилот)'), findsNothing);
     expect(find.text('Оплата'), findsOneWidget);
     expect(find.text('При передаче вещи'), findsOneWidget);
     expect(find.text('Валюта'), findsNothing);
@@ -797,7 +797,7 @@ void main() {
     expect(find.text('Чек-лист готовности'), findsOneWidget);
     expect(find.text('Видимые дефекты: Нет'), findsOneWidget);
     expect(
-      find.text('Заявление владельца, не проверка Sosedi.'),
+      find.text('Заявление владельца, не проверка «Всё рядом».'),
       findsOneWidget,
     );
     await tester.tap(find.text('Подтвердить передачу'));

@@ -47,35 +47,36 @@ void main() {
     );
   });
 
-  testWidgets('shows a distinct Sosedi illustration on every onboarding page', (
-    tester,
-  ) async {
-    const assets = [
-      'assets/images/onboarding/nearby-item.png',
-      'assets/images/onboarding/safe-deal.png',
-      'assets/images/onboarding/quick-search.png',
-    ];
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          theme: AppTheme.light(),
-          home: const OnboardingScreen(),
+  testWidgets(
+    'shows a distinct product illustration on every onboarding page',
+    (tester) async {
+      const assets = [
+        'assets/images/onboarding/nearby-item.png',
+        'assets/images/onboarding/safe-deal.png',
+        'assets/images/onboarding/quick-search.png',
+      ];
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const OnboardingScreen(),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    for (var index = 0; index < assets.length; index += 1) {
-      final image = tester.widget<Image>(
-        find.byKey(ValueKey('onboarding-image-$index')),
       );
-      expect((image.image as AssetImage).assetName, assets[index]);
-      if (index < assets.length - 1) {
-        await tester.tap(find.text('Далее'));
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
+
+      for (var index = 0; index < assets.length; index += 1) {
+        final image = tester.widget<Image>(
+          find.byKey(ValueKey('onboarding-image-$index')),
+        );
+        expect((image.image as AssetImage).assetName, assets[index]);
+        if (index < assets.length - 1) {
+          await tester.tap(find.text('Далее'));
+          await tester.pumpAndSettle();
+        }
       }
-    }
-  });
+    },
+  );
 
   testWidgets('keeps onboarding usable on a compact screen at 200% text', (
     tester,
