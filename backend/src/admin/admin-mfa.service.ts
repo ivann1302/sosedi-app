@@ -87,7 +87,7 @@ export class AdminMfaService {
 
     return {
       secret,
-      otpauthUri: buildTotpUri('Соседи', phone, secret),
+      otpauthUri: buildTotpUri('Всё рядом', phone, secret),
       expiresInSeconds: MFA_SETUP_TTL_SECONDS,
     };
   }

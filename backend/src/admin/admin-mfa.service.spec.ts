@@ -4,6 +4,38 @@ import { RedisService } from '../redis/redis.service';
 import { AdminMfaService } from './admin-mfa.service';
 
 describe('AdminMfaService', () => {
+  it('uses the current product name in the authenticator URI', async () => {
+    const prisma = {
+      adminMfaCredential: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+      adminAuditLog: { create: jest.fn().mockResolvedValue({}) },
+    };
+    const redis = {
+      set: jest.fn().mockResolvedValue('OK'),
+      del: jest.fn().mockResolvedValue(1),
+    };
+    const config = {
+      get: jest.fn().mockReturnValue(Buffer.alloc(32, 7).toString('base64')),
+    };
+    const service = new AdminMfaService(
+      prisma as unknown as PrismaService,
+      { getClient: () => redis } as unknown as RedisService,
+      config as unknown as ConfigService,
+    );
+
+    const result = await service.beginTotpSetup('admin-1', '+79990000001', {
+      requestId: 'mfa-setup-request',
+      ipAddress: '127.0.0.1',
+      deviceId: 'device-hash',
+    });
+
+    expect(new URL(result.otpauthUri).searchParams.get('issuer')).toBe(
+      'Всё рядом',
+    );
+    expect(decodeURIComponent(result.otpauthUri)).not.toContain('Соседи');
+  });
+
   it('removes a pending TOTP secret when the required setup audit fails', async () => {
     const auditError = new Error('audit unavailable');
     const auditCreate = jest.fn().mockRejectedValue(auditError);

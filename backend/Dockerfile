@@ -28,7 +28,7 @@ RUN npm prune --omit=dev --ignore-scripts --no-audit --no-fund
 FROM base AS runtime
 ARG APP_RELEASE=local
 
-LABEL org.opencontainers.image.title="Sosedi backend" \
+LABEL org.opencontainers.image.title="Всё рядом backend" \
       org.opencontainers.image.version="${APP_RELEASE}"
 
 ENV NODE_ENV=production \

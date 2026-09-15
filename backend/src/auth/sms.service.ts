@@ -66,7 +66,7 @@ export class SmsService {
         body: new URLSearchParams({
           api_id: apiKey,
           to: phone.replace('+', ''),
-          msg: `Код для входа в Соседи: ${code}`,
+          msg: `Код для входа во Всё рядом: ${code}`,
           json: '1',
         }),
         signal: AbortSignal.timeout(SMS_PROVIDER_TIMEOUT_MS),

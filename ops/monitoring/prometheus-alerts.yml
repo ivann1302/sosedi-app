@@ -8,7 +8,7 @@ groups:
           severity: critical
           owner: product-owner
         annotations:
-          summary: Sosedi backend metrics are unavailable
+          summary: Всё рядом backend metrics are unavailable
           threshold: backend metrics absent for 5m
           runbook: docs/monitoring-alert-runbooks.md#metrics-and-api
 
@@ -23,7 +23,7 @@ groups:
           severity: critical
           owner: product-owner
         annotations:
-          summary: Sosedi API 5xx rate is above 5%
+          summary: Всё рядом API 5xx rate is above 5%
           threshold: 5xx ratio above 5% for 10m
           runbook: docs/monitoring-alert-runbooks.md#metrics-and-api
 
@@ -38,7 +38,7 @@ groups:
           severity: warning
           owner: on-call-operator
         annotations:
-          summary: Sosedi API p95 latency is above 1 second
+          summary: Всё рядом API p95 latency is above 1 second
           threshold: p95 above 1s for 10m
           runbook: docs/monitoring-alert-runbooks.md#metrics-and-api
 
@@ -156,7 +156,7 @@ groups:
           severity: warning
           owner: on-call-operator
         annotations:
-          summary: "Sosedi operation failures: {{ $labels.operation }}"
+          summary: "Всё рядом operation failures: {{ $labels.operation }}"
           threshold: one or more operation failures in 10m
           runbook: docs/monitoring-alert-runbooks.md#provider-operation
 

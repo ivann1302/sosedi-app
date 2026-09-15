@@ -11,7 +11,7 @@ export function configureSwagger(
   }
 
   const config = new DocumentBuilder()
-    .setTitle('Соседи API')
+    .setTitle('Всё рядом API')
     .setVersion('1.0')
     .addBearerAuth()
     .addCookieAuth(ADMIN_SESSION_COOKIE)

@@ -69,6 +69,11 @@ describe('SmsService logging', () => {
         service.sendOtp('+79991234567', '654321'),
       ).resolves.toBeUndefined();
       expect(fetchMock).toHaveBeenCalledTimes(2);
+      const requestBody = fetchMock.mock.calls[1][1]?.body;
+      expect(requestBody).toBeInstanceOf(URLSearchParams);
+      expect((requestBody as URLSearchParams).get('msg')).toBe(
+        'Код для входа во Всё рядом: 654321',
+      );
       expect(metrics.recordOperation.mock.calls).toEqual([
         ['sms_send', 'failure'],
         ['sms_send', 'success'],

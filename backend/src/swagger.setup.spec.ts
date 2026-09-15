@@ -39,7 +39,11 @@ describe('Swagger environment policy', () => {
   it('keeps Swagger available for local development', async () => {
     const app = await createApp('development');
 
-    await request(app.getHttpServer()).get('/api/docs-json').expect(200);
+    const response = await request(app.getHttpServer())
+      .get('/api/docs-json')
+      .expect(200);
+    const document = response.body as { info: { title: string } };
+    expect(document.info.title).toBe('Всё рядом API');
     await app.close();
   });
 });

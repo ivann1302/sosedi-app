@@ -1,5 +1,5 @@
 [Unit]
-Description=Sosedi encrypted PostgreSQL backup
+Description=Всё рядом encrypted PostgreSQL backup
 Wants=network-online.target
 After=network-online.target
 ConditionPathIsDirectory=/opt/sosedi/current/backend
