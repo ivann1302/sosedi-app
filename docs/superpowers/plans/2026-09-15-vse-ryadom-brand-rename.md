@@ -4,7 +4,7 @@
 
 **Goal:** Заменить пользовательское название «Соседи» / `Sosedi` на «Всё рядом» без миграции технических идентификаторов и без изменения графического знака.
 
-**Architecture:** Ребрендинг выполняется точечно по пользовательским поверхностям: mobile, backend-generated copy, operator/public web и активные документы. Совместимые identifiers `sosedi` остаются неизменными; старый внешний лендинг на SprintHost не входит в задачу, а новый лендинг на Timeweb проектируется отдельно после оплаты hosting и выбора нового домена.
+**Architecture:** Ребрендинг выполняется точечно по пользовательским поверхностям: mobile, backend-generated copy, operator/public web и активные документы. Совместимые identifiers `sosedi` остаются неизменными. Создание и публикация лендинга исключены из roadmap по решению владельца.
 
 **Tech Stack:** Flutter/Dart, NestJS/TypeScript/Jest, React/Vite, Astro, Android manifest, iOS plist, Markdown/HTML.
 
@@ -290,7 +290,7 @@ emails, IDs or filenames.
 
 Change only the new canonical brand item from `[ ]` to `[x]` after Tasks 1–4
 are verified. Add a dated `DONE` note with the exact validation commands and
-state that screenshots/new logo/new Timeweb landing remain separate. Update the
+state that screenshots/new logo remain separate and landing work is owner-managed outside roadmap. Update the
 roadmap counterpart and recompute counts from checkbox lines.
 
 - [ ] **Step 4: Validate documentation and commit**
@@ -363,7 +363,7 @@ pre-existing user-owned changes remain outside the brand commits.
 
 Rewrite `.codex/HANDOFF.md` to no more than 8 lines/800 characters with the
 brand item, results, checks, the exact next `[ ]` item, source section, and the
-new landing/store external blockers. Do not stage this ignored local file.
+store external blockers. Do not stage this ignored local file.
 
 If Task 5 required tracked evidence corrections, commit only those corrections:
 

@@ -91,7 +91,7 @@ hard reservation и запрещают пересекающийся календ
 gate.
 
 До отправки заявки borrower видит ставку × число дней, отсутствие залога,
-комиссию Sosedi `0`, выплату владельцу, оплату при передаче, итог и RUB. Lender
+комиссию «Всё рядом» `0`, выплату владельцу, оплату при передаче, итог и RUB. Lender
 видит тот же immutable breakdown в `PENDING` до подтверждения. Legacy Item с
 ненулевым залогом получает `ITEM_DEPOSIT_NOT_SUPPORTED` до отдельного
 deposit/legal gate и не создаёт нечитаемый Booking snapshot.
@@ -101,7 +101,7 @@ deposit/legal gate и не создаёт нечитаемый Booking snapshot.
 platform fee пилота, owner payout, total, RUB, `PAY_ON_HANDOVER`, handover point
 и версии Item. В этом сценарии Booking не создаёт Payment, payout или online
 receipt и не получает ложный статус `PAID`; mobile до заявки явно показывает
-оплату при передаче, комиссию Sosedi 0 ₽ и отсутствие приёма/перевода денег
+оплату при передаче, комиссию «Всё рядом» 0 ₽ и отсутствие приёма/перевода денег
 платформой.
 Новые Booking всегда получают настроенные `offerVersion` и
 `cancellationPolicyVersion`; без них endpoint закрыт. Nullable reading
@@ -112,7 +112,7 @@ timestamp, фиксированный UI method и обе версии. Поля
 service обязательно требует их и не доверяет client timestamp/method.
 До provider ADR `PaymentsModule` не имеет HTTP controller или payout/split
 service: fake provider доступен только внутренним доменным тестам. Ручная
-выплата владельцу со счёта Sosedi не является скрытым fallback.
+выплата владельцу со счёта «Всё рядом» не является скрытым fallback.
 
 `GET /bookings` и `GET /bookings/:id` доступны только borrower/lender. Pricing
 snapshot виден участникам во всех состояниях, но точный handover address и
@@ -129,7 +129,7 @@ Mobile инвалидирует уже загруженные private booking de
 `ACTIVE` — единственный `RETURN` act. `HANDOVER` обязательно сохраняет
 неизменяемую самодекларацию владельца: исправность, полную
 комплектацию, текст о видимых дефектах и server timestamp. Это не
-проверка Sosedi и не решение финансового спора. Вопрос о заряде
+проверка «Всё рядом» и не решение финансового спора. Вопрос о заряде
 не показывается без утверждённого category rule.
 
 Act включает server author/time и private evidence,

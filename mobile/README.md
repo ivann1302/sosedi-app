@@ -1,6 +1,6 @@
-# Sosedi Mobile
+# «Всё рядом» Mobile
 
-Flutter client for the Sosedi P2P item-rental MVP.
+Flutter client for the «Всё рядом» P2P item-rental MVP.
 
 The implemented mobile surface contains onboarding, SMS OTP/session management,
 profile/edit/closure, catalog and item details, owner listing creation/edit/

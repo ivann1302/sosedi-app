@@ -81,7 +81,7 @@ ADR хранит только принятое business, legal, provider или 
 - release-сценарий платежей и комиссия: Safe Deal либо offline pilot 0%;
 - идентификация владельца: provider-managed либо local KYC;
 - marketplace legal/safety rules и prohibited categories;
-- mixed P2P/first-party supply до публикации имущества ИП/ООО Sosedi;
+- mixed P2P/first-party supply до публикации имущества ИП/ООО «Всё рядом»;
 - включение или исключение delivery handoff;
 - retention/legal hold для аккаунтов, evidence и KYC.
 

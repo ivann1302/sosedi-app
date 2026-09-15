@@ -1,6 +1,6 @@
-# Sosedi Backend
+# «Всё рядом» Backend
 
-NestJS monolith for the Sosedi P2P item-rental MVP.
+NestJS monolith for the «Всё рядом» P2P item-rental MVP.
 
 The current product contract uses `Item`/`ItemPhoto`, `/api/v1/items` and one
 product role, `USER`. A user may both borrow other users' items and publish

@@ -1,4 +1,4 @@
-# Sosedi Operator
+# «Всё рядом» Operator
 
 Минимальный закрытый React/Vite UI для `SUPPORT`, `DISPUTE`, `FINANCE` и
 `MODERATION`. Менеджер с `SUPPORT` видит очередь споров только для чтения.

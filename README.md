@@ -1,4 +1,4 @@
-# Соседи
+# Всё рядом
 
 Мобильный P2P-сервис платной аренды разрешённых личных вещей между соседями в
 России.
@@ -44,7 +44,7 @@ payment/KYC legal gates и обязательный production-readiness эта�
 - Cache and queues: Redis, BullMQ.
 - Storage: один основной S3-compatible провайдер в РФ через presigned URL.
 - Payments: комиссия только через согласованную CloudPayments «Безопасную сделку»;
-  оплата при передаче — временный pilot с комиссией Sosedi 0%.
+  оплата при передаче — временный pilot с комиссией «Всё рядом» 0%.
 - Notifications: FCM, RuStore Push и in-app inbox через единый `PushProvider`.
 - Observability: `sentry_flutter` SDK с GlitchTip self-hosted в РФ и AppMetrica.
 
@@ -264,13 +264,13 @@ make mobile-gen
 
 Основная БД, телефоны, профили, адреса, фотографии, платежные записи и резервные
 копии должны храниться на территории РФ. KYC-документы входят в этот перечень
-только если ADR выбрал ветку `LOCAL_KYC`; при `PROVIDER_MANAGED` Sosedi их не
+только если ADR выбрал ветку `LOCAL_KYC`; при `PROVIDER_MANAGED` «Всё рядом» их не
 собирает.
 
 Важно:
 
 - не использовать Firebase Auth, AWS Cognito, Supabase Auth;
-- сначала предпочитать provider-managed identification; KYC-документы в Sosedi
+- сначала предпочитать provider-managed identification; KYC-документы в «Всё рядом»
   собирать только после legal gate и хранить в приватном S3 bucket;
 - для админских действий вести аудит;
 - передавать внешним SDK только минимальные технические идентификаторы при
@@ -307,7 +307,7 @@ production-домен/HTTPS и выполнить release smoke.
 ## Обязательные проверки до интеграций
 
 - До Payments согласовать с CloudPayments «Безопасную сделку». Пока gate не
-  закрыт, MVP бронирует вещь, оплата происходит при передаче, а комиссия Sosedi
+  закрыт, MVP бронирует вещь, оплата происходит при передаче, а комиссия «Всё рядом»
   равна 0%.
 - До публичной аренды согласовать роль площадки, оферту/rental rules, комиссию,
   отмены/ущерб, eligibility и launch whitelist запрещённых/опасных категорий
@@ -329,7 +329,7 @@ production-домен/HTTPS и выполнить release smoke.
 - **Раньше:** только checkout и webhook, без hold, split и автоматических
   выплат.
 - **Теперь:** monetized MVP разрешён только через согласованную с CloudPayments
-  «Безопасную сделку»; оплата при передаче — pilot с комиссией Sosedi 0%.
+  «Безопасную сделку»; оплата при передаче — pilot с комиссией «Всё рядом» 0%.
 - **Почему:** checkout-only принимает деньги, но не завершает расчеты P2P-сделки
   с владельцем вещи.
 

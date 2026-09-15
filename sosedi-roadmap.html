@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Соседи — Roadmap</title>
+<title>Всё рядом — Roadmap</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -514,14 +514,14 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
     </button>
     <a href="#overview" class="topbar-logo">
-      <!-- Соседи SVG Logo -->
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="Соседи">
+      <!-- Всё рядом SVG Logo -->
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="Всё рядом">
         <rect width="28" height="28" rx="7" fill="currentColor" opacity="0.12"/>
         <path d="M7 8h7a4 4 0 0 1 0 8H7V8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>
         <path d="M14 16l5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         <circle cx="21" cy="19" r="2.5" fill="currentColor" opacity="0.5"/>
       </svg>
-      Соседи
+      Всё рядом
     </a>
     <span class="topbar-title">Платная аренда вещей</span>
     <div class="topbar-right">
@@ -567,7 +567,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
     <!-- ==================== OVERVIEW ==================== -->
     <div id="view-overview" class="view active">
       <div class="page-header">
-        <h1>Соседи — платная аренда вещей</h1>
+        <h1>Всё рядом — платная аренда вещей</h1>
         <p>Мобильная P2P-платформа аренды разрешённых личных вещей между соседями. Разрабатывается одним разработчиком с AI-инструментами.</p>
       </div>
 
@@ -607,9 +607,9 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
       <div class="progress-wrap">
         <div class="progress-header">
           <span>Прогресс всего MVP</span>
-          <span>352 / 487 — 72,3%</span>
+          <span>353 / 486 — 72,6%</span>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:72.3%"></div></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:72.6%"></div></div>
         <div class="kpi-sub" style="margin-top:var(--space-2)">Рассчитано только из выполненных пунктов <code>MVP_CHECKLIST.md</code>; HTML не ведёт второй независимый процент. Tiles CI: run 34342751765 прошёл 09.09.2026, ключ передан из environment secret.</div>
       </div>
 
@@ -665,14 +665,13 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-item"><div><strong>0 · inventory получен:</strong> store accounts ждут юрлицо заказчика; два физических Samsung и iPhone 7 подключены и прошли local smoke; отдельный Android без GMS и проектный OTP-номер не подтверждены.</div></div>
           <div class="tl-item"><div><strong>1 · DONE:</strong> публичный support-контакт — <code>sosedi.rs@yandex.ru</code>; local support/account-deletion routes проверены.</div></div>
           <div class="tl-item"><div><strong>2 · DONE:</strong> local smoke пройден на SM-S916N, SM-G780G и iPhone 7 с iOS 15.8.8. На iPhone подтверждены живой каталог, Yandex Tiles карта и 3/3 integration-маршрута; найденная видимость нового сообщения на компактном экране исправлена через TDD. Пункт 8.2 закрыт.</div></div>
-          <div class="tl-item"><div><strong>3–4 · DONE:</strong> исходники старого промосайта получены; GitLab backup и восстановление проверены. <strong>5 · AUTO-first:</strong> видимый бренд меняется на «Всё рядом» при сохранении технических identifiers.</div></div>
-          <div class="tl-item"><div><strong>6 · новый landing:</strong> отдельный сайт «Всё рядом» на Timeweb и новом домене; счёт выставлен, ожидается оплата. Старый SprintHost-сайт не менять.</div></div>
-          <div class="tl-item"><div><strong>7–10 · внешние prerequisites:</strong> российский OCI registry → store accounts/signing → Tiles production-настройка → завершение SMS.ru/push/S3.</div></div>
-          <div class="tl-item"><div><strong>11–13 · дни/недели:</strong> production РФ → marketplace legal/privacy → Safe Deal, экономика 1% и одна KYC-ветка.</div></div>
-          <div class="tl-item"><div><strong>14 · операционная ступень:</strong> плотное предложение и usability smoke с пятью новыми пользователями. Районы и организация поддержки — после технического запуска (приложение A).</div></div>
-          <div class="tl-item"><div><strong>Public hosting decision · 15.09.2026:</strong> старый лендинг «Соседи» на <code>sosedi-app.ru</code> и SprintHost остаётся без изменений. Новый лендинг «Всё рядом» создаётся отдельно на Timeweb после оплаты счёта и выбора нового домена.</div></div>
+          <div class="tl-item"><div><strong>3–5 · DONE:</strong> исходники старого промосайта получены; GitLab backup/restore проверены; пользовательский бренд изменён на «Всё рядом» при сохранении технических identifiers.</div></div>
+          <div class="tl-item"><div><strong>6–9 · внешние prerequisites:</strong> российский OCI registry → store accounts/signing → Tiles production-настройка → завершение SMS.ru/push/S3.</div></div>
+          <div class="tl-item"><div><strong>10–12 · дни/недели:</strong> production РФ → marketplace legal/privacy → Safe Deal, экономика 1% и одна KYC-ветка.</div></div>
+          <div class="tl-item"><div><strong>13 · операционная ступень:</strong> плотное предложение и usability smoke с пятью новыми пользователями. Районы и организация поддержки — после технического запуска (приложение A).</div></div>
+          <div class="tl-item"><div><strong>Landing decision · 15.09.2026:</strong> создание и публикацию нового лендинга владелец выполняет самостоятельно вне roadmap; старый SprintHost-сайт не изменяется.</div></div>
           <div class="tl-item"><div>Codex сначала готовит инструкцию, после действия владельца сам проверяет evidence и закрывает техническую часть. Подробный шаблон текущей ступени — <code>OWNER_ACTIONS.md</code>.</div></div>
-          <div class="tl-item"><div><strong>Сейчас:</strong> первым идёт ребрендинг «Всё рядом». CloudPayments — заявка отправлена и ожидается следующий ответ менеджера; SMS.ru — account создан, sender ждёт новый домен и оригиналы документов; Timeweb — счёт выставлен, ожидается оплата. После ребрендинга готовим новый landing и store prerequisites.</div></div>
+          <div class="tl-item"><div><strong>Сейчас:</strong> ребрендинг «Всё рядом» завершён. CloudPayments — заявка отправлена и ожидается следующий ответ менеджера; SMS.ru — account создан, sender ждёт новый домен и оригиналы документов; Timeweb — счёт выставлен, ожидается оплата. Следующий автономный roadmap-пункт определяется по checklist; landing ведёт владелец.</div></div>
         </div>
       </div>
 
@@ -945,7 +944,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Онбординг (3 слайда) + SMS-логин</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Product shell: Stateful indexed stack объединяет Найти / Брони / Сдать / Входящие / Профиль; Найти стартует первым, ветки сохраняют допустимое состояние, auth/logout остаются fail-closed</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Гостевой read-only путь: onboarding → Найти → публичная Item Details без SMS; auth только по intent, безопасный route/action восстанавливается после OTP</div></div>
-              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Утверждённый mobile refresh: bundled Onest Variable и знакомая marketplace-механика внутри identity Sosedi; плоские поверхности, каталог в две колонки, пять вкладок, sticky CTA, grouped rows и photo-first публикация в три шага. Реализованы девять визуальных партий и 38 route/state screenshots; проверены compact 320×720 при 200% текста и wide split от 840 px. Local smoke пройден на SM-S916N, SM-G780G и iPhone 7 с iOS 15.8.8. <strong>IPHONE DEVICE SMOKE 09.09.2026:</strong> живой каталог и Yandex Tiles карта показали кластер семи public объявлений; полный набор 3/3 integration-маршрутов прошёл. Видимость нового сообщения на компактном экране исправлена через TDD. Analyzer и 320 mobile tests прошли. <a href="docs/autonomous-mobile-audit-2026-09-08.md">Отчёт и ограничения</a>.</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Утверждённый mobile refresh: bundled Onest Variable и знакомая marketplace-механика внутри identity «Всё рядом»; плоские поверхности, каталог в две колонки, пять вкладок, sticky CTA, grouped rows и photo-first публикация в три шага. Реализованы девять визуальных партий и 38 route/state screenshots; проверены compact 320×720 при 200% текста и wide split от 840 px. Local smoke пройден на SM-S916N, SM-G780G и iPhone 7 с iOS 15.8.8. <strong>IPHONE DEVICE SMOKE 09.09.2026:</strong> живой каталог и Yandex Tiles карта показали кластер семи public объявлений; полный набор 3/3 integration-маршрутов прошёл. Видимость нового сообщения на компактном экране исправлена через TDD. Analyzer и 320 mobile tests прошли. <a href="docs/autonomous-mobile-audit-2026-09-08.md">Отчёт и ограничения</a>.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile Map в общем Найти: <code>flutter_map</code> + Yandex Tiles API, coarse markers/clusters, общие даты/фильтры со списком, phone selection card и wide split. Ручной район уже загружается из видимых approved объявлений и не запрашивает координаты. <strong>LOCATION CONTROL 06.09.2026:</strong> нативный MapKit удалён; Tiles picker с официальным логотипом заменил ручные latitude/longitude в создании/редактировании. Район и приватный адрес вводятся понятными ручными полями, точка выбирается на карте. <code>YANDEX_TILES_API_KEY</code> хранится вне Git. <strong>CATALOG MAP 07.09.2026:</strong> общий «Найти» показывает настоящие Tiles и кластеры приблизительных маркеров. Касание маркера открывает компактную фото-карточку, а касание пустой карты или крестика закрывает её. По решению пользователя «Искать в этой области» исключено из MVP. Свежий keyed APK прошёл на SM-G780G кластер, выбор/закрытие карточки и переход в Item Details; analyzer, 314 mobile tests и backend lint/366 tests/build прошли. <strong>WIDE/TILES BASELINE 07.09.2026:</strong> split layout покрыт тестом на 1000×800; отдельные документы фиксируют 30 RPS, 0 ₽ для пилота, оценку запросов и privacy/retention точной геолокации.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Mobile Catalog: список объявлений, поиск, фильтры и server-side сортировка «новые / дешевле / дороже» с сохранением при refresh и пагинации</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Item Details: фото, дневная цена, примерная локация, владелец, состояние, комплектация, safety notice и проверка доступности по датам готовы; точная rental-rules версия показывается только из полного approved public набора</div></div>
@@ -960,13 +959,12 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
             </div>
             <div class="tl-card">
               <div class="tl-card-title" style="color:var(--color-warning)">Обязательные внешние gates · стартуют параллельно</div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Brand readiness:</strong> заменить пользовательские «Соседи» / <code>Sosedi</code> на «Всё рядом» в mobile, service copy, web и активной документации; сохранить <code>ru.sosedi.app</code>, технические identifiers и графический знак.</div></div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Новый landing:</strong> после оплаты Timeweb и выбора домена создать отдельный сайт «Всё рядом» с Astro legal/support/delete routes, HTTPS, headers и rollback; старый SprintHost-сайт не изменять.</div></div>
+              <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Brand readiness:</strong> mobile, SMS/TOTP/Swagger, operator/public web и активная документация используют «Всё рядом»; <code>ru.sosedi.app</code>, технические identifiers и графический знак сохранены.</div></div>
               <div class="tl-item"><div><strong>Store readiness:</strong> завершить Apple Developer, Google Play, RuStore, IDs, signing keys и smoke-сборки до production-карты; затем один manifest/version вести параллельно с отдельными platform artifacts/config и общим API/legal contract.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Mobile IDs:</strong> Android applicationId/namespace и iOS bundle ID зафиксированы как <code>ru.sosedi.app</code>; release APK и iOS no-sign smoke собираются.</div></div>
               <div class="tl-item"><div><strong>Privacy:</strong> цель, минимизация, внешний Tiles flow, fallback и retention точной геолокации зафиксированы в <code>docs/exact-location-privacy.md</code>. До production-активации остаются опубликованный versioned consent, provider disclosure и отдельные AppMetrica/FCM gates.</div></div>
               <div class="tl-item"><div><strong>Marketplace legal/safety:</strong> launch whitelist принят; backend требует exact approved versions и хранит borrower/server-time/method acceptance. Mobile booking требует exact URLs/versions и два checkbox, а профиль показывает offer/rules/privacy только полным published set; default fail-closed. Публичный запуск ждёт legal texts, роль посредника, cancellation/damage, eligibility и production URLs.</div></div>
-              <div class="tl-item"><div><strong>Mixed supply:</strong> PROPOSED ADR-0006 фиксирует направление, но имущество ИП/ООО Sosedi остаётся выключено до отдельного договора, disclosure, кассы/чеков, payment flow и immutable lender snapshot.</div></div>
+              <div class="tl-item"><div><strong>Mixed supply:</strong> PROPOSED ADR-0006 фиксирует направление, но имущество ИП/ООО «Всё рядом» остаётся выключено до отдельного договора, disclosure, кассы/чеков, payment flow и immutable lender snapshot.</div></div>
               <div class="tl-item"><div><strong>Payment/identity decision:</strong> до фазы 0.3 подтвердить provider onboarding и выбрать ADR-ветку provider-managed либо local KYC; production payment integration остаётся в 0.4.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Supply chain:</strong> PostGIS 15.13/3.5.2 и Redis 7.4.9 зафиксированы в Compose по читаемой версии и immutable digest; совместимость подтверждена backend e2e.</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div><strong>Build cache:</strong> npm/pub/Prisma/CocoaPods кеши привязаны к lock/schema; отдельный macOS job собирает locked iOS release без подписи.</div></div>
@@ -1035,7 +1033,7 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="tl-body">
             <div class="tl-card">
               <div class="tl-card-title">Добавить</div>
-              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>После payment-provider decision принять ADR ровно одной ветки: provider-managed identification без документов в Sosedi либо local KYC с legal/biometric/consent/retention gate; вторую ветку пометить N/A</div></div>
+              <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>После payment-provider decision принять ADR ровно одной ветки: provider-managed identification без документов во «Всё рядом» либо local KYC с legal/biometric/consent/retention gate; вторую ветку пометить N/A</div></div>
               <div class="tl-item" data-status="todo"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Статус «Проверен» на профиле сдающего пользователя</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Приватный акт с фото вещи до передачи создаёт lender, borrower проверяет и подтверждает его</div></div>
               <div class="tl-item" data-status="done"><svg class="tl-item-check" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/></svg><div>Приватный акт с фото после возврата создаёт borrower, lender проверяет и подтверждает его</div></div>
@@ -1242,7 +1240,6 @@ button { cursor: pointer; background: none; border: none; font: inherit; color: 
           <div class="stack-items">
             <div class="stack-item-row"><span class="stack-item-label">Operator UI</span><span class="tag tag-blue">React + Vite</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Public site</span><span class="tag tag-orange">Astro</span></div>
-            <div class="stack-item-row"><span class="stack-item-label">Новый landing</span><span class="tag tag-yellow">Timeweb · ждёт оплату/домен</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Язык</span><span class="tag tag-blue">TypeScript</span></div>
             <div class="stack-item-row"><span class="stack-item-label">Граница</span><span class="tag tag-gray">Public site без auth/ПД</span></div>
           </div>

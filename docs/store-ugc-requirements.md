@@ -39,7 +39,7 @@
 - ограничение доступа для нарушителей;
 - контакт поддержки/moderation team и своевременную реакцию.
 
-## Состояние Sosedi
+## Состояние «Всё рядом»
 
 Backend уже имеет target-specific report, user block, rate/dedup, operator
 `dismiss / hide listing / block user`, capability/CSRF и audit. Item проходит

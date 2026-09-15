@@ -1,4 +1,4 @@
-# Схема БД Sosedi MVP
+# Схема БД MVP «Всё рядом»
 
 Источник истины: `backend/prisma/schema.prisma`.
 
